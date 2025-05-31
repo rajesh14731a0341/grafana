@@ -20,6 +20,10 @@ jobs:
         run: terraform init
         working-directory: ./env/dev
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file=terraform.tfvars
+      - name: Terraform Plan
+        run: terraform plan -var-file=terraform.tfvars
+        working-directory: ./env/dev
+
+      - name: Terraform destroy
+        run: terraform destroy -auto-approve -var-file=terraform.tfvars
         working-directory: ./env/dev
