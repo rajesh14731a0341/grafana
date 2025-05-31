@@ -1,7 +1,9 @@
 name: Deploy to ECS (Dev)
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - grafana-branch  # ✅ Trigger only when code is pushed to this branch
 
 jobs:
   deploy:
