@@ -10,7 +10,7 @@ output "task_definition_arn" {
 
 output "service_arn" {
   description = "The ARN of the ECS service"
-  value       = aws_ecs_service.grafana.arn
+  value       = aws_ecs_service.grafana.id
 }
 
 output "service_name" {
