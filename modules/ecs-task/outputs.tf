@@ -1,11 +1,19 @@
-output "task_definition_arn" {
-  value = aws_ecs_task_definition.grafana.arn
+output "cluster_arn" {
+  description = "The ARN of the ECS cluster"
+  value       = aws_ecs_cluster.grafana_cluster.arn
 }
 
-output "service_name" {
-  value = aws_ecs_service.grafana.name
+output "task_definition_arn" {
+  description = "The ARN of the ECS task definition"
+  value       = aws_ecs_task_definition.grafana.arn
 }
 
 output "service_arn" {
-  value = aws_ecs_service.grafana.arn
+  description = "The ARN of the ECS service"
+  value       = aws_ecs_service.grafana.service_arn
+}
+
+output "service_name" {
+  description = "The name of the ECS service"
+  value       = aws_ecs_service.grafana.name
 }
