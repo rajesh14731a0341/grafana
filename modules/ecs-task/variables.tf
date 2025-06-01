@@ -1,82 +1,51 @@
-variable "cluster_arn" {
-  type        = string
-  description = "ECS cluster ARN"
-}
-
-variable "subnet_ids" {
-  type        = list(string)
-  description = "List of subnet IDs"
-}
-
-variable "security_group_id" {
-  type        = string
-  description = "Security group ID"
-}
-
 variable "execution_role_arn" {
-  type        = string
-  description = "IAM role ARN for ECS task execution"
+  type = string
 }
 
 variable "task_role_arn" {
-  type        = string
-  description = "IAM role ARN for ECS task"
+  type = string
 }
 
-variable "efs_file_system_id" {
-  type        = string
-  description = "EFS file system ID"
+variable "ecs_cluster_id" {
+  type = string
+}
+
+variable "subnet_ids" {
+  type = list(string)
+}
+
+variable "security_group_id" {
+  type = string
 }
 
 variable "efs_access_point_id" {
-  type        = string
-  description = "EFS access point ID"
+  type = string
 }
 
-variable "grafana_image" {
-  type        = string
-  description = "Docker image for Grafana Enterprise"
-}
-
-variable "renderer_image" {
-  type        = string
-  description = "Docker image for Renderer"
-}
-
-variable "redis_image" {
-  type        = string
-  description = "Docker image for Redis"
-}
-
-variable "desired_count" {
-  type        = number
-  description = "Number of ECS tasks"
-  default     = 1
+variable "efs_file_system_id" {
+  type = string
 }
 
 variable "grafana_user" {
-  type        = string
+  type = string
 }
 
 variable "grafana_password" {
-  type        = string
-  sensitive   = true
+  type = string
 }
 
 variable "renderer_user" {
-  type        = string
+  type = string
 }
 
 variable "renderer_password" {
-  type        = string
-  sensitive   = true
+  type = string
 }
 
 variable "redis_user" {
-  type        = string
+  type = string
 }
 
 variable "redis_password" {
-  type        = string
-  sensitive   = true
+  type = string
 }

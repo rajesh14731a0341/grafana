@@ -1,5 +1,15 @@
-variable "cluster_arn" {
-  description = "ARN of the ECS cluster"
+variable "execution_role_arn" {
+  description = "ECS Task Execution Role ARN"
+  type        = string
+}
+
+variable "task_role_arn" {
+  description = "ECS Task Role ARN"
+  type        = string
+}
+
+variable "ecs_cluster_id" {
+  description = "ECS Cluster ARN"
   type        = string
 }
 
@@ -9,22 +19,7 @@ variable "subnet_ids" {
 }
 
 variable "security_group_id" {
-  description = "Security group ID"
-  type        = string
-}
-
-variable "execution_role_arn" {
-  description = "IAM role ARN for ECS task execution"
-  type        = string
-}
-
-variable "task_role_arn" {
-  description = "IAM role ARN for ECS task"
-  type        = string
-}
-
-variable "efs_file_system_id" {
-  description = "EFS File System ID"
+  description = "Security Group ID for ECS tasks"
   type        = string
 }
 
@@ -33,56 +28,37 @@ variable "efs_access_point_id" {
   type        = string
 }
 
-variable "grafana_image" {
-  description = "Docker image for Grafana Enterprise"
+variable "efs_file_system_id" {
+  description = "EFS File System ID"
   type        = string
-}
-
-variable "renderer_image" {
-  description = "Docker image for Grafana Renderer"
-  type        = string
-}
-
-variable "redis_image" {
-  description = "Docker image for Redis"
-  type        = string
-}
-
-variable "desired_count" {
-  description = "Desired ECS service count"
-  type        = number
-  default     = 1
 }
 
 variable "grafana_user" {
-  description = "Grafana username"
+  description = "Grafana container username"
   type        = string
 }
 
 variable "grafana_password" {
-  description = "Grafana password"
+  description = "Grafana container password"
   type        = string
-  sensitive   = true
 }
 
 variable "renderer_user" {
-  description = "Renderer username"
+  description = "Renderer container username"
   type        = string
 }
 
 variable "renderer_password" {
-  description = "Renderer password"
+  description = "Renderer container password"
   type        = string
-  sensitive   = true
 }
 
 variable "redis_user" {
-  description = "Redis username"
+  description = "Redis container username"
   type        = string
 }
 
 variable "redis_password" {
-  description = "Redis password"
+  description = "Redis container password"
   type        = string
-  sensitive   = true
 }
