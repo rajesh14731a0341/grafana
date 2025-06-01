@@ -1,9 +1,9 @@
-output "ecs_service_id" {
-  description = "The ECS service ID (ARN)"
-  value       = aws_ecs_service.grafana.id
+output "ecs_service_arn" {
+  description = "ARN of ECS service"
+  value       = aws_ecs_service.grafana.arn
 }
 
-output "ecs_service_name" {
-  description = "The ECS service name"
-  value       = aws_ecs_service.grafana.name
+output "ecs_task_definition_arn" {
+  description = "ARN of ECS task definition"
+  value       = aws_ecs_task_definition.grafana.arn
 }

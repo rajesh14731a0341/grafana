@@ -1,26 +1,27 @@
-resource "aws_cloudwatch_log_group" "grafana" {
-  name              = "/ecs/grafana"
-  retention_in_days = 14
+resource "aws_cloudwatch_log_group" "ecs" {
+  name              = "/ecs/grafana-task"
+  retention_in_days = 7
 }
 
 resource "aws_ecs_task_definition" "grafana" {
   family                   = "grafana-task"
-  cpu                      = "1024"
-  memory                   = "2048"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
   volume {
-    name = "grafana-efs"
+    name = "grafana-data"
     efs_volume_configuration {
-      file_system_id          = var.efs_file_system_id
-      transit_encryption      = "ENABLED"
+      file_system_id = var.efs_filesystem_id
       authorization_config {
         access_point_id = var.efs_access_point_id
-        iam             = "ENABLED"
+        iam             = "DISABLED"
       }
+      transit_encryption = "ENABLED"
+      root_directory     = "/grafana"
     }
   }
 
@@ -28,13 +29,10 @@ resource "aws_ecs_task_definition" "grafana" {
     {
       name      = "grafana"
       image     = "grafana/grafana-enterprise:11.6.1"
-      cpu       = 512
-      memory    = 1024
       essential = true
       portMappings = [
         {
           containerPort = 3000
-          hostPort      = 3000
           protocol      = "tcp"
         }
       ]
@@ -52,7 +50,7 @@ resource "aws_ecs_task_definition" "grafana" {
       ]
       mountPoints = [
         {
-          sourceVolume  = "grafana-efs"
+          sourceVolume  = "grafana-data"
           containerPath = "/var/lib/grafana"
           readOnly      = false
         }
@@ -60,7 +58,7 @@ resource "aws_ecs_task_definition" "grafana" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
           "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "grafana"
         }
@@ -69,24 +67,21 @@ resource "aws_ecs_task_definition" "grafana" {
     {
       name      = "renderer"
       image     = "grafana/grafana-image-renderer:3.12.5"
-      cpu       = 256
-      memory    = 512
       essential = true
       portMappings = [
         {
           containerPort = 8081
-          hostPort      = 8081
           protocol      = "tcp"
         }
       ]
       environment = [
-        { name = "RENDERER_USER", value = var.renderer_user },
-        { name = "RENDERER_PASSWORD", value = var.renderer_password }
+        { name = "GF_RENDERER_USER", value = var.renderer_user },
+        { name = "GF_RENDERER_PASSWORD", value = var.renderer_password }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
           "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "renderer"
         }
@@ -94,10 +89,14 @@ resource "aws_ecs_task_definition" "grafana" {
     },
     {
       name      = "redis"
-      image     = "redis:7.0"
-      cpu       = 256
-      memory    = 512
+      image     = "redis:latest"
       essential = true
+      portMappings = [
+        {
+          containerPort = 6379
+          protocol      = "tcp"
+        }
+      ]
       environment = [
         { name = "REDIS_USER", value = var.redis_user },
         { name = "REDIS_PASSWORD", value = var.redis_password }
@@ -105,7 +104,7 @@ resource "aws_ecs_task_definition" "grafana" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
           "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "redis"
         }
@@ -127,7 +126,5 @@ resource "aws_ecs_service" "grafana" {
     assign_public_ip = true
   }
 
-  depends_on = [
-    aws_ecs_task_definition.grafana
-  ]
+  depends_on = [aws_ecs_task_definition.grafana]
 }

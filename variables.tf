@@ -19,7 +19,37 @@ variable "subnet_ids" {
 }
 
 variable "security_group_id" {
-  description = "Security Group ID for ECS tasks"
+  description = "Security Group ID"
+  type        = string
+}
+
+variable "grafana_user" {
+  description = "Grafana username"
+  type        = string
+}
+
+variable "grafana_password" {
+  description = "Grafana password"
+  type        = string
+}
+
+variable "renderer_user" {
+  description = "Renderer username"
+  type        = string
+}
+
+variable "renderer_password" {
+  description = "Renderer password"
+  type        = string
+}
+
+variable "redis_user" {
+  description = "Redis username"
+  type        = string
+}
+
+variable "redis_password" {
+  description = "Redis password"
   type        = string
 }
 
@@ -28,37 +58,7 @@ variable "efs_access_point_id" {
   type        = string
 }
 
-variable "efs_file_system_id" {
-  description = "EFS File System ID"
-  type        = string
-}
-
-variable "grafana_user" {
-  description = "Grafana container username"
-  type        = string
-}
-
-variable "grafana_password" {
-  description = "Grafana container password"
-  type        = string
-}
-
-variable "renderer_user" {
-  description = "Renderer container username"
-  type        = string
-}
-
-variable "renderer_password" {
-  description = "Renderer container password"
-  type        = string
-}
-
-variable "redis_user" {
-  description = "Redis container username"
-  type        = string
-}
-
-variable "redis_password" {
-  description = "Redis container password"
+variable "efs_filesystem_id" {
+  description = "EFS Filesystem ID"
   type        = string
 }
