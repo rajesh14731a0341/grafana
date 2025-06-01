@@ -14,6 +14,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: List repo root contents (debug)
+        run: ls -al
+
+      - name: List terraform/env/dev folder contents (debug)
+        run: ls -al terraform/env/dev
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
