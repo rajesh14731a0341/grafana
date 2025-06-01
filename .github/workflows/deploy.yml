@@ -1,28 +1,28 @@
-name: Deploy ECS Task
+name: Terraform ECS Deploy
 
 on:
   push:
-    branches:
-      - efs
+    branches: [ "efs" ]
 
 jobs:
-  deploy:
+  terraform:
+    name: Deploy to ECS
     runs-on: self-hosted
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.7
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.6
 
-      - name: Terraform Init
-        run: terraform init
+    - name: Terraform Init
+      run: terraform init
 
-      - name: Terraform Plan
-        run: terraform plan -var-file="terraform.tfvars"
+    - name: Terraform Plan
+      run: terraform plan -var-file="terraform.tfvars"
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file="terraform.tfvars"
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -var-file="terraform.tfvars"

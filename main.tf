@@ -1,16 +1,19 @@
 module "ecs_task" {
-  source              = "./modules/ecs-task"
-  cluster_id          = "arn:aws:ecs:us-east-1:736747734611:cluster/rajesh-cluster"
-  subnet_ids          = ["subnet-0eddeac6a246b078f", "subnet-0fcef6c827cb2624e"]
-  security_group_id   = "sg-084b6f2c8b582a491"
-  execution_role_arn  = "arn:aws:iam::736747734611:role/rajesh-ecs-task-execution-role"
-  task_role_arn       = "arn:aws:iam::736747734611:role/rajesh-grafana-task-role"
-  file_system_id      = "fs-0cd04a696a7f77740"
-  access_point_id     = "fsap-08df96b746fbbd9ad"
-  grafana_user        = var.grafana_user
-  grafana_password    = var.grafana_password
-  renderer_user       = var.renderer_user
-  renderer_password   = var.renderer_password
-  redis_user          = var.redis_user
-  redis_password      = var.redis_password
+  source = "./modules/ecs-task"
+
+  cluster_arn        = var.ecs_cluster_id
+  subnet_ids         = var.subnet_ids
+  security_group_id  = var.security_group_id
+  execution_role_arn = var.execution_role_arn
+  task_role_arn      = var.task_role_arn
+  access_point_id    = var.access_point_id
+  filesystem_id      = var.filesystem_id
+  region             = var.region
+
+  grafana_user       = var.grafana_user
+  grafana_password   = var.grafana_password
+  renderer_user      = var.renderer_user
+  renderer_password  = var.renderer_password
+  redis_user         = var.redis_user
+  redis_password     = var.redis_password
 }

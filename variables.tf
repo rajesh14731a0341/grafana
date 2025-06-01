@@ -1,3 +1,12 @@
+variable "ecs_cluster_id" {}
+variable "subnet_ids" { type = list(string) }
+variable "security_group_id" {}
+variable "execution_role_arn" {}
+variable "task_role_arn" {}
+variable "access_point_id" {}
+variable "filesystem_id" {}
+variable "region" {}
+
 variable "grafana_user" {}
 variable "grafana_password" {}
 variable "renderer_user" {}
