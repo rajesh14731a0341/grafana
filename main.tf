@@ -1,25 +1,24 @@
 module "ecs_task" {
   source = "./modules/ecs-task"
 
-  grafana_image       = "grafana/grafana-enterprise:latest"
-  renderer_image      = "grafana/grafana-image-renderer:latest"
-  redis_image         = "redis:6-alpine"
+  cluster_arn          = var.cluster_arn
+  subnet_ids           = var.subnet_ids
+  security_group_id    = var.security_group_id
+  execution_role_arn   = var.execution_role_arn
+  task_role_arn        = var.task_role_arn
+  efs_file_system_id   = var.efs_file_system_id
+  efs_access_point_id  = var.efs_access_point_id
 
-  execution_role_arn  = "arn:aws:iam::123456789012:role/ecsExecutionRole"
-  task_role_arn       = "arn:aws:iam::123456789012:role/ecsTaskRole"
+  grafana_image        = var.grafana_image
+  renderer_image       = var.renderer_image
+  redis_image          = var.redis_image
 
-  efs_file_system_id  = "fs-0cd04a696a7f77740"
-  efs_access_point_id = "fsap-08df96b746fbbd9ad"
+  desired_count        = var.desired_count
 
-  ecs_cluster_id      = "arn:aws:ecs:us-east-1:123456789012:cluster/your-cluster"
-  subnet_ids          = ["subnet-abc123", "subnet-def456"]
-  security_group_id   = "sg-12345678"
-
-  grafana_user       = "admin"
-  grafana_password   = "YourStrongPassword"
-
-  renderer_user      = ""
-  renderer_password  = ""
-  redis_user         = ""
-  redis_password     = ""
+  grafana_user         = var.grafana_user
+  grafana_password     = var.grafana_password
+  renderer_user        = var.renderer_user
+  renderer_password    = var.renderer_password
+  redis_user           = var.redis_user
+  redis_password       = var.redis_password
 }
