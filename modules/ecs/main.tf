@@ -1,97 +1,184 @@
-resource "aws_cloudwatch_log_group" "ecs" {
-  name              = var.log_group_name
-  retention_in_days = 7
-}
-
-resource "aws_ecs_task_definition" "grafana" {
-  family                   = "rajesh-grafana-task"
-  network_mode             = "awsvpc"
+resource "aws_ecs_task_definition" "grafana_stack" {
+  family             = "grafana-stack"
+  network_mode       = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "512"
-  memory                   = "1024"
-  execution_role_arn       = var.execution_role_arn
-  task_role_arn            = var.task_role_arn
+  cpu                = 1024
+  memory             = 2048
+  execution_role_arn = var.ecs_execution_role_arn
+  task_role_arn      = var.ecs_task_role_arn
 
   container_definitions = jsonencode([
     {
       name      = "grafana"
-      image     = "grafana/grafana-enterprise:11.6.1"
-      essential = true
-      portMappings = [{
-        containerPort = 3000
-        protocol      = "tcp"
-      }]
-      environment = [
-        { name = "REDIS_PATH", value = "redis:6379" },
-        { name = "REDIS_DB", value = "1" },
-        { name = "REDIS_CACHETIME", value = "12000" },
-        { name = "CACHING", value = "Y" },
-        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-        { name = "GF_RENDERING_SERVER_URL", value = "http://renderer:8081/render" },
-        { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana:3000/" },
-        { name = "GF_LOG_FILTERS", value = "rendering: debug" }
-      ]
-      mountPoints = [
+      image     = var.grafana_image
+      ports     = [{ containerPort = 3000, hostPort = 3000 }]
+      volumes   = [
         {
-          sourceVolume  = "grafana_data"
-          containerPath = "/var/lib/grafana"
-          readOnly      = false
+          name      = "grafana-storage"
+          hostPath  = "/var/lib/grafana"
+        },
+        {
+          name      = "grafana-provisioning"
+          hostPath  = "/etc/grafana/provisioning"
+        },
+        {
+          name      = "grafana-ini"
+          hostPath  = "/etc/grafana/grafana.ini"
+        },
+        {
+          name      = "grafana-plugins"
+          hostPath  = "/var/lib/grafana/plugins"
         }
       ]
-      logConfiguration = {
+      environment = [
+        {
+          name  = "REDIS_PATH"
+          value = "${var.redis_container_name}:6379"
+        },
+        {
+          name  = "REDIS_DB"
+          value = "1"
+        },
+        {
+          name  = "REDIS_CACHETIME"
+          value = "12000"
+        },
+        {
+          name  = "CACHING"
+          value = "Y"
+        },
+        {
+          name  = "GF_PLUGIN_ALLOW_LOCAL_MODE"
+          value = "true"
+        },
+        {
+          name  = "GF_RENDERING_SERVER_URL"
+          value = "http://${var.renderer_container_name}:8081/render"
+        },
+        {
+          name  = "GF_RENDERING_CALLBACK_URL"
+          value = "http://grafana:3000/"
+        },
+        {
+          name  = "GF_LOG_FILTERS"
+          value = "rendering:debug"
+        },
+        {
+          name  = "GF_AUTH_ADMIN_USER"
+          value = var.grafana_user
+        },
+        {
+          name  = "GF_AUTH_ADMIN_PASSWORD"
+          value = var.grafana_password
+        }
+      ]
+      log_configuration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = var.log_group_name
-          awslogs-region        = "us-east-1"
+          awslogs-group  = "/ecs/${var.ecs_cluster_id}/grafana"
+          awslogs-region = var.aws_region
           awslogs-stream-prefix = "grafana"
         }
       }
     },
     {
-      name      = "renderer"
-      image     = "grafana/grafana-image-renderer:3.12.5"
-      essential = true
-      portMappings = [{
-        containerPort = 8081
-        protocol      = "tcp"
-      }]
-      logConfiguration = {
+      name      = var.renderer_container_name
+      image     = var.renderer_image
+      ports     = [{ containerPort = 8081, hostPort = 8081 }]
+      log_configuration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = var.log_group_name
-          awslogs-region        = "us-east-1"
+          awslogs-group  = "/ecs/${var.ecs_cluster_id}/${var.renderer_container_name}"
+          awslogs-region = var.aws_region
           awslogs-stream-prefix = "renderer"
+        }
+      }
+    },
+    {
+      name      = var.redis_container_name
+      image     = var.redis_image
+      ports     = [{ containerPort = 6379, hostPort = 6379 }]
+      environment = [
+        {
+          name  = "REDISUSER"
+          value = var.redis_user
+        },
+        {
+          name  = "REDISPASSWORD"
+          value = var.redis_password
+        }
+      ]
+      log_configuration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group  = "/ecs/${var.ecs_cluster_id}/${var.redis_container_name}"
+          awslogs-region = var.aws_region
+          awslogs-stream-prefix = "redis"
         }
       }
     }
   ])
-
-  volume {
-    name = "grafana_data"
-    efs_volume_configuration {
-      file_system_id          = var.efs_file_system_id
-      authorization_config {
-        access_point_id = var.efs_access_point_id
-        iam             = "DISABLED"
-      }
-      transit_encryption = "ENABLED"
-      root_directory     = "/grafana"
-    }
-  }
 }
 
-resource "aws_ecs_service" "grafana" {
-  name            = "rajesh-grafana-service"
-  cluster         = var.cluster_id
-  task_definition = aws_ecs_task_definition.grafana.arn
-  desired_count   = 2
+resource "aws_ecs_service" "grafana_service" {
+  name            = "grafana-service"
+  cluster         = var.ecs_cluster_id
+  task_definition = aws_ecs_task_definition.grafana_stack.arn
+  desired_count   = 1
   launch_type     = "FARGATE"
 
   network_configuration {
     subnets         = var.subnet_ids
     security_groups = [var.security_group_id]
-    assign_public_ip = false
+    assign_public_ip = true # Set to false if you have a private subnet and NAT gateway
   }
 
-  depends_on = [aws_ecs_task_definition.grafana]
+  load_balancer {
+    target_group_arn = aws_lb_target_group.grafana.arn
+    container_name   = "grafana"
+    container_port   = 3000
+  }
+
+  depends_on = [aws_lb_listener.http]
+}
+
+resource "aws_lb" "grafana" {
+  name               = "grafana-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [var.security_group_id]
+  subnets            = var.subnet_ids
+
+  enable_deletion_protection = false
+}
+
+resource "aws_lb_target_group" "grafana" {
+  port     = 3000
+  protocol = "HTTP"
+  vpc_id   = data.aws_vpc.default.id
+
+  health_check {
+    path     = "/"
+    protocol = "HTTP"
+    matcher  = "200"
+    interval = 30
+    timeout  = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.grafana.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.grafana.arn
+  }
+}
+
+data "aws_vpc" "default" {
+  default = true
 }

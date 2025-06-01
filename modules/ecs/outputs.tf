@@ -1,9 +1,7 @@
 output "ecs_service_name" {
-  description = "ECS service name"
-  value       = aws_ecs_service.grafana.name
+  value = aws_ecs_service.grafana_service.name
 }
 
-output "ecs_task_definition_arn" {
-  description = "ECS task definition ARN"
-  value       = aws_ecs_task_definition.grafana.arn
+output "load_balancer_dns" {
+  value = aws_lb.grafana.dns_name
 }
