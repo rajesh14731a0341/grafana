@@ -1,6 +1,6 @@
 output "cluster_arn" {
   description = "The ARN of the ECS cluster"
-  value       = aws_ecs_cluster.grafana_cluster.arn
+  value       = var.cluster_arn
 }
 
 output "task_definition_arn" {
@@ -10,7 +10,7 @@ output "task_definition_arn" {
 
 output "service_arn" {
   description = "The ARN of the ECS service"
-  value       = aws_ecs_service.grafana.service_arn
+  value       = aws_ecs_service.grafana.arn
 }
 
 output "service_name" {
