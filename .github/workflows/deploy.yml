@@ -1,0 +1,32 @@
+name: Deploy to ECS
+
+on:
+  push:
+    branches:
+      - grafana_cloudwatch
+
+jobs:
+  terraform:
+    name: Terraform Apply
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.6
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform/env/dev
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: terraform/env/dev
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file="terraform.tfvars"
+        working-directory: terraform/env/dev
