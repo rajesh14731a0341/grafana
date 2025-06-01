@@ -21,7 +21,7 @@ resource "aws_ecs_task_definition" "grafana" {
         iam             = "DISABLED"
       }
       transit_encryption = "ENABLED"
-      root_directory     = "/grafana"
+      root_directory     = "/"
     }
   }
 
