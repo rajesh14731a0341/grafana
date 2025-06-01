@@ -1,36 +1,9 @@
-variable "cluster_id" {
-  type = string
+resource "aws_cloudwatch_log_group" "ecs" {
+  name              = var.log_group_name
+  retention_in_days = 7
 }
 
-variable "execution_role_arn" {
-  type = string
-}
-
-variable "task_role_arn" {
-  type = string
-}
-
-variable "subnet_ids" {
-  type = list(string)
-}
-
-variable "security_group_id" {
-  type = string
-}
-
-variable "efs_access_point_id" {
-  type = string
-}
-
-variable "efs_file_system_id" {
-  type = string
-}
-
-variable "log_group_name" {
-  type = string
-}
-
-resource "aws_ecs_task_definition" "grafana_task" {
+resource "aws_ecs_task_definition" "grafana" {
   family                   = "rajesh-grafana-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
@@ -39,29 +12,13 @@ resource "aws_ecs_task_definition" "grafana_task" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  volume {
-    name = "grafana-storage"
-
-    efs_volume_configuration {
-      file_system_id          = var.efs_file_system_id
-      transit_encryption      = "ENABLED"
-      authorization_config {
-        access_point_id = var.efs_access_point_id
-        iam             = "ENABLED"
-      }
-    }
-  }
-
   container_definitions = jsonencode([
     {
       name      = "grafana"
       image     = "grafana/grafana-enterprise:11.6.1"
-      cpu       = 256
-      memory    = 512
       essential = true
       portMappings = [{
         containerPort = 3000
-        hostPort      = 3000
         protocol      = "tcp"
       }]
       environment = [
@@ -76,7 +33,7 @@ resource "aws_ecs_task_definition" "grafana_task" {
       ]
       mountPoints = [
         {
-          sourceVolume  = "grafana-storage"
+          sourceVolume  = "grafana_data"
           containerPath = "/var/lib/grafana"
           readOnly      = false
         }
@@ -84,77 +41,57 @@ resource "aws_ecs_task_definition" "grafana_task" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = var.log_group_name
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "grafana"
+          awslogs-group         = var.log_group_name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "grafana"
         }
       }
     },
     {
       name      = "renderer"
       image     = "grafana/grafana-image-renderer:3.12.5"
-      cpu       = 128
-      memory    = 256
       essential = true
       portMappings = [{
         containerPort = 8081
-        hostPort      = 8081
         protocol      = "tcp"
       }]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = var.log_group_name
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "renderer"
-        }
-      }
-    },
-    {
-      name      = "redis"
-      image     = "redis"
-      cpu       = 128
-      memory    = 256
-      essential = true
-      portMappings = [{
-        containerPort = 6379
-        hostPort      = 6379
-        protocol      = "tcp"
-      }]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = var.log_group_name
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "redis"
+          awslogs-group         = var.log_group_name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "renderer"
         }
       }
     }
   ])
+
+  volume {
+    name = "grafana_data"
+    efs_volume_configuration {
+      file_system_id          = var.efs_file_system_id
+      authorization_config {
+        access_point_id = var.efs_access_point_id
+        iam             = "DISABLED"
+      }
+      transit_encryption = "ENABLED"
+      root_directory     = "/grafana"
+    }
+  }
 }
 
-resource "aws_ecs_service" "grafana_service" {
+resource "aws_ecs_service" "grafana" {
   name            = "rajesh-grafana-service"
   cluster         = var.cluster_id
-  task_definition = aws_ecs_task_definition.grafana_task.arn
+  task_definition = aws_ecs_task_definition.grafana.arn
   desired_count   = 2
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = var.subnet_ids
-    security_groups  = [var.security_group_id]
-    assign_public_ip = true
+    subnets         = var.subnet_ids
+    security_groups = [var.security_group_id]
+    assign_public_ip = false
   }
 
-  depends_on = [
-    aws_ecs_task_definition.grafana_task
-  ]
-}
-
-output "ecs_service_name" {
-  value = aws_ecs_service.grafana_service.name
-}
-
-output "ecs_task_definition_arn" {
-  value = aws_ecs_task_definition.grafana_task.arn
+  depends_on = [aws_ecs_task_definition.grafana]
 }

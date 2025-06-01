@@ -8,18 +8,18 @@ variable "task_role_arn" {
   type        = string
 }
 
-variable "cluster_id" {
+variable "ecs_cluster_id" {
   description = "ECS Cluster ARN"
   type        = string
 }
 
 variable "subnet_ids" {
-  description = "List of subnet IDs"
+  description = "List of subnet IDs for ECS service"
   type        = list(string)
 }
 
 variable "security_group_id" {
-  description = "Security Group ID"
+  description = "Security Group ID for ECS service"
   type        = string
 }
 

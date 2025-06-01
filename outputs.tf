@@ -1,9 +1,9 @@
 output "ecs_service_name" {
   description = "ECS service name"
-  value       = aws_ecs_service.grafana.name
+  value       = module.ecs.ecs_service_name
 }
 
 output "ecs_task_definition_arn" {
   description = "ECS task definition ARN"
-  value       = aws_ecs_task_definition.grafana.arn
+  value       = module.ecs.ecs_task_definition_arn
 }
