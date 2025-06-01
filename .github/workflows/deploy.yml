@@ -3,7 +3,7 @@ name: Deploy to ECS (Dev)
 on:
   push:
     branches:
-      - efs  # ✅ Trigger only when code is pushed to this branch
+      - efs # ✅ Trigger only when code is pushed to this branch
 
 jobs:
   deploy:
@@ -11,13 +11,20 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1 # Ensure this matches your AWS region
+
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -backend-config="bucket=redshift-data-migration-bucket" -backend-config="key=grafana/terraform.tfstate" -backend-config="region=us-east-1"
         working-directory: ./env/dev
 
       - name: Terraform Plan
