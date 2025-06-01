@@ -1,38 +1,31 @@
-name: Deploy to ECS
+name: Deploy to ECS (Grafana CloudWatch)
 
 on:
   push:
     branches:
-      - grafana_cloudwatch
+      - grafana_cloudwatch  # Trigger only on this branch
 
 jobs:
-  terraform:
-    name: Terraform Apply
+  deploy:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: List repo root contents (debug)
-        run: ls -al
-
-      - name: List terraform/env/dev folder contents (debug)
-        run: ls -al terraform/env/dev
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6
 
       - name: Terraform Init
         run: terraform init
-        working-directory: terraform/env/dev
+        working-directory: ./terraform/env/dev
 
-      - name: Terraform Validate
-        run: terraform validate
-        working-directory: terraform/env/dev
+      - name: Terraform Plan
+        run: terraform plan -var-file=terraform.tfvars
+        working-directory: ./terraform/env/dev
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file="terraform.tfvars"
-        working-directory: terraform/env/dev
+        run: terraform apply -auto-approve -var-file=terraform.tfvars
+        working-directory: ./terraform/env/dev
