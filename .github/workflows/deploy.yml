@@ -3,11 +3,15 @@ name: Deploy to ECS (Dev)
 on:
   push:
     branches:
-      - secret-manager  # ✅ Trigger only when code is pushed to this branch
+      - secret-manager  # Trigger only when code is pushed to this branch
 
 jobs:
   deploy:
     runs-on: self-hosted
+
+    defaults:
+      run:
+        working-directory: ./envs/grafana   # Correct folder path here
 
     steps:
       - name: Checkout code
@@ -18,12 +22,9 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ./env/dev
 
       - name: Terraform Plan
         run: terraform plan -var-file=terraform.tfvars
-        working-directory: ./env/dev
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -var-file=terraform.tfvars
-        working-directory: ./env/dev
