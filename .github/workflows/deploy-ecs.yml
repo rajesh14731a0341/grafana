@@ -30,6 +30,6 @@ jobs:
         working-directory: env/grafana
         run: terraform plan -out=tfplan
 
-      - name: Terraform destroy
+      - name: Terraform apply
         working-directory: env/grafana
-        run: terraform destroy -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan
