@@ -1,3 +1,8 @@
+variable "region" {
+  type    = string
+  default = "us-east-1"
+}
+
 variable "ecs_cluster_arn" {
   type = string
 }
@@ -18,11 +23,11 @@ variable "task_role_arn" {
   type = string
 }
 
-variable "efs_access_point_id" {
+variable "efs_file_system_id" {
   type = string
 }
 
-variable "efs_file_system_id" {
+variable "efs_access_point_id" {
   type = string
 }
 
@@ -31,7 +36,25 @@ variable "desired_task_count" {
   default = 1
 }
 
-variable "aws_region" {
+variable "grafana_image" {
   type    = string
-  default = "us-east-1"
+  default = "grafana/grafana-enterprise:11.6.1"
+}
+
+variable "renderer_image" {
+  type    = string
+  default = "grafana/grafana-image-renderer:3.12.5"
+}
+
+variable "redis_image" {
+  type    = string
+  default = "redis:7.0.12"
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {
+    Environment = "production"
+    Project     = "grafana-ecs"
+  }
 }

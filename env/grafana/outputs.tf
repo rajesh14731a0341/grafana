@@ -1,9 +1,7 @@
-output "ecs_service_name" {
-  description = "ECS Service Name"
-  value       = module.grafana.ecs_service_name
+output "ecs_task_definition_arn" {
+  value = module.grafana.ecs_task_definition_arn
 }
 
-output "task_definition_arn" {
-  description = "ECS Task Definition ARN"
-  value       = module.grafana.task_definition_arn
+output "ecs_service_name" {
+  value = module.grafana.ecs_service_name
 }
