@@ -1,76 +1,22 @@
-variable "ecs_cluster_id" {}
-variable "subnet_ids" {
-  type = list(string)
-}
-variable "security_group_id" {}
-variable "execution_role_arn" {}
-variable "task_role_arn" {}
-variable "efs_access_point_id" {}
-variable "efs_file_system_id" {}
-
-resource "aws_cloudwatch_log_group" "grafana" {
-  name              = "/ecs/grafana"
-  retention_in_days = 14
-}
-
 resource "aws_ecs_task_definition" "grafana_task" {
   family                   = "grafana-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "1024"
-  memory                   = "2048"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
   volume {
-    name = "grafana-var-lib"
+    name = "grafana_data"
     efs_volume_configuration {
-      file_system_id          = var.efs_file_system_id
-      transit_encryption      = "ENABLED"
+      file_system_id          = substr(var.efs_access_point_id, 0, 13) == "fsap-" ? substr(var.efs_access_point_id, 5, 15) : var.efs_access_point_id
       authorization_config {
         access_point_id = var.efs_access_point_id
         iam             = "DISABLED"
       }
-      root_directory = "/"  # Root of the EFS
-    }
-  }
-
-  volume {
-    name = "grafana-provisioning"
-    efs_volume_configuration {
-      file_system_id          = var.efs_file_system_id
-      transit_encryption      = "ENABLED"
-      authorization_config {
-        access_point_id = var.efs_access_point_id
-        iam             = "DISABLED"
-      }
-      root_directory = "/provisioning"
-    }
-  }
-
-  volume {
-    name = "grafana-config"
-    efs_volume_configuration {
-      file_system_id          = var.efs_file_system_id
-      transit_encryption      = "ENABLED"
-      authorization_config {
-        access_point_id = var.efs_access_point_id
-        iam             = "DISABLED"
-      }
-      root_directory = "/config"
-    }
-  }
-
-  volume {
-    name = "grafana-plugins"
-    efs_volume_configuration {
-      file_system_id          = var.efs_file_system_id
-      transit_encryption      = "ENABLED"
-      authorization_config {
-        access_point_id = var.efs_access_point_id
-        iam             = "DISABLED"
-      }
-      root_directory = "/plugins"
+      transit_encryption = "ENABLED"
+      root_directory     = "/"
     }
   }
 
@@ -82,6 +28,7 @@ resource "aws_ecs_task_definition" "grafana_task" {
       portMappings = [
         {
           containerPort = 3000
+          hostPort      = 3000
           protocol      = "tcp"
         }
       ]
@@ -93,34 +40,34 @@ resource "aws_ecs_task_definition" "grafana_task" {
         { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
         { name = "GF_RENDERING_SERVER_URL", value = "http://renderer:8081/render" },
         { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana:3000/" },
-        { name = "GF_LOG_FILTERS", value = "rendering:debug" }
+        { name = "GF_LOG_FILTERS", value = "rendering: debug" }
       ]
       mountPoints = [
         {
-          sourceVolume  = "grafana-var-lib"
+          sourceVolume  = "grafana_data"
           containerPath = "/var/lib/grafana"
           readOnly      = false
         },
         {
-          sourceVolume  = "grafana-provisioning"
+          sourceVolume  = "grafana_data"
           containerPath = "/etc/grafana/provisioning"
           readOnly      = false
         },
         {
-          sourceVolume  = "grafana-config"
-          containerPath = "/etc/grafana"
+          sourceVolume  = "grafana_data"
+          containerPath = "/etc/grafana/grafana.ini"
           readOnly      = false
         },
         {
-          sourceVolume  = "grafana-plugins"
-          containerPath = "/var/lib/grafana/plugins"
+          sourceVolume  = "grafana_data"
+          containerPath = "/etc/grafana/plugins"
           readOnly      = false
         }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+          "awslogs-group"         = "/ecs/grafana"
           "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "grafana"
         }
@@ -133,13 +80,14 @@ resource "aws_ecs_task_definition" "grafana_task" {
       portMappings = [
         {
           containerPort = 8081
+          hostPort      = 8081
           protocol      = "tcp"
         }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+          "awslogs-group"         = "/ecs/grafana"
           "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "renderer"
         }
@@ -147,22 +95,44 @@ resource "aws_ecs_task_definition" "grafana_task" {
     },
     {
       name      = "redis"
-      image     = "redis:7.0-alpine"
+      image     = "redis:7"
       essential = true
       portMappings = [
         {
           containerPort = 6379
+          hostPort      = 6379
           protocol      = "tcp"
         }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+          "awslogs-group"         = "/ecs/grafana"
           "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "redis"
         }
       }
     }
   ])
+}
+
+resource "aws_ecs_service" "grafana_service" {
+  name            = "grafana-service"
+  cluster         = var.ecs_cluster_arn
+  task_definition = aws_ecs_task_definition.grafana_task.arn
+  desired_count   = var.desired_task_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = var.subnet_ids
+    security_groups = [var.security_group_id]
+    assign_public_ip = true
+  }
+
+  depends_on = []
+}
+
+resource "aws_cloudwatch_log_group" "grafana" {
+  name              = "/ecs/grafana"
+  retention_in_days = 14
 }
