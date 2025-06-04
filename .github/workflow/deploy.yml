@@ -1,33 +1,30 @@
-name: Deploy to ECS
+name: Deploy to ECS (Dev)
 
 on:
   push:
     branches:
-      - efs_secret_cloudwatch
+      - efs_secret_cloudwatch  # Trigger only when code is pushed to this branch
 
 jobs:
-  terraform:
-    name: Terraform Deployment
+  deploy:
     runs-on: self-hosted
 
     defaults:
       run:
-        working-directory: env/grafana
+        working-directory: ./envs/grafana   # Correct folder path here
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Terraform
+      - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.7
 
       - name: Terraform Init
         run: terraform init
 
       - name: Terraform Plan
-        run: terraform plan -var-file="terraform.tfvars"
+        run: terraform plan -var-file=terraform.tfvars
 
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -var-file="terraform.tfvars"
+      - name: Terraform destroy
+        run: terraform destroy -auto-approve -var-file=terraform.tfvars
