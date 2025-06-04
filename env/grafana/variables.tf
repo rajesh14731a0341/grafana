@@ -1,36 +1,40 @@
 variable "ecs_cluster_arn" {
-  type = string
+  description = "ECS cluster ARN"
+  type        = string
 }
 
 variable "subnet_ids" {
-  type = list(string)
+  description = "List of subnet IDs"
+  type        = list(string)
 }
 
 variable "security_group_id" {
-  type = string
+  description = "Security Group ID"
+  type        = string
 }
 
 variable "execution_role_arn" {
-  type = string
+  description = "ECS Task Execution Role ARN"
+  type        = string
 }
 
 variable "task_role_arn" {
-  type = string
-}
-
-variable "efs_file_system_id" {
-  type = string
+  description = "ECS Task Role ARN"
+  type        = string
 }
 
 variable "efs_access_point_id" {
-  type = string
+  description = "EFS Access Point ID"
+  type        = string
+}
+
+variable "efs_file_system_id" {
+  description = "EFS File System ID"
+  type        = string
 }
 
 variable "desired_task_count" {
-  type    = number
-  default = 1
-}
-
-variable "tags" {
-  type = map(string)
+  description = "ECS service desired count"
+  type        = number
+  default     = 1
 }

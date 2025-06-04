@@ -1,10 +1,14 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 
-# Create symlinks to EFS volumes inside container paths
+# Symlink required Grafana directories to the mounted EFS path
 
-ln -snf /mnt/grafana_efs/var_lib_grafana /var/lib/grafana
-ln -snf /mnt/grafana_efs/etc_grafana_provisioning /etc/grafana/provisioning
-ln -snf /mnt/grafana_efs/etc_grafana_grafana_ini /etc/grafana/grafana.ini
-ln -snf /mnt/grafana_efs/var_lib_grafana_plugins /var/lib/grafana/plugins
+mkdir -p /mnt/grafana_efs/{lib,grafana,provisioning,plugins,etc}
 
+ln -snf /mnt/grafana_efs/lib/grafana /var/lib/grafana
+ln -snf /mnt/grafana_efs/etc/provisioning /etc/grafana/provisioning
+ln -snf /mnt/grafana_efs/etc/grafana.ini /etc/grafana/grafana.ini
+ln -snf /mnt/grafana_efs/lib/plugins /var/lib/grafana/plugins
+
+# Execute the original container command
 exec "$@"

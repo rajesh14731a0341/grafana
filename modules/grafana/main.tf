@@ -5,35 +5,37 @@ resource "aws_cloudwatch_log_group" "grafana" {
 
 resource "aws_ecs_task_definition" "grafana_task" {
   family                   = "grafana-task"
-  requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = "1024"     # 1 vCPU
-  memory                   = "2048"     # 2GB RAM
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "1024"
+  memory                   = "2048"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
   volume {
-    name = "grafana_efs_volume"
+    name = "grafana_efs"
     efs_volume_configuration {
       file_system_id          = var.efs_file_system_id
-      transit_encryption      = "ENABLED"
       authorization_config {
         access_point_id = var.efs_access_point_id
         iam             = "DISABLED"
       }
-      root_directory = "/"   # MUST be "/" or omitted when using access point
+      transit_encryption = "ENABLED"
+      root_directory     = "/"
     }
   }
 
   container_definitions = jsonencode([
     {
       name      = "grafana"
-      image     = var.grafana_image
+      image     = "grafana/grafana-enterprise:11.6.1"
       essential = true
-      portMappings = [{
-        containerPort = 3000
-        protocol      = "tcp"
-      }]
+      portMappings = [
+        {
+          containerPort = 3000
+          protocol      = "tcp"
+        }
+      ]
       environment = [
         { name = "REDIS_PATH", value = "redis:6379" },
         { name = "REDIS_DB", value = "1" },
@@ -46,60 +48,63 @@ resource "aws_ecs_task_definition" "grafana_task" {
       ]
       mountPoints = [
         {
-          sourceVolume  = "grafana_efs_volume"
+          sourceVolume  = "grafana_efs"
           containerPath = "/mnt/grafana_efs"
           readOnly      = false
+        }
+      ]
+      command = ["/bin/sh", "-c", "/entrypoint.sh /run.sh"]
+      linuxParameters = {
+        initProcessEnabled = true
+      }
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+          "awslogs-region"        = "us-east-1"
+          "awslogs-stream-prefix" = "grafana"
+        }
+      }
+    },
+    {
+      name      = "renderer"
+      image     = "grafana/grafana-image-renderer:3.12.5"
+      essential = true
+      portMappings = [
+        {
+          containerPort = 8081
+          protocol      = "tcp"
         }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
           "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
-          "awslogs-region"        = var.region
-          "awslogs-stream-prefix" = "grafana"
-        }
-      }
-      # Override the default command to run our entrypoint.sh that symlinks volumes
-      command = ["/bin/sh", "-c", "/mnt/grafana_efs/entrypoint.sh && /run.sh"]
-      user    = "0"
-    },
-    {
-      name      = "renderer"
-      image     = var.renderer_image
-      essential = true
-      portMappings = [{
-        containerPort = 8081
-        protocol      = "tcp"
-      }]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
-          "awslogs-region"        = var.region
+          "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "renderer"
         }
       }
     },
     {
       name      = "redis"
-      image     = var.redis_image
+      image     = "redis:7.0-alpine"
       essential = true
-      portMappings = [{
-        containerPort = 6379
-        protocol      = "tcp"
-      }]
+      portMappings = [
+        {
+          containerPort = 6379
+          protocol      = "tcp"
+        }
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
           "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
-          "awslogs-region"        = var.region
+          "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "redis"
         }
       }
     }
   ])
-
-  tags = var.tags
 }
 
 resource "aws_ecs_service" "grafana_service" {
@@ -110,13 +115,12 @@ resource "aws_ecs_service" "grafana_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
   depends_on = [
-    aws_cloudwatch_log_group.grafana
+    aws_ecs_task_definition.grafana_task
   ]
 }
-
