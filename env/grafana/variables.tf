@@ -1,34 +1,27 @@
 variable "ecs_cluster_id" {
-  type        = string
-  description = "ARN of the existing ECS cluster"
+  type = string
 }
 
 variable "subnet_ids" {
-  type        = list(string)
-  description = "List of subnet IDs for ECS tasks"
+  type = list(string)
 }
 
 variable "security_group_id" {
-  type        = string
-  description = "Security group ID for ECS tasks"
+  type = string
 }
 
 variable "execution_role_arn" {
-  type        = string
-  description = "ECS task execution IAM role ARN"
+  type = string
 }
 
 variable "task_role_arn" {
-  type        = string
-  description = "ECS task role ARN"
+  type = string
 }
 
 variable "efs_access_point_id" {
-  type        = string
-  description = "EFS access point ID for persistent storage"
+  type = string
 }
 
 variable "efs_file_system_id" {
-  type        = string
-  description = "EFS file system ID"
+  type = string
 }
