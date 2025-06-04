@@ -11,7 +11,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./envs/grafana   # Correct folder path here
+        working-directory: ./env/grafana   # Correct folder path here
 
     steps:
       - name: Checkout code
