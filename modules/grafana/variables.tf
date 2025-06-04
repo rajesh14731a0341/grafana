@@ -22,7 +22,16 @@ variable "efs_access_point_id" {
   type = string
 }
 
+variable "efs_file_system_id" {
+  type = string
+}
+
 variable "desired_task_count" {
   type    = number
   default = 1
+}
+
+variable "aws_region" {
+  type    = string
+  default = "us-east-1"
 }

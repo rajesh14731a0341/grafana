@@ -1,7 +1,9 @@
-output "ecs_cluster_arn" {
-  value = var.ecs_cluster_arn
+output "ecs_service_name" {
+  description = "ECS Service Name"
+  value       = module.grafana.ecs_service_name
 }
 
-output "desired_task_count" {
-  value = var.desired_task_count
+output "task_definition_arn" {
+  description = "ECS Task Definition ARN"
+  value       = module.grafana.task_definition_arn
 }
