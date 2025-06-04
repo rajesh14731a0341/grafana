@@ -1,5 +1,10 @@
+resource "aws_cloudwatch_log_group" "grafana" {
+  name              = "/ecs/rajesh-grafana"
+  retention_in_days = 7
+}
+
 resource "aws_ecs_task_definition" "grafana_task" {
-  family                   = "rajesh-grafana-task"
+  family                   = "rajesh-grafana"
   requires_compatibilities = ["FARGATE"]
   network_mode            = "awsvpc"
   cpu                     = "512"
@@ -12,25 +17,40 @@ resource "aws_ecs_task_definition" "grafana_task" {
       name      = "grafana"
       image     = "grafana/grafana-enterprise:11.6.1"
       essential = true
-      portMappings = [{ containerPort = 3000, protocol = "tcp" }]
-      secrets = [
-        { name = "GF_SECURITY_ADMIN_USER", valueFrom = var.grafana_user_secret_arn },
-        { name = "GF_SECURITY_ADMIN_PASSWORD", valueFrom = var.grafana_pass_secret_arn }
+      portMappings = [
+        {
+          containerPort = 3000
+          hostPort      = 3000
+          protocol      = "tcp"
+        }
       ]
       environment = [
-        { name = "GF_RENDERING_SERVER_URL", value = "http://localhost:8081/render" },
-        { name = "GF_RENDERING_CALLBACK_URL", value = "http://localhost:3000" },
-        { name = "GF_LOG_FILTERS", value = "rendering:debug" },
-        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-        { name = "REDIS_PATH", value = "localhost:6379" },
+        { name = "GF_RENDERING_SERVER_URL", value = "http://renderer:8081/render" },
+        { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana:3000/" },
+        { name = "REDIS_PATH", value = "redis:6379" },
         { name = "REDIS_DB", value = "1" },
         { name = "REDIS_CACHETIME", value = "12000" },
-        { name = "CACHING", value = "Y" }
+        { name = "CACHING", value = "Y" },
+        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
+        { name = "GF_LOG_FILTERS", value = "rendering:debug" }
       ]
-      mountPoints = [{
-        sourceVolume  = "grafana-storage"
-        containerPath = "/var/lib/grafana"
-      }]
+      secrets = [
+        {
+          name      = "GF_SECURITY_ADMIN_USER"
+          valueFrom = var.grafana_user_secret_arn
+        },
+        {
+          name      = "GF_SECURITY_ADMIN_PASSWORD"
+          valueFrom = var.grafana_pass_secret_arn
+        }
+      ]
+      mountPoints = [
+        {
+          sourceVolume  = "grafana-storage"
+          containerPath = "/var/lib/grafana"
+          readOnly      = false
+        }
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -44,16 +64,51 @@ resource "aws_ecs_task_definition" "grafana_task" {
       name      = "renderer"
       image     = "grafana/grafana-image-renderer:3.12.5"
       essential = false
-      portMappings = [{ containerPort = 8081 }]
+      portMappings = [
+        {
+          containerPort = 8081
+          hostPort      = 8081
+          protocol      = "tcp"
+        }
+      ]
+      environment = [
+        { name = "RENDERER_USER", value = "rendereruser" },
+        { name = "RENDERER_PASSWORD", value = "rendererpassword" }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/rajesh-grafana"
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "renderer"
+        }
+      }
     },
     {
       name      = "redis"
-      image     = "redis:7.2"
+      image     = "redis:alpine"
       essential = false
-      portMappings = [{ containerPort = 6379 }]
-      secrets = [
-        { name = "REDIS_PASSWORD", valueFrom = var.redis_pass_secret_arn }
+      portMappings = [
+        {
+          containerPort = 6379
+          hostPort      = 6379
+          protocol      = "tcp"
+        }
       ]
+      secrets = [
+        {
+          name      = "REDIS_PASSWORD"
+          valueFrom = var.redis_pass_secret_arn
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/rajesh-grafana"
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "redis"
+        }
+      }
     }
   ])
 
@@ -68,20 +123,26 @@ resource "aws_ecs_task_definition" "grafana_task" {
       }
     }
   }
+
+  depends_on = [aws_cloudwatch_log_group.grafana]
 }
 
 resource "aws_ecs_service" "grafana_service" {
   name            = "rajesh-grafana-service"
   cluster         = var.ecs_cluster_id
-  launch_type     = "FARGATE"
   task_definition = aws_ecs_task_definition.grafana_task.arn
+  launch_type     = "FARGATE"
   desired_count   = 1
 
   network_configuration {
-    subnets          = var.subnet_ids
-    security_groups  = [var.security_group_id]
+    subnets         = var.subnet_ids
+    security_groups = [var.security_group_id]
     assign_public_ip = true
   }
 
-  depends_on = [aws_ecs_task_definition.grafana_task]
+  enable_execute_command = true
+
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
 }
