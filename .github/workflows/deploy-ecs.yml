@@ -1,36 +1,35 @@
-name: Deploy Grafana ECS
+name: Deploy to ECS
 
 on:
   push:
     branches:
-      - psql
+      - psql   # Change this to your branch if different
 
 jobs:
-  terraform:
-    name: Terraform Apply
-    runs-on: self-hosted
+  deploy:
+    runs-on: self-hosted   # Your EC2 self-hosted runner
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Terraform CLI
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.5.6
+          terraform_version: 1.5.7
 
       - name: Terraform Init
-        working-directory: ./env/grafana
+        working-directory: env/grafana
         run: terraform init
 
       - name: Terraform Validate
-        working-directory: ./env/grafana
+        working-directory: env/grafana
         run: terraform validate
 
-      - name: Terraform Plan
-        working-directory: ./env/grafana
-        run: terraform plan -out=tfplan
+      - name: Terraform Plan Destroy
+        working-directory: env/grafana
+        run: terraform plan -destroy -out=tfplan
 
-      - name: Terraform destroy
-        working-directory: ./env/grafana
-        run: terraform destroy -auto-approve tfplan
+      - name: Terraform Apply Destroy
+        working-directory: env/grafana
+        run: terraform apply -auto-approve tfplan
