@@ -4,7 +4,7 @@ security_group_id   = "sg-084b6f2c8b582a491"
 execution_role_arn  = "arn:aws:iam::736747734611:role/rajesh-ecs-task-execution-role"
 task_role_arn       = "arn:aws:iam::736747734611:role/rajesh-grafana-task-role"
 
-db_secret_arn       = "arn:aws:secretsmanager:us-east-1:736747734611:secret:rds!db-df0916a7-d6fb-4841-8b58-388fe4380807-5sDmn2"
+db_secret_arn       = "arn:aws:secretsmanager:us-east-1:736747734611:secret:psql-GRklvA"
 db_endpoint         = "database-1.c030msui2s50.us-east-1.rds.amazonaws.com"
 
 grafana_desired_count           = 1
