@@ -1,4 +1,4 @@
-provider "aws" {}
+
 
 # CloudWatch log groups for services
 resource "aws_cloudwatch_log_group" "grafana" {
