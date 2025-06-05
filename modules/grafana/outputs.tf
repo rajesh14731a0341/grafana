@@ -1,11 +1,19 @@
 output "grafana_service_name" {
-  value = aws_ecs_service.services["grafana"].name
+  description = "Name of the Grafana ECS service."
+  value       = aws_ecs_service.grafana.name
 }
 
 output "renderer_service_name" {
-  value = aws_ecs_service.services["renderer"].name
+  description = "Name of the Renderer ECS service."
+  value       = aws_ecs_service.renderer.name
 }
 
 output "redis_service_name" {
-  value = aws_ecs_service.services["redis"].name
+  description = "Name of the Redis ECS service."
+  value       = aws_ecs_service.redis.name
+}
+
+output "grafana_service_discovery_namespace" {
+  description = "Private DNS Namespace for Grafana services."
+  value       = aws_service_discovery_private_dns_namespace.grafana.name
 }
