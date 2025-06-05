@@ -3,17 +3,17 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - psql   # Change this to your branch if different
+      - psql
 
 jobs:
-  deploy:
-    runs-on: self-hosted   # Your EC2 self-hosted runner
+  terraform:
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Terraform
+      - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
@@ -22,14 +22,18 @@ jobs:
         working-directory: env/grafana
         run: terraform init
 
+      - name: Terraform Format Check
+        working-directory: env/grafana
+        run: terraform fmt -check
+
       - name: Terraform Validate
         working-directory: env/grafana
         run: terraform validate
 
-      - name: Terraform Plan Destroy
+      - name: Terraform Plan
         working-directory: env/grafana
-        run: terraform plan -destroy -out=tfplan
+        run: terraform plan -out=tfplan
 
-      - name: Terraform Apply Destroy
+      - name: Terraform Apply
         working-directory: env/grafana
         run: terraform apply -auto-approve tfplan

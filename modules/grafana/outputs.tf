@@ -1,7 +1,3 @@
-output "grafana_task_definition_arn" {
-  value = aws_ecs_task_definition.grafana.arn
-}
-
 output "grafana_service_name" {
   value = aws_ecs_service.grafana.name
 }

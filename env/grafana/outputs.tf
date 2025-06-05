@@ -1,7 +1,3 @@
-output "grafana_task_definition_arn" {
-  value = module.grafana.grafana_task_definition_arn
-}
-
 output "grafana_service_name" {
   value = module.grafana.grafana_service_name
 }

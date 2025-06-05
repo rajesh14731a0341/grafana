@@ -7,10 +7,6 @@ variable "ecs_cluster_id" {
   type = string
 }
 
-variable "ecs_cluster_name" {
-  type = string
-}
-
 variable "subnet_ids" {
   type = list(string)
 }
@@ -58,97 +54,65 @@ variable "redis_image" {
   default = "redis:latest"
 }
 
-variable "grafana_task_cpu" {
-  type    = string
-  default = "512"
-}
-
-variable "grafana_task_memory" {
-  type    = string
-  default = "1024"
-}
+# Autoscaling variables per service
 
 variable "grafana_desired_count" {
   type    = number
   default = 1
+}
+variable "grafana_min_capacity" {
+  type    = number
+  default = 1
+}
+variable "grafana_max_capacity" {
+  type    = number
+  default = 5
+}
+variable "grafana_cpu_target" {
+  type    = number
+  default = 70
 }
 
 variable "renderer_desired_count" {
   type    = number
   default = 1
 }
+variable "renderer_min_capacity" {
+  type    = number
+  default = 1
+}
+variable "renderer_max_capacity" {
+  type    = number
+  default = 2
+}
+variable "renderer_cpu_target" {
+  type    = number
+  default = 40
+}
 
 variable "redis_desired_count" {
   type    = number
   default = 1
 }
-
-variable "grafana_autoscaling_min" {
+variable "redis_min_capacity" {
   type    = number
   default = 1
 }
-
-variable "grafana_autoscaling_max" {
+variable "redis_max_capacity" {
   type    = number
-  default = 5
+  default = 2
+}
+variable "redis_cpu_target" {
+  type    = number
+  default = 50
 }
 
-variable "grafana_autoscaling_cpu_target" {
-  type    = number
-  default = 70
-}
-
-variable "renderer_autoscaling_min" {
-  type    = number
-  default = 1
-}
-
-variable "renderer_autoscaling_max" {
-  type    = number
-  default = 5
-}
-
-variable "renderer_autoscaling_cpu_target" {
-  type    = number
-  default = 70
-}
-
-variable "redis_autoscaling_min" {
-  type    = number
-  default = 1
-}
-
-variable "redis_autoscaling_max" {
-  type    = number
-  default = 5
-}
-
-variable "redis_autoscaling_cpu_target" {
-  type    = number
-  default = 70
-}
-
-variable "cloudwatch_log_group" {
+variable "task_cpu" {
   type    = string
-  default = "/ecs/grafana"
+  default = "512"
 }
 
-variable "redis_host" {
+variable "task_memory" {
   type    = string
-  default = "redis:6379"
-}
-
-variable "redis_db" {
-  type    = string
-  default = "1"
-}
-
-variable "redis_cachetime" {
-  type    = string
-  default = "12000"
-}
-
-variable "caching" {
-  type    = string
-  default = "Y"
+  default = "1024"
 }
