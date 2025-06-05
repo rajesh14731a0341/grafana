@@ -10,10 +10,6 @@ variable "container_port" {
   type = number
 }
 
-variable "ecs_cluster_id" {
-  type = string
-}
-
 variable "subnet_ids" {
   type = list(string)
 }
@@ -30,23 +26,54 @@ variable "task_role_arn" {
   type = string
 }
 
-variable "desired_count" {
+variable "secret_arn" {
+  type = string
+}
+
+variable "db_host" {
+  type = string
+}
+
+variable "db_port" {
   type = number
+}
+
+variable "db_name" {
+  type = string
+}
+
+variable "db_username" {
+  type = string
+}
+
+variable "desired_count" {
+  type    = number
+  default = 1
 }
 
 variable "min_capacity" {
-  type = number
+  type    = number
+  default = 1
 }
 
 variable "max_capacity" {
-  type = number
+  type    = number
+  default = 5
 }
 
 variable "cpu_target" {
-  type = number
+  type    = number
+  default = 70
 }
 
-variable "environment" {
-  type    = map(string)
-  default = {}
+variable "region" {
+  type = string
+}
+
+variable "ecs_cluster_id" {
+  type = string
+}
+
+variable "log_group_name" {
+  type = string
 }
