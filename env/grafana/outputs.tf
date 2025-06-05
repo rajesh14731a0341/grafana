@@ -1,11 +1,14 @@
-output "grafana_service_name" {
-  value = module.grafana.service_name
+output "grafana_service_arn" {
+  value       = module.grafana.grafana_service_arn
+  description = "ARN of Grafana ECS service"
 }
 
-output "renderer_service_name" {
-  value = module.renderer.service_name
+output "renderer_service_arn" {
+  value       = module.grafana.renderer_service_arn
+  description = "ARN of Renderer ECS service"
 }
 
-output "redis_service_name" {
-  value = module.redis.service_name
+output "redis_service_arn" {
+  value       = module.grafana.redis_service_arn
+  description = "ARN of Redis ECS service"
 }

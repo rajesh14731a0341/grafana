@@ -1,79 +1,37 @@
 module "grafana" {
-  source            = "../../modules/grafana"
-  cluster_arn       = var.cluster_arn
-  subnet_ids        = var.subnet_ids
+  source           = "../../modules/grafana"
+
+  ecs_cluster_id   = var.ecs_cluster_id
+  subnet_ids       = var.subnet_ids
   security_group_id = var.security_group_id
+
   execution_role_arn = var.execution_role_arn
   task_role_arn      = var.task_role_arn
-  service_name      = "rajesh-grafana-svc"
-  container_name    = "grafana"
-  container_image   = "grafana/grafana-enterprise:11.6.1"
-  container_port    = 3000
 
-  # PSQL connection - environment variables Grafana needs for DB connection
-  environment = {
-    "GF_DATABASE_TYPE" = "postgres"
-    "GF_DATABASE_HOST" = var.db_host
-    "GF_DATABASE_NAME" = var.db_name
-    "GF_DATABASE_USER" = var.db_user
-    "GF_DATABASE_SSL_MODE" = "disable"  # dev mode, SSL off
-    "GF_RENDERING_SERVER_URL" = "http://rajesh-renderer-svc:8081/render"
-    "GF_RENDERING_CALLBACK_URL" = "http://rajesh-grafana-svc:3000/"
-    "GF_LOG_FILTERS" = "rendering:debug"
-    "REDIS_PATH" = "rajesh-redis-svc:6379"
-    "REDIS_DB" = "1"
-    "REDIS_CACHETIME" = "12000"
-    "CACHING" = "Y"
-    "GF_PLUGIN_ALLOW_LOCAL_MODE" = "true"
-  }
+  grafana_image   = "grafana/grafana-enterprise:11.6.1"
+  renderer_image  = "grafana/grafana-image-renderer:3.12.5"
+  redis_image     = "redis:latest"
 
-  secrets = {
-    "GF_DATABASE_PASSWORD" = var.db_secret_arn
-  }
+  db_secret_arn = var.db_secret_arn
+  db_endpoint   = var.db_endpoint
+  db_port       = 5432
+  db_name       = "grafana"
 
-  min_capacity       = var.grafana_min_capacity
-  max_capacity       = var.grafana_max_capacity
-  desired_task_count = var.grafana_desired_task_count
-}
+  redis_host = "redis"
+  redis_port = 6379
 
-module "renderer" {
-  source            = "../../modules/grafana"
-  cluster_arn       = var.cluster_arn
-  subnet_ids        = var.subnet_ids
-  security_group_id = var.security_group_id
-  execution_role_arn = var.execution_role_arn
-  task_role_arn      = var.task_role_arn
-  service_name      = "rajesh-renderer-svc"
-  container_name    = "renderer"
-  container_image   = "grafana/grafana-image-renderer:3.12.5"
-  container_port    = 8081
+  grafana_desired_count           = var.grafana_desired_count
+  grafana_autoscaling_min         = var.grafana_autoscaling_min
+  grafana_autoscaling_max         = var.grafana_autoscaling_max
+  grafana_autoscaling_cpu_target  = var.grafana_autoscaling_cpu_target
 
-  environment = {}
+  renderer_desired_count           = var.renderer_desired_count
+  renderer_autoscaling_min         = var.renderer_autoscaling_min
+  renderer_autoscaling_max         = var.renderer_autoscaling_max
+  renderer_autoscaling_cpu_target  = var.renderer_autoscaling_cpu_target
 
-  secrets = {}
-
-  min_capacity       = var.renderer_min_capacity
-  max_capacity       = var.renderer_max_capacity
-  desired_task_count = var.renderer_desired_task_count
-}
-
-module "redis" {
-  source            = "../../modules/grafana"
-  cluster_arn       = var.cluster_arn
-  subnet_ids        = var.subnet_ids
-  security_group_id = var.security_group_id
-  execution_role_arn = var.execution_role_arn
-  task_role_arn      = var.task_role_arn
-  service_name      = "rajesh-redis-svc"
-  container_name    = "redis"
-  container_image   = "redis:latest"
-  container_port    = 6379
-
-  environment = {}
-
-  secrets = {}
-
-  min_capacity       = var.redis_min_capacity
-  max_capacity       = var.redis_max_capacity
-  desired_task_count = var.redis_desired_task_count
+  redis_desired_count           = var.redis_desired_count
+  redis_autoscaling_min         = var.redis_autoscaling_min
+  redis_autoscaling_max         = var.redis_autoscaling_max
+  redis_autoscaling_cpu_target  = var.redis_autoscaling_cpu_target
 }
