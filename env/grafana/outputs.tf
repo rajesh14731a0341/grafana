@@ -1,18 +1,11 @@
-output "grafana_service_name" {
-  description = "Name of the Grafana ECS service."
-  value       = module.grafana_ecs_deployment.grafana_service_name
+output "grafana_service_arn" {
+  value = module.grafana_services.grafana_service_arn
 }
 
-output "renderer_service_name" {
-  description = "Name of the Renderer ECS service."
-  value       = module.grafana_ecs_deployment.renderer_service_name
+output "renderer_service_arn" {
+  value = module.grafana_services.renderer_service_arn
 }
 
-output "redis_service_name" {
-  description = "Name of the Redis ECS service."
-  value       = module.grafana_ecs_deployment.redis_service_name
-}
-
-output "grafana_service_discovery_namespace" {
-  value = module.grafana_ecs_deployment.grafana_service_discovery_namespace
+output "redis_service_arn" {
+  value = module.grafana_services.redis_service_arn
 }
