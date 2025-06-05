@@ -13,6 +13,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Cache Terraform plugins
+        uses: actions/cache@v3
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: ${{ runner.os }}-terraform-${{ hashFiles('env/grafana/**/*.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-
+
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v2
         with:
@@ -20,7 +28,14 @@ jobs:
 
       - name: Terraform Init
         working-directory: env/grafana
+        env:
+          TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
         run: terraform init
+
+      - name: Select Terraform Workspace
+        working-directory: env/grafana
+        run: |
+          terraform workspace list | grep -q psql && terraform workspace select psql || terraform workspace new psql
 
       - name: Terraform Format Check
         working-directory: env/grafana
