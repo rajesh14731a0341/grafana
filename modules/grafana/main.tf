@@ -45,11 +45,11 @@ resource "aws_ecs_task_definition" "grafana_task" {
         },
         {
           name  = "GF_DATABASE_NAME"
-          value = "grafana"
+          value = "rajesh"
         },
         {
           name  = "GF_DATABASE_USER"
-          value = "postgres"
+          value = "rajesh"
         },
         {
           name  = "GF_DATABASE_SSL_MODE"
