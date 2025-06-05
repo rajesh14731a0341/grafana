@@ -36,62 +36,48 @@ resource "aws_ecs_task_definition" "grafana" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "grafana"
-      image     = var.grafana_image
-      cpu       = 256
-      memory    = 512
-      essential = true
-      portMappings = [{
-        containerPort = 3000
-        protocol      = "tcp"
-      }]
-      environment = [
-        {
-          name  = "GF_DATABASE_TYPE"
-          value = "postgres"
-        },
-        {
-          name  = "GF_DATABASE_HOST"
-          value = var.postgres_host
-        },
-        {
-          name  = "GF_DATABASE_NAME"
-          value = var.postgres_db
-        },
-        {
-          name  = "GF_DATABASE_USER"
-          value = var.postgres_user
-        },
-        {
-          name  = "GF_DATABASE_PASSWORD"
-          value = data.aws_secretsmanager_secret_version.postgres_password.secret_string
-        },
-        # SSL placeholders - uncomment & configure in production
-        # {
-        #   name  = "GF_DATABASE_SSL_MODE"
-        #   value = "require"
-        # },
-        # {
-        #   name  = "GF_DATABASE_SSL_CERT_PATH"
-        #   value = "/path/to/cert.pem"
-        # },
-        # {
-        #   name  = "GF_DATABASE_SSL_KEY_PATH"
-        #   value = "/path/to/key.pem"
-        # }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
-          "awslogs-region"        = var.region
-          "awslogs-stream-prefix" = "grafana"
-        }
+  container_definitions = jsonencode([{
+    name      = "grafana"
+    image     = var.grafana_image
+    cpu       = 256
+    memory    = 512
+    essential = true
+    portMappings = [{
+      containerPort = 3000
+      protocol      = "tcp"
+    }]
+    environment = [
+      {
+        name  = "GF_DATABASE_TYPE"
+        value = "postgres"
+      },
+      {
+        name  = "GF_DATABASE_HOST"
+        value = var.postgres_host
+      },
+      {
+        name  = "GF_DATABASE_NAME"
+        value = var.postgres_db
+      },
+      {
+        name  = "GF_DATABASE_USER"
+        value = var.postgres_user
+      },
+      {
+        name  = "GF_DATABASE_PASSWORD"
+        value = jsondecode(data.aws_secretsmanager_secret_version.postgres_password.secret_string)["password"]
+      }
+      # SSL settings can be uncommented in production as needed
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+        "awslogs-region"        = var.region
+        "awslogs-stream-prefix" = "grafana"
       }
     }
-  ])
+  }])
 }
 
 # Renderer Task Definition
@@ -104,23 +90,21 @@ resource "aws_ecs_task_definition" "renderer" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "renderer"
-      image     = var.renderer_image
-      cpu       = 128
-      memory    = 256
-      essential = true
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.renderer.name
-          "awslogs-region"        = var.region
-          "awslogs-stream-prefix" = "renderer"
-        }
+  container_definitions = jsonencode([{
+    name      = "renderer"
+    image     = var.renderer_image
+    cpu       = 128
+    memory    = 256
+    essential = true
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.renderer.name
+        "awslogs-region"        = var.region
+        "awslogs-stream-prefix" = "renderer"
       }
     }
-  ])
+  }])
 }
 
 # Redis Task Definition
@@ -133,27 +117,25 @@ resource "aws_ecs_task_definition" "redis" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "redis"
-      image     = var.redis_image
-      cpu       = 128
-      memory    = 256
-      essential = true
-      portMappings = [{
-        containerPort = 6379
-        protocol      = "tcp"
-      }]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.redis.name
-          "awslogs-region"        = var.region
-          "awslogs-stream-prefix" = "redis"
-        }
+  container_definitions = jsonencode([{
+    name      = "redis"
+    image     = var.redis_image
+    cpu       = 128
+    memory    = 256
+    essential = true
+    portMappings = [{
+      containerPort = 6379
+      protocol      = "tcp"
+    }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.redis.name
+        "awslogs-region"        = var.region
+        "awslogs-stream-prefix" = "redis"
       }
     }
-  ])
+  }])
 }
 
 ##############################
@@ -170,8 +152,8 @@ resource "aws_ecs_service" "grafana" {
   platform_version = "LATEST"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
@@ -179,7 +161,7 @@ resource "aws_ecs_service" "grafana" {
 }
 
 # Renderer Service
-resource "aws_ecs_service" "renderer {
+resource "aws_ecs_service" "renderer" {
   name            = "rajesh-renderer-svc"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.renderer.arn
@@ -188,8 +170,8 @@ resource "aws_ecs_service" "renderer {
   platform_version = "LATEST"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
@@ -206,8 +188,8 @@ resource "aws_ecs_service" "redis" {
   platform_version = "LATEST"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
