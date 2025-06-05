@@ -13,16 +13,16 @@ module "grafana_ecs_deployment" {
   rds_username            = var.rds_username
   aws_region              = var.aws_region
 
-  grafana_min_capacity    = var.grafana_min_capacity
-  grafana_max_capacity    = var.grafana_max_capacity
+  grafana_min_capacity           = var.grafana_min_capacity
+  grafana_max_capacity           = var.grafana_max_capacity
   grafana_cpu_target_utilization = var.grafana_cpu_target_utilization
 
-  renderer_min_capacity    = var.renderer_min_capacity
-  renderer_max_capacity    = var.renderer_max_capacity
+  renderer_min_capacity           = var.renderer_min_capacity
+  renderer_max_capacity           = var.renderer_max_capacity
   renderer_cpu_target_utilization = var.renderer_cpu_target_utilization
 
-  redis_min_capacity    = var.redis_min_capacity
-  redis_max_capacity    = var.redis_max_capacity
+  redis_min_capacity           = var.redis_min_capacity
+  redis_max_capacity           = var.redis_max_capacity
   redis_cpu_target_utilization = var.redis_cpu_target_utilization
 }
 

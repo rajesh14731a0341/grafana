@@ -1,3 +1,4 @@
+# CloudWatch Log Groups for each service
 resource "aws_cloudwatch_log_group" "grafana" {
   name              = "/ecs/grafana"
   retention_in_days = var.log_retention_in_days
@@ -13,6 +14,7 @@ resource "aws_cloudwatch_log_group" "redis" {
   retention_in_days = var.log_retention_in_days
 }
 
+# ECS Task Definition for Grafana
 resource "aws_ecs_task_definition" "grafana" {
   family                   = "grafana-task"
   network_mode             = "awsvpc"
@@ -68,6 +70,7 @@ resource "aws_ecs_task_definition" "grafana" {
   ])
 }
 
+# ECS Task Definition for Grafana Image Renderer
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "grafana-renderer-task"
   network_mode             = "awsvpc"
@@ -103,6 +106,7 @@ resource "aws_ecs_task_definition" "renderer" {
   ])
 }
 
+# ECS Task Definition for Redis
 resource "aws_ecs_task_definition" "redis" {
   family                   = "grafana-redis-task"
   network_mode             = "awsvpc"
@@ -138,12 +142,15 @@ resource "aws_ecs_task_definition" "redis" {
   ])
 }
 
+# Service Discovery Private DNS Namespace
 resource "aws_service_discovery_private_dns_namespace" "grafana" {
   name        = "grafana.local"
   description = "Private DNS namespace for Grafana services"
-  vpc         = split("/", var.ecs_cluster_id)[4] # Extract VPC ID from cluster ARN (assuming cluster is in one VPC)
+  # Extract VPC ID from cluster ARN (assuming cluster is in one VPC)
+  vpc         = split("/", var.ecs_cluster_id)[4]
 }
 
+# Service Discovery Service for Grafana
 resource "aws_service_discovery_service" "grafana" {
   name = "grafana"
 
@@ -161,6 +168,7 @@ resource "aws_service_discovery_service" "grafana" {
   }
 }
 
+# Service Discovery Service for Renderer
 resource "aws_service_discovery_service" "renderer" {
   name = "renderer"
 
@@ -178,6 +186,7 @@ resource "aws_service_discovery_service" "renderer" {
   }
 }
 
+# Service Discovery Service for Redis
 resource "aws_service_discovery_service" "redis" {
   name = "redis"
 
@@ -195,6 +204,7 @@ resource "aws_service_discovery_service" "redis" {
   }
 }
 
+# ECS Service for Grafana
 resource "aws_ecs_service" "grafana" {
   name            = "rajesh-grafana-svc"
   cluster         = var.ecs_cluster_id
@@ -203,22 +213,24 @@ resource "aws_ecs_service" "grafana" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.grafana.arn
-    port         = 3000
+    registry_arn   = aws_service_discovery_service.grafana.arn
+    port           = 3000
     container_name = "grafana"
   }
 
+  # Allow autoscaling to manage desired_count
   lifecycle {
-    ignore_changes = [desired_count] # Allow autoscaling to manage desired_count
+    ignore_changes = [desired_count]
   }
 }
 
+# Auto Scaling Target for Grafana
 resource "aws_appautoscaling_target" "grafana_target" {
   max_capacity       = var.grafana_max_capacity
   min_capacity       = var.grafana_min_capacity
@@ -227,6 +239,7 @@ resource "aws_appautoscaling_target" "grafana_target" {
   service_namespace  = "ecs"
 }
 
+# Auto Scaling Policy for Grafana (CPU Utilization)
 resource "aws_appautoscaling_policy" "grafana_cpu_scaling" {
   name               = "grafana-cpu-scaling-policy"
   policy_type        = "TargetTrackingScaling"
@@ -242,6 +255,7 @@ resource "aws_appautoscaling_policy" "grafana_cpu_scaling" {
   }
 }
 
+# ECS Service for Grafana Image Renderer
 resource "aws_ecs_service" "renderer" {
   name            = "rajesh-renderer-svc"
   cluster         = var.ecs_cluster_id
@@ -250,22 +264,24 @@ resource "aws_ecs_service" "renderer" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.renderer.arn
-    port         = 8081
+    registry_arn   = aws_service_discovery_service.renderer.arn
+    port           = 8081
     container_name = "renderer"
   }
 
+  # Allow autoscaling to manage desired_count
   lifecycle {
-    ignore_changes = [desired_count] # Allow autoscaling to manage desired_count
+    ignore_changes = [desired_count]
   }
 }
 
+# Auto Scaling Target for Renderer
 resource "aws_appautoscaling_target" "renderer_target" {
   max_capacity       = var.renderer_max_capacity
   min_capacity       = var.renderer_min_capacity
@@ -274,6 +290,7 @@ resource "aws_appautoscaling_target" "renderer_target" {
   service_namespace  = "ecs"
 }
 
+# Auto Scaling Policy for Renderer (CPU Utilization)
 resource "aws_appautoscaling_policy" "renderer_cpu_scaling" {
   name               = "renderer-cpu-scaling-policy"
   policy_type        = "TargetTrackingScaling"
@@ -289,6 +306,7 @@ resource "aws_appautoscaling_policy" "renderer_cpu_scaling" {
   }
 }
 
+# ECS Service for Redis
 resource "aws_ecs_service" "redis" {
   name            = "rajesh-redis-svc"
   cluster         = var.ecs_cluster_id
@@ -297,22 +315,24 @@ resource "aws_ecs_service" "redis" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.redis.arn
-    port         = 6379
+    registry_arn   = aws_service_discovery_service.redis.arn
+    port           = 6379
     container_name = "redis"
   }
 
+  # Allow autoscaling to manage desired_count
   lifecycle {
-    ignore_changes = [desired_count] # Allow autoscaling to manage desired_count
+    ignore_changes = [desired_count]
   }
 }
 
+# Auto Scaling Target for Redis
 resource "aws_appautoscaling_target" "redis_target" {
   max_capacity       = var.redis_max_capacity
   min_capacity       = var.redis_min_capacity
@@ -321,6 +341,7 @@ resource "aws_appautoscaling_target" "redis_target" {
   service_namespace  = "ecs"
 }
 
+# Auto Scaling Policy for Redis (CPU Utilization)
 resource "aws_appautoscaling_policy" "redis_cpu_scaling" {
   name               = "redis-cpu-scaling-policy"
   policy_type        = "TargetTrackingScaling"
