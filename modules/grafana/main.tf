@@ -53,7 +53,7 @@ resource "aws_ecs_task_definition" "grafana_task" {
         },
         {
           name  = "GF_DATABASE_SSL_MODE"
-          value = "disable"
+          value = "require"
         },
         {
           name  = "GF_RENDERING_SERVER_URL"
