@@ -1,11 +1,11 @@
-output "grafana_service_arn" {
-  value = module.grafana_services.grafana_service_arn
+output "grafana_service_name" {
+  value = module.grafana.service_name
 }
 
-output "renderer_service_arn" {
-  value = module.grafana_services.renderer_service_arn
+output "renderer_service_name" {
+  value = module.renderer.service_name
 }
 
-output "redis_service_arn" {
-  value = module.grafana_services.redis_service_arn
+output "redis_service_name" {
+  value = module.redis.service_name
 }
