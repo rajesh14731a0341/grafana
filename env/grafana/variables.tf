@@ -1,8 +1,4 @@
-variable "cluster_id" {
-  type = string
-}
-
-variable "cluster_name" {
+variable "cluster_arn" {
   type = string
 }
 
@@ -26,64 +22,38 @@ variable "postgres_secret_arn" {
   type = string
 }
 
-# Per service scaling variables
-
 variable "grafana_desired_count" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "grafana_min_capacity" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "grafana_max_capacity" {
-  type    = number
-  default = 5
-}
-
-variable "grafana_target_cpu_utilization" {
-  type    = number
-  default = 70
+  type = number
 }
 
 variable "renderer_desired_count" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "renderer_min_capacity" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "renderer_max_capacity" {
-  type    = number
-  default = 5
-}
-
-variable "renderer_target_cpu_utilization" {
-  type    = number
-  default = 70
+  type = number
 }
 
 variable "redis_desired_count" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "redis_min_capacity" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "redis_max_capacity" {
-  type    = number
-  default = 5
-}
-
-variable "redis_target_cpu_utilization" {
-  type    = number
-  default = 70
+  type = number
 }
