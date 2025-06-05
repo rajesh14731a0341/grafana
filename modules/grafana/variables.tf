@@ -1,8 +1,8 @@
-variable "region" {
+variable "cluster_id" {
   type = string
 }
 
-variable "ecs_cluster_id" {
+variable "cluster_name" {
   type = string
 }
 
@@ -22,86 +22,69 @@ variable "task_role_arn" {
   type = string
 }
 
-variable "grafana_image" {
+variable "postgres_secret_arn" {
   type = string
 }
 
-variable "renderer_image" {
-  type = string
-}
-
-variable "redis_image" {
-  type = string
-}
-
-variable "postgres_host" {
-  type = string
-}
-
-variable "postgres_db" {
-  type = string
-}
-
-variable "postgres_user" {
-  type = string
-}
-
-variable "postgres_password_secret_arn" {
-  type = string
-}
-
-variable "task_cpu" {
-  type = number
-}
-
-variable "task_memory" {
-  type = number
-}
-
+# Grafana service scaling
 variable "grafana_desired_count" {
-  type = number
-}
-
-variable "renderer_desired_count" {
-  type = number
-}
-
-variable "redis_desired_count" {
-  type = number
+  type    = number
+  default = 1
 }
 
 variable "grafana_min_capacity" {
-  type = number
+  type    = number
+  default = 1
 }
 
 variable "grafana_max_capacity" {
-  type = number
+  type    = number
+  default = 5
 }
 
-variable "grafana_cpu_target" {
-  type = number
+variable "grafana_target_cpu_utilization" {
+  type    = number
+  default = 70
+}
+
+# Renderer service scaling
+variable "renderer_desired_count" {
+  type    = number
+  default = 1
 }
 
 variable "renderer_min_capacity" {
-  type = number
+  type    = number
+  default = 1
 }
 
 variable "renderer_max_capacity" {
-  type = number
+  type    = number
+  default = 5
 }
 
-variable "renderer_cpu_target" {
-  type = number
+variable "renderer_target_cpu_utilization" {
+  type    = number
+  default = 70
+}
+
+# Redis service scaling
+variable "redis_desired_count" {
+  type    = number
+  default = 1
 }
 
 variable "redis_min_capacity" {
-  type = number
+  type    = number
+  default = 1
 }
 
 variable "redis_max_capacity" {
-  type = number
+  type    = number
+  default = 5
 }
 
-variable "redis_cpu_target" {
-  type = number
+variable "redis_target_cpu_utilization" {
+  type    = number
+  default = 70
 }

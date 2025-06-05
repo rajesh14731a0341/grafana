@@ -1,27 +1,22 @@
-region                        = "us-east-1"
-ecs_cluster_id                = "arn:aws:ecs:us-east-1:736747734611:cluster/rajesh-cluster"
-subnet_ids                   = ["subnet-0eddeac6a246b078f", "subnet-0fcef6c827cb2624e"]
-security_group_id            = "sg-084b6f2c8b582a491"
-execution_role_arn           = "arn:aws:iam::736747734611:role/rajesh-ecs-task-execution-role"
-task_role_arn                = "arn:aws:iam::736747734611:role/rajesh-grafana-task-role"
-grafana_image                = "grafana/grafana-enterprise:11.6.1"
-renderer_image               = "grafana/grafana-image-renderer:3.12.5"
-redis_image                  = "redis:latest"
-postgres_host                = "database-1.c030msui2s50.us-east-1.rds.amazonaws.com"
-postgres_db                  = "grafana"
-postgres_user                = "postgres"
-postgres_password_secret_arn = "arn:aws:secretsmanager:us-east-1:736747734611:secret:rds!db-df0916a7-d6fb-4841-8b58-388fe4380807-5sDmn2"
-task_cpu                     = 512
-task_memory                  = 1024
-grafana_desired_count        = 1
-renderer_desired_count       = 1
+cluster_id          = "arn:aws:ecs:us-east-1:736747734611:cluster/rajesh-cluster"
+cluster_name        = "rajesh-cluster"
+subnet_ids          = ["subnet-0eddeac6a246b078f", "subnet-0fcef6c827cb2624e"]
+security_group_id   = "sg-084b6f2c8b582a491"
+execution_role_arn  = "arn:aws:iam::736747734611:role/rajesh-ecs-task-execution-role"
+task_role_arn       = "arn:aws:iam::736747734611:role/rajesh-grafana-task-role"
+postgres_secret_arn = "arn:aws:secretsmanager:us-east-1:736747734611:secret:rds!db-df0916a7-d6fb-4841-8b58-388fe4380807-5sDmn2"
+
+grafana_desired_count          = 1
+grafana_min_capacity           = 1
+grafana_max_capacity           = 5
+grafana_target_cpu_utilization = 70
+
+renderer_desired_count          = 1
+renderer_min_capacity           = 1
+renderer_max_capacity           = 5
+renderer_target_cpu_utilization = 70
+
 redis_desired_count          = 1
-grafana_min_capacity         = 1
-grafana_max_capacity         = 5
-grafana_cpu_target           = 70
-renderer_min_capacity        = 1
-renderer_max_capacity        = 5
-renderer_cpu_target          = 70
 redis_min_capacity           = 1
 redis_max_capacity           = 5
-redis_cpu_target             = 70
+redis_target_cpu_utilization = 70
