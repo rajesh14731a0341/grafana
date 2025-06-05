@@ -1,11 +1,15 @@
-output "ecs_service_name" {
-  value = aws_ecs_service.this.name
+output "grafana_task_definition_arn" {
+  value = aws_ecs_task_definition.grafana.arn
 }
 
-output "ecs_task_definition_arn" {
-  value = aws_ecs_task_definition.this.arn
+output "grafana_service_name" {
+  value = aws_ecs_service.grafana.name
 }
 
-output "cloudwatch_log_group_name" {
-  value = aws_cloudwatch_log_group.this.name
+output "renderer_service_name" {
+  value = aws_ecs_service.renderer.name
+}
+
+output "redis_service_name" {
+  value = aws_ecs_service.redis.name
 }

@@ -1,72 +1,38 @@
-provider "aws" {
-  region = var.region
-}
+module "grafana" {
+  source = "../../modules/grafana"
 
-module "grafana_enterprise" {
-  source            = "../../modules/grafana"
-  service_name      = "grafana-enterprise"
-  container_image   = "grafana/grafana-enterprise:11.6.1"
-  container_port    = 3000
-  subnet_ids        = var.subnet_ids
-  security_group_id = var.security_group_id
-  execution_role_arn = var.execution_role_arn
-  task_role_arn     = var.task_role_arn
-  secret_arn        = var.secret_arn
-  db_host           = var.db_host
-  db_port           = var.db_port
-  db_name           = var.db_name
-  db_username       = var.db_username
-  desired_count     = var.grafana_desired_count
-  min_capacity      = var.grafana_min_capacity
-  max_capacity      = var.grafana_max_capacity
-  cpu_target        = var.grafana_cpu_target
-  region            = var.region
-  ecs_cluster_id    = var.ecs_cluster_id
-  log_group_name    = "/ecs/grafana-enterprise"
-}
-
-module "grafana_renderer" {
-  source            = "../../modules/grafana"
-  service_name      = "grafana-renderer"
-  container_image   = "grafana/grafana-image-renderer:3.12.5"
-  container_port    = 8081
-  subnet_ids        = var.subnet_ids
-  security_group_id = var.security_group_id
-  execution_role_arn = var.execution_role_arn
-  task_role_arn     = var.task_role_arn
-  secret_arn        = var.secret_arn
-  db_host           = var.db_host
-  db_port           = var.db_port
-  db_name           = var.db_name
-  db_username       = var.db_username
-  desired_count     = var.renderer_desired_count
-  min_capacity      = var.renderer_min_capacity
-  max_capacity      = var.renderer_max_capacity
-  cpu_target        = var.renderer_cpu_target
-  region            = var.region
-  ecs_cluster_id    = var.ecs_cluster_id
-  log_group_name    = "/ecs/grafana-renderer"
-}
-
-module "redis" {
-  source            = "../../modules/grafana"
-  service_name      = "redis"
-  container_image   = "redis:latest"
-  container_port    = 6379
-  subnet_ids        = var.subnet_ids
-  security_group_id = var.security_group_id
-  execution_role_arn = var.execution_role_arn
-  task_role_arn     = var.task_role_arn
-  secret_arn        = var.secret_arn
-  db_host           = var.db_host
-  db_port           = var.db_port
-  db_name           = var.db_name
-  db_username       = var.db_username
-  desired_count     = var.redis_desired_count
-  min_capacity      = var.redis_min_capacity
-  max_capacity      = var.redis_max_capacity
-  cpu_target        = var.redis_cpu_target
-  region            = var.region
-  ecs_cluster_id    = var.ecs_cluster_id
-  log_group_name    = "/ecs/redis"
+  region                    = var.region
+  name_prefix               = "rajesh"
+  ecs_cluster_id            = var.ecs_cluster_id
+  ecs_cluster_name          = var.ecs_cluster_name
+  subnet_ids                = var.subnet_ids
+  security_group_id         = var.security_group_id
+  execution_role_arn        = var.execution_role_arn
+  task_role_arn             = var.task_role_arn
+  postgres_password_secret_arn = var.postgres_password_secret_arn
+  postgres_host             = var.postgres_host
+  postgres_db               = var.postgres_db
+  postgres_user             = var.postgres_user
+  grafana_image             = var.grafana_image
+  renderer_image            = var.renderer_image
+  redis_image               = var.redis_image
+  grafana_task_cpu          = var.grafana_task_cpu
+  grafana_task_memory       = var.grafana_task_memory
+  grafana_desired_count     = var.grafana_desired_count
+  renderer_desired_count    = var.renderer_desired_count
+  redis_desired_count       = var.redis_desired_count
+  grafana_autoscaling_min   = var.grafana_autoscaling_min
+  grafana_autoscaling_max   = var.grafana_autoscaling_max
+  grafana_autoscaling_cpu_target = var.grafana_autoscaling_cpu_target
+  renderer_autoscaling_min  = var.renderer_autoscaling_min
+  renderer_autoscaling_max  = var.renderer_autoscaling_max
+  renderer_autoscaling_cpu_target = var.renderer_autoscaling_cpu_target
+  redis_autoscaling_min     = var.redis_autoscaling_min
+  redis_autoscaling_max     = var.redis_autoscaling_max
+  redis_autoscaling_cpu_target = var.redis_autoscaling_cpu_target
+  cloudwatch_log_group      = var.cloudwatch_log_group
+  redis_host                = var.redis_host
+  redis_db                  = var.redis_db
+  redis_cachetime           = var.redis_cachetime
+  caching                   = var.caching
 }
