@@ -231,7 +231,7 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_DATABASE_NAME", value = "grafana" },
       { name = "GF_DATABASE_USER", value = "rajesh" },
       { name = "GF_DATABASE_HOST", value = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com" },
-      { name = "GF_DATABASE_TYPE", value = "postgres" }
+      { name = "GF_DATABASE_TYPE", value = "postgres" },
       { name = "GF_DATABASE_SSL_MODE", value = "require" }
     ]
     secrets = [
