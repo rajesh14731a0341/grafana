@@ -54,6 +54,24 @@ resource "aws_cloudwatch_log_group" "redis" {
   retention_in_days = 14
 }
 
+resource "aws_service_discovery_service" "redis" {
+  name         = "redis"
+  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
+    routing_policy = "MULTIVALUE"
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
+
 resource "aws_ecs_service" "redis" {
   name            = "rajesh-redis-svc"
   cluster         = var.ecs_cluster_id
@@ -72,24 +90,6 @@ resource "aws_ecs_service" "redis" {
   }
 
   depends_on = [aws_cloudwatch_log_group.redis]
-}
-
-resource "aws_service_discovery_service" "redis" {
-  name         = "redis"
-  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
-
-  dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
-    routing_policy = "MULTIVALUE"
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
 }
 
 ###############################
@@ -132,6 +132,24 @@ resource "aws_cloudwatch_log_group" "renderer" {
   retention_in_days = 14
 }
 
+resource "aws_service_discovery_service" "renderer" {
+  name         = "renderer"
+  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
+    routing_policy = "MULTIVALUE"
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
+
 resource "aws_ecs_service" "renderer" {
   name            = "rajesh-renderer-svc"
   cluster         = var.ecs_cluster_id
@@ -150,24 +168,6 @@ resource "aws_ecs_service" "renderer" {
   }
 
   depends_on = [aws_cloudwatch_log_group.renderer]
-}
-
-resource "aws_service_discovery_service" "renderer" {
-  name         = "renderer"
-  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
-
-  dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
-    routing_policy = "MULTIVALUE"
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
 }
 
 ###############################
@@ -216,7 +216,7 @@ resource "aws_ecs_task_definition" "grafana" {
         },
         {
           name  = "GF_DATABASE_PASSWORD"
-          value = jsondecode(data.aws_secretsmanager_secret_version.db_secret.secret_string)["password"]
+          value = data.aws_secretsmanager_secret_version.db_secret.secret_string
         },
         {
           name  = "GF_DATABASE_SSL_MODE"
@@ -272,6 +272,24 @@ resource "aws_cloudwatch_log_group" "grafana" {
   retention_in_days = 14
 }
 
+resource "aws_service_discovery_service" "grafana" {
+  name         = "grafana"
+  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
+    routing_policy = "MULTIVALUE"
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
+
 resource "aws_ecs_service" "grafana" {
   name            = "rajesh-grafana-svc"
   cluster         = var.ecs_cluster_id
@@ -290,22 +308,4 @@ resource "aws_ecs_service" "grafana" {
   }
 
   depends_on = [aws_cloudwatch_log_group.grafana]
-}
-
-resource "aws_service_discovery_service" "grafana" {
-  name         = "grafana"
-  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
-
-  dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
-    routing_policy = "MULTIVALUE"
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
 }
