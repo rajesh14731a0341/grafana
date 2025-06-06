@@ -1,21 +1,39 @@
 ###############################
-# Cloud Map private DNS namespace for service discovery
+# Cloud Map Private DNS Namespace
 ###############################
 resource "aws_service_discovery_private_dns_namespace" "namespace" {
   name        = "service.local"
-  description = "Private DNS namespace for Grafana ECS services"
+  description = "Private DNS namespace for ECS services"
   vpc         = var.vpc_id
 }
 
 ###############################
-# Locals for CloudWatch Log Group prefix
+# Log Group Prefix
 ###############################
 locals {
   log_group_prefix = "/ecs/grafana"
 }
 
 ###############################
-# Redis ECS Task Definition, Log Group, ECS Service, Cloud Map Service
+# CloudWatch Log Groups
+###############################
+resource "aws_cloudwatch_log_group" "redis" {
+  name              = "${local.log_group_prefix}-redis"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_log_group" "renderer" {
+  name              = "${local.log_group_prefix}-renderer"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_log_group" "grafana" {
+  name              = "${local.log_group_prefix}-grafana"
+  retention_in_days = 14
+}
+
+###############################
+# Redis ECS
 ###############################
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
@@ -26,32 +44,25 @@ resource "aws_ecs_task_definition" "redis" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "redis"
-      image     = "redis:latest"
-      cpu       = 256
-      memory    = 512
-      essential = true
-      portMappings = [{
-        containerPort = 6379
-        protocol      = "tcp"
-      }]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = "${local.log_group_prefix}-redis"
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "redis"
-        }
+  container_definitions = jsonencode([{
+    name      = "redis"
+    image     = "redis:latest"
+    cpu       = 256
+    memory    = 512
+    essential = true
+    portMappings = [{
+      containerPort = 6379
+      protocol      = "tcp"
+    }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "${local.log_group_prefix}-redis"
+        "awslogs-region"        = "us-east-1"
+        "awslogs-stream-prefix" = "redis"
       }
     }
-  ])
-}
-
-resource "aws_cloudwatch_log_group" "redis" {
-  name              = "${local.log_group_prefix}-redis"
-  retention_in_days = 14
+  }])
 }
 
 resource "aws_service_discovery_service" "redis" {
@@ -93,7 +104,7 @@ resource "aws_ecs_service" "redis" {
 }
 
 ###############################
-# Renderer ECS Task Definition, Log Group, ECS Service, Cloud Map Service
+# Renderer ECS
 ###############################
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
@@ -104,32 +115,25 @@ resource "aws_ecs_task_definition" "renderer" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "renderer"
-      image     = "grafana/grafana-image-renderer:3.12.5"
-      cpu       = 256
-      memory    = 512
-      essential = true
-      portMappings = [{
-        containerPort = 8081
-        protocol      = "tcp"
-      }]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = "${local.log_group_prefix}-renderer"
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "renderer"
-        }
+  container_definitions = jsonencode([{
+    name      = "renderer"
+    image     = "grafana/grafana-image-renderer:3.12.5"
+    cpu       = 256
+    memory    = 512
+    essential = true
+    portMappings = [{
+      containerPort = 8081
+      protocol      = "tcp"
+    }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "${local.log_group_prefix}-renderer"
+        "awslogs-region"        = "us-east-1"
+        "awslogs-stream-prefix" = "renderer"
       }
     }
-  ])
-}
-
-resource "aws_cloudwatch_log_group" "renderer" {
-  name              = "${local.log_group_prefix}-renderer"
-  retention_in_days = 14
+  }])
 }
 
 resource "aws_service_discovery_service" "renderer" {
@@ -171,7 +175,7 @@ resource "aws_ecs_service" "renderer" {
 }
 
 ###############################
-# Grafana ECS Task Definition, Log Group, ECS Service, Cloud Map Service
+# Grafana ECS
 ###############################
 data "aws_secretsmanager_secret_version" "db_secret" {
   secret_id = var.db_secret_arn
@@ -186,93 +190,41 @@ resource "aws_ecs_task_definition" "grafana" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "grafana"
-      image     = "grafana/grafana-enterprise:11.6.1"
-      cpu       = 512
-      memory    = 1024
-      essential = true
-      portMappings = [{
-        containerPort = 3000
-        protocol      = "tcp"
-      }]
-      environment = [
-        {
-          name  = "GF_DATABASE_TYPE"
-          value = "postgres"
-        },
-        {
-          name  = "GF_DATABASE_HOST"
-          value = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com"
-        },
-        {
-          name  = "GF_DATABASE_NAME"
-          value = "grafana"
-        },
-        {
-          name  = "GF_DATABASE_USER"
-          value = "rajesh"
-        },
-        {
-          name  = "GF_DATABASE_PASSWORD"
-          value = data.aws_secretsmanager_secret_version.db_secret.secret_string
-        },
-        {
-          name  = "GF_DATABASE_SSL_MODE"
-          value = "require"
-        },
-        {
-          name  = "REDIS_PATH"
-          value = "redis.service.local:6379"
-        },
-        {
-          name  = "REDIS_DB"
-          value = "1"
-        },
-        {
-          name  = "REDIS_CACHETIME"
-          value = "12000"
-        },
-        {
-          name  = "CACHING"
-          value = "Y"
-        },
-        {
-          name  = "GF_PLUGIN_ALLOW_LOCAL_MODE"
-          value = "true"
-        },
-        {
-          name  = "GF_RENDERING_SERVER_URL"
-          value = "http://renderer.service.local:8081/render"
-        },
-        {
-          name  = "GF_RENDERING_CALLBACK_URL"
-          value = "http://grafana.service.local:3000/"
-        },
-        {
-          name  = "GF_LOG_FILTERS"
-          value = "rendering: debug"
-        }
-      ],
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = "${local.log_group_prefix}-grafana"
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "grafana"
-        }
-      },
-      dnsServers = ["10.0.0.2"],
-      dnsSearchDomains = ["service.local"]
+  container_definitions = jsonencode([{
+    name      = "grafana"
+    image     = "grafana/grafana-enterprise:11.6.1"
+    cpu       = 512
+    memory    = 1024
+    essential = true
+    portMappings = [{
+      containerPort = 3000
+      protocol      = "tcp"
+    }]
+    environment = [
+      { name = "GF_DATABASE_TYPE",         value = "postgres" },
+      { name = "GF_DATABASE_HOST",         value = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com" },
+      { name = "GF_DATABASE_NAME",         value = "grafana" },
+      { name = "GF_DATABASE_USER",         value = "rajesh" },
+      { name = "GF_DATABASE_PASSWORD",     value = data.aws_secretsmanager_secret_version.db_secret.secret_string },
+      { name = "GF_DATABASE_SSL_MODE",     value = "require" },
+      { name = "REDIS_PATH",               value = "redis.service.local:6379" },
+      { name = "REDIS_DB",                 value = "1" },
+      { name = "REDIS_CACHETIME",          value = "12000" },
+      { name = "CACHING",                  value = "Y" },
+      { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
+      { name = "GF_RENDERING_SERVER_URL",  value = "http://renderer.service.local:8081/render" },
+      { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.service.local:3000/" },
+      { name = "GF_LOG_FILTERS",           value = "rendering: debug" }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "${local.log_group_prefix}-grafana"
+        "awslogs-region"        = "us-east-1"
+        "awslogs-stream-prefix" = "grafana"
+      }
     }
-  ])
-}
-
-
-resource "aws_cloudwatch_log_group" "grafana" {
-  name              = "${local.log_group_prefix}-grafana"
-  retention_in_days = 14
+  }])
 }
 
 resource "aws_service_discovery_service" "grafana" {
