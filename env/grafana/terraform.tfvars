@@ -4,7 +4,7 @@ security_group_id     = "sg-084b6f2c8b582a491"
 execution_role_arn    = "arn:aws:iam::736747734611:role/rajesh-ecs-task-execution-role"
 task_role_arn         = "arn:aws:iam::736747734611:role/rajesh-grafana-task-role"
 db_secret_arn         = "arn:aws:secretsmanager:us-east-1:736747734611:secret:grafana/psql/rajesh-password-7YOPwB"
-vpc_id                = "vpc-0abcd1234efgh5678"
+vpc_id                = "vpc-0baac8b1f8f1ca391"
 
 grafana_desired_count           = 1
 grafana_autoscaling_min         = 1
