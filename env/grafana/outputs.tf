@@ -9,7 +9,3 @@ output "renderer_service_name" {
 output "redis_service_name" {
   value = module.grafana.redis_service_name
 }
-
-output "cloud_map_namespace_id" {
-  value = module.grafana.cloud_map_namespace_id
-}

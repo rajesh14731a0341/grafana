@@ -1,81 +1,84 @@
-# Cloud Map private DNS namespace for service discovery
-resource "aws_service_discovery_private_dns_namespace" "cloud_map_ns" {
+##############################
+# CloudWatch Log Groups
+##############################
+resource "aws_cloudwatch_log_group" "grafana" {
+  name              = "/ecs/grafana"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_group" "renderer" {
+  name              = "/ecs/renderer"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_group" "redis" {
+  name              = "/ecs/redis"
+  retention_in_days = 7
+}
+
+##############################
+# Cloud Map Namespace for Service Discovery
+##############################
+resource "aws_service_discovery_private_dns_namespace" "namespace" {
   name        = "grafana.local"
-  description = "Private DNS namespace for Grafana ECS services"
+  description = "Private namespace for ECS services"
   vpc         = var.vpc_id
 }
 
+##############################
 # ECS Task Definitions
-
-locals {
-  # Docker images for services
-  grafana_image  = "grafana/grafana-enterprise:11.6.1"
-  renderer_image = "grafana/grafana-image-renderer:3.12.5"
-  redis_image    = "redis:latest"
-}
-
-# Secrets Manager ARN to container secrets
-# Grafana DB secret will be mounted as environment variables by fetching keys username, password, dbname, host
-
-data "aws_secretsmanager_secret_version" "db_secret" {
-  secret_id = var.db_secret_arn
-}
+##############################
 
 # Grafana Task Definition
-resource "aws_ecs_task_definition" "grafana" {
-  family                   = "rajesh-grafana-task"
-  cpu                      = 512
-  memory                   = 1024
+resource "aws_ecs_task_definition" "grafana_task" {
+  family                   = "grafana-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([
     {
       name      = "grafana"
-      image     = local.grafana_image
-      cpu       = 512
-      memory    = 1024
+      image     = "grafana/grafana-enterprise:11.6.1"
       essential = true
+
       portMappings = [
         {
           containerPort = 3000
           protocol      = "tcp"
         }
       ]
+
       environment = [
-        { name = "REDIS_PATH", value = "redis.grafana.local:6379" },
-        { name = "REDIS_DB", value = "1" },
-        { name = "REDIS_CACHETIME", value = "12000" },
-        { name = "CACHING", value = "Y" },
-        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-        { name = "GF_RENDERING_SERVER_URL", value = "http://renderer.grafana.local:8081/render" },
-        { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.grafana.local:3000/" },
-        { name = "GF_LOG_FILTERS", value = "rendering: debug" }
+        { name = "GF_DATABASE_TYPE"            , value = "postgres" },
+        { name = "GF_DATABASE_HOST"            , value = var.db_endpoint },
+        { name = "GF_DATABASE_NAME"            , value = "grafana" },
+        { name = "GF_DATABASE_USER"            , value = "rajesh" },
+        { name = "GF_DATABASE_SSL_MODE"        , value = "require" },
+        { name = "GF_RENDERING_SERVER_URL"     , value = "http://renderer.grafana.local:8081/render" },
+        { name = "GF_RENDERING_CALLBACK_URL"   , value = "http://grafana.grafana.local:3000/" },
+        { name = "REDIS_HOST"                  , value = "redis.grafana.local" },
+        { name = "REDIS_PORT"                  , value = "6379" },
+        { name = "REDIS_DB"                    , value = "1" },
+        { name = "REDIS_CACHETIME"             , value = "12000" },
+        { name = "CACHING"                     , value = "Y" },
+        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE"  , value = "true" }
       ]
+
       secrets = [
         {
-          name      = "GF_DATABASE_USER"
-          valueFrom = "${var.db_secret_arn}:username::"
-        },
-        {
           name      = "GF_DATABASE_PASSWORD"
-          valueFrom = "${var.db_secret_arn}:password::"
-        },
-        {
-          name      = "GF_DATABASE_NAME"
-          valueFrom = "${var.db_secret_arn}:dbname::"
-        },
-        {
-          name      = "GF_DATABASE_HOST"
-          valueFrom = "${var.db_secret_arn}:host::"
+          valueFrom = var.db_secret_arn
         }
       ]
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/ecs/rajesh-grafana"
+          awslogs-group         = aws_cloudwatch_log_group.grafana.name
           awslogs-region        = "us-east-1"
           awslogs-stream-prefix = "grafana"
         }
@@ -85,32 +88,32 @@ resource "aws_ecs_task_definition" "grafana" {
 }
 
 # Renderer Task Definition
-resource "aws_ecs_task_definition" "renderer" {
-  family                   = "rajesh-renderer-task"
-  cpu                      = 256
-  memory                   = 512
+resource "aws_ecs_task_definition" "renderer_task" {
+  family                   = "renderer-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([
     {
       name      = "renderer"
-      image     = local.renderer_image
-      cpu       = 256
-      memory    = 512
+      image     = "grafana/grafana-image-renderer:3.12.5"
       essential = true
+
       portMappings = [
         {
           containerPort = 8081
           protocol      = "tcp"
         }
       ]
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/ecs/rajesh-renderer"
+          awslogs-group         = aws_cloudwatch_log_group.renderer.name
           awslogs-region        = "us-east-1"
           awslogs-stream-prefix = "renderer"
         }
@@ -120,32 +123,32 @@ resource "aws_ecs_task_definition" "renderer" {
 }
 
 # Redis Task Definition
-resource "aws_ecs_task_definition" "redis" {
-  family                   = "rajesh-redis-task"
-  cpu                      = 256
-  memory                   = 512
+resource "aws_ecs_task_definition" "redis_task" {
+  family                   = "redis-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([
     {
       name      = "redis"
-      image     = local.redis_image
-      cpu       = 256
-      memory    = 512
+      image     = "redis:latest"
       essential = true
+
       portMappings = [
         {
           containerPort = 6379
           protocol      = "tcp"
         }
       ]
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/ecs/rajesh-redis"
+          awslogs-group         = aws_cloudwatch_log_group.redis.name
           awslogs-region        = "us-east-1"
           awslogs-stream-prefix = "redis"
         }
@@ -154,119 +157,123 @@ resource "aws_ecs_task_definition" "redis" {
   ])
 }
 
-# ECS Services
+##############################
+# ECS Services & Cloud Map Service Registrations
+##############################
+
+resource "aws_service_discovery_service" "grafana_sd" {
+  name = "grafana"
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+    dns_records {
+      type = "A"
+      ttl  = 10
+    }
+    routing_policy = "MULTIVALUE"
+  }
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
 
 resource "aws_ecs_service" "grafana" {
   name            = "rajesh-grafana-svc"
   cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.grafana.arn
+  task_definition = aws_ecs_task_definition.grafana_task.arn
   desired_count   = var.grafana_desired_count
   launch_type     = "FARGATE"
   platform_version = "LATEST"
 
   network_configuration {
-    subnets          = var.subnet_ids
-    security_groups  = [var.security_group_id]
+    subnets         = var.subnet_ids
+    security_groups = [var.security_group_id]
     assign_public_ip = true
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.grafana.arn
+    registry_arn = aws_service_discovery_service.grafana_sd.arn
   }
 
-  depends_on = [aws_service_discovery_service.grafana]
+  depends_on = [aws_service_discovery_service.grafana_sd]
+}
+
+resource "aws_service_discovery_service" "renderer_sd" {
+  name = "renderer"
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+    dns_records {
+      type = "A"
+      ttl  = 10
+    }
+    routing_policy = "MULTIVALUE"
+  }
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }
 
 resource "aws_ecs_service" "renderer" {
   name            = "rajesh-renderer-svc"
   cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.renderer.arn
+  task_definition = aws_ecs_task_definition.renderer_task.arn
   desired_count   = var.renderer_desired_count
   launch_type     = "FARGATE"
   platform_version = "LATEST"
 
   network_configuration {
-    subnets          = var.subnet_ids
-    security_groups  = [var.security_group_id]
+    subnets         = var.subnet_ids
+    security_groups = [var.security_group_id]
     assign_public_ip = true
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.renderer.arn
+    registry_arn = aws_service_discovery_service.renderer_sd.arn
   }
 
-  depends_on = [aws_service_discovery_service.renderer]
+  depends_on = [aws_service_discovery_service.renderer_sd]
+}
+
+resource "aws_service_discovery_service" "redis_sd" {
+  name = "redis"
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+    dns_records {
+      type = "A"
+      ttl  = 10
+    }
+    routing_policy = "MULTIVALUE"
+  }
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }
 
 resource "aws_ecs_service" "redis" {
   name            = "rajesh-redis-svc"
   cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.redis.arn
+  task_definition = aws_ecs_task_definition.redis_task.arn
   desired_count   = var.redis_desired_count
   launch_type     = "FARGATE"
   platform_version = "LATEST"
 
   network_configuration {
-    subnets          = var.subnet_ids
-    security_groups  = [var.security_group_id]
+    subnets         = var.subnet_ids
+    security_groups = [var.security_group_id]
     assign_public_ip = true
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.redis.arn
+    registry_arn = aws_service_discovery_service.redis_sd.arn
   }
 
-  depends_on = [aws_service_discovery_service.redis]
+  depends_on = [aws_service_discovery_service.redis_sd]
 }
 
-# Cloud Map Service Registrations
+##############################
+# Auto Scaling for Each ECS Service
+##############################
 
-resource "aws_service_discovery_service" "grafana" {
-  name = "grafana"
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.cloud_map_ns.id
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-    routing_policy = "MULTIVALUE"
-  }
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-resource "aws_service_discovery_service" "renderer" {
-  name = "renderer"
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.cloud_map_ns.id
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-    routing_policy = "MULTIVALUE"
-  }
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-resource "aws_service_discovery_service" "redis" {
-  name = "redis"
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.cloud_map_ns.id
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-    routing_policy = "MULTIVALUE"
-  }
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-# Autoscaling for Grafana
+# Grafana Auto Scaling
 resource "aws_appautoscaling_target" "grafana" {
   max_capacity       = var.grafana_autoscaling_max
   min_capacity       = var.grafana_autoscaling_min
@@ -283,16 +290,14 @@ resource "aws_appautoscaling_policy" "grafana_cpu" {
   service_namespace  = aws_appautoscaling_target.grafana.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value       = var.grafana_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
+    target_value = var.grafana_autoscaling_cpu_target
   }
 }
 
-# Autoscaling for Renderer
+# Renderer Auto Scaling
 resource "aws_appautoscaling_target" "renderer" {
   max_capacity       = var.renderer_autoscaling_max
   min_capacity       = var.renderer_autoscaling_min
@@ -309,16 +314,14 @@ resource "aws_appautoscaling_policy" "renderer_cpu" {
   service_namespace  = aws_appautoscaling_target.renderer.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value       = var.renderer_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
+    target_value = var.renderer_autoscaling_cpu_target
   }
 }
 
-# Autoscaling for Redis
+# Redis Auto Scaling
 resource "aws_appautoscaling_target" "redis" {
   max_capacity       = var.redis_autoscaling_max
   min_capacity       = var.redis_autoscaling_min
@@ -335,11 +338,9 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
   service_namespace  = aws_appautoscaling_target.redis.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value       = var.redis_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
+    target_value = var.redis_autoscaling_cpu_target
   }
 }
