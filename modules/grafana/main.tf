@@ -53,19 +53,19 @@ resource "aws_ecs_task_definition" "grafana_task" {
       ]
 
       environment = [
-        { name = "GF_DATABASE_TYPE"            , value = "postgres" },
-        { name = "GF_DATABASE_HOST"            , value = var.db_endpoint },
-        { name = "GF_DATABASE_NAME"            , value = "grafana" },
-        { name = "GF_DATABASE_USER"            , value = "rajesh" },
-        { name = "GF_DATABASE_SSL_MODE"        , value = "require" },
-        { name = "GF_RENDERING_SERVER_URL"     , value = "http://renderer.grafana.local:8081/render" },
-        { name = "GF_RENDERING_CALLBACK_URL"   , value = "http://grafana.grafana.local:3000/" },
-        { name = "REDIS_HOST"                  , value = "redis.grafana.local" },
-        { name = "REDIS_PORT"                  , value = "6379" },
-        { name = "REDIS_DB"                    , value = "1" },
-        { name = "REDIS_CACHETIME"             , value = "12000" },
-        { name = "CACHING"                     , value = "Y" },
-        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE"  , value = "true" }
+        { name = "GF_DATABASE_TYPE"           , value = "postgres" },
+        { name = "GF_DATABASE_HOST"           , value = var.db_endpoint },
+        { name = "GF_DATABASE_NAME"           , value = "grafana" },
+        { name = "GF_DATABASE_USER"           , value = "rajesh" },
+        { name = "GF_DATABASE_SSL_MODE"       , value = "require" },
+        { name = "GF_RENDERING_SERVER_URL"    , value = "http://renderer.grafana.local:8081/render" },
+        { name = "GF_RENDERING_CALLBACK_URL" , value = "http://grafana.grafana.local:3000/" },
+        { name = "REDIS_HOST"                 , value = "redis.grafana.local" },
+        { name = "REDIS_PORT"                 , value = "6379" },
+        { name = "REDIS_DB"                   , value = "1" },
+        { name = "REDIS_CACHETIME"            , value = "12000" },
+        { name = "CACHING"                    , value = "Y" },
+        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE" , value = "true" }
       ]
 
       secrets = [
@@ -163,14 +163,18 @@ resource "aws_ecs_task_definition" "redis_task" {
 
 resource "aws_service_discovery_service" "grafana_sd" {
   name = "grafana"
+
   dns_config {
     namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+
     dns_records {
       type = "A"
       ttl  = 10
     }
+
     routing_policy = "MULTIVALUE"
   }
+
   health_check_custom_config {
     failure_threshold = 1
   }
@@ -199,14 +203,18 @@ resource "aws_ecs_service" "grafana" {
 
 resource "aws_service_discovery_service" "renderer_sd" {
   name = "renderer"
+
   dns_config {
     namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+
     dns_records {
       type = "A"
       ttl  = 10
     }
+
     routing_policy = "MULTIVALUE"
   }
+
   health_check_custom_config {
     failure_threshold = 1
   }
@@ -235,14 +243,18 @@ resource "aws_ecs_service" "renderer" {
 
 resource "aws_service_discovery_service" "redis_sd" {
   name = "redis"
+
   dns_config {
     namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+
     dns_records {
       type = "A"
       ttl  = 10
     }
+
     routing_policy = "MULTIVALUE"
   }
+
   health_check_custom_config {
     failure_threshold = 1
   }
@@ -273,11 +285,16 @@ resource "aws_ecs_service" "redis" {
 # Auto Scaling for Each ECS Service
 ##############################
 
+# Extract cluster name from ARN for autoscaling resource_id
+locals {
+  cluster_name = regex("cluster/(.+)$", var.ecs_cluster_id)[0]
+}
+
 # Grafana Auto Scaling
 resource "aws_appautoscaling_target" "grafana" {
   max_capacity       = var.grafana_autoscaling_max
   min_capacity       = var.grafana_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.grafana.name}"
+  resource_id        = "service/${local.cluster_name}/${aws_ecs_service.grafana.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
@@ -301,7 +318,7 @@ resource "aws_appautoscaling_policy" "grafana_cpu" {
 resource "aws_appautoscaling_target" "renderer" {
   max_capacity       = var.renderer_autoscaling_max
   min_capacity       = var.renderer_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.renderer.name}"
+  resource_id        = "service/${local.cluster_name}/${aws_ecs_service.renderer.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
@@ -325,7 +342,7 @@ resource "aws_appautoscaling_policy" "renderer_cpu" {
 resource "aws_appautoscaling_target" "redis" {
   max_capacity       = var.redis_autoscaling_max
   min_capacity       = var.redis_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_id}/${aws_ecs_service.redis.name}"
+  resource_id        = "service/${local.cluster_name}/${aws_ecs_service.redis.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
