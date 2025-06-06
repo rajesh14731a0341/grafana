@@ -3,7 +3,7 @@ name: Deploy Grafana ECS
 on:
   push:
     branches:
-      - grafana_cloudma
+      - grafana_cloudmap
 
 jobs:
   terraform:
