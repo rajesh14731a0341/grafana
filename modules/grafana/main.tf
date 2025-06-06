@@ -1,19 +1,22 @@
-# Cloud Map namespace for service discovery
+###############################
+# Cloud Map private DNS namespace for service discovery
+###############################
 resource "aws_service_discovery_private_dns_namespace" "namespace" {
   name        = "service.local"
   description = "Private DNS namespace for Grafana ECS services"
   vpc         = var.vpc_id
 }
 
-# Common log group prefix
+###############################
+# Locals for CloudWatch Log Group prefix
+###############################
 locals {
   log_group_prefix = "/ecs/grafana"
 }
 
-##########################
-# Redis ECS Task Definition & Service with Cloud Map
-##########################
-
+###############################
+# Redis ECS Task Definition, Log Group, ECS Service, Cloud Map Service
+###############################
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
   cpu                      = "256"
@@ -59,8 +62,8 @@ resource "aws_ecs_service" "redis" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
@@ -72,11 +75,11 @@ resource "aws_ecs_service" "redis" {
 }
 
 resource "aws_service_discovery_service" "redis" {
-  name = "redis"
+  name         = "redis"
   namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
 
   dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
     routing_policy = "MULTIVALUE"
     dns_records {
       ttl  = 10
@@ -89,10 +92,9 @@ resource "aws_service_discovery_service" "redis" {
   }
 }
 
-##########################
-# Renderer ECS Task Definition & Service with Cloud Map
-##########################
-
+###############################
+# Renderer ECS Task Definition, Log Group, ECS Service, Cloud Map Service
+###############################
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
   cpu                      = "256"
@@ -138,8 +140,8 @@ resource "aws_ecs_service" "renderer" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
@@ -151,11 +153,11 @@ resource "aws_ecs_service" "renderer" {
 }
 
 resource "aws_service_discovery_service" "renderer" {
-  name = "renderer"
+  name         = "renderer"
   namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
 
   dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
     routing_policy = "MULTIVALUE"
     dns_records {
       ttl  = 10
@@ -168,11 +170,9 @@ resource "aws_service_discovery_service" "renderer" {
   }
 }
 
-##########################
-# Grafana ECS Task Definition & Service with Cloud Map
-##########################
-
-# Fetch DB password from Secrets Manager
+###############################
+# Grafana ECS Task Definition, Log Group, ECS Service, Cloud Map Service
+###############################
 data "aws_secretsmanager_secret_version" "db_secret" {
   secret_id = var.db_secret_arn
 }
@@ -280,8 +280,8 @@ resource "aws_ecs_service" "grafana" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
   }
 
@@ -293,4 +293,19 @@ resource "aws_ecs_service" "grafana" {
 }
 
 resource "aws_service_discovery_service" "grafana" {
-  name = "grafana"
+  name         = "grafana"
+  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
+    routing_policy = "MULTIVALUE"
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
