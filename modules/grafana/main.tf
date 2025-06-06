@@ -45,7 +45,7 @@ resource "aws_ecs_task_definition" "grafana_task" {
         },
         {
           name  = "GF_DATABASE_NAME"
-          value = "rajesh"
+          value = "grafana"
         },
         {
           name  = "GF_DATABASE_USER"
