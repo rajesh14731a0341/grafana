@@ -1,94 +1,24 @@
-variable "ecs_cluster_id" {
-  type        = string
-  description = "ECS Cluster ARN"
-}
-
+variable "ecs_cluster_id" {}
 variable "subnet_ids" {
-  type        = list(string)
-  description = "List of subnet IDs for ECS tasks"
+  type = list(string)
 }
+variable "security_group_id" {}
+variable "execution_role_arn" {}
+variable "task_role_arn" {}
+variable "db_secret_arn" {}
+variable "vpc_id" {}
 
-variable "security_group_id" {
-  type        = string
-  description = "Security Group ID for ECS tasks"
-}
+variable "grafana_desired_count" {}
+variable "grafana_autoscaling_min" {}
+variable "grafana_autoscaling_max" {}
+variable "grafana_autoscaling_cpu_target" {}
 
-variable "execution_role_arn" {
-  type        = string
-  description = "IAM role ARN for ECS task execution"
-}
+variable "redis_desired_count" {}
+variable "redis_autoscaling_min" {}
+variable "redis_autoscaling_max" {}
+variable "redis_autoscaling_cpu_target" {}
 
-variable "task_role_arn" {
-  type        = string
-  description = "IAM role ARN for ECS task role"
-}
-
-variable "db_secret_arn" {
-  type        = string
-  description = "Secrets Manager ARN for PostgreSQL credentials"
-}
-
-variable "vpc_id" {
-  type        = string
-  description = "VPC ID for Cloud Map namespace"
-}
-
-variable "grafana_desired_count" {
-  type        = number
-  default     = 1
-}
-
-variable "grafana_autoscaling_min" {
-  type        = number
-  default     = 1
-}
-
-variable "grafana_autoscaling_max" {
-  type        = number
-  default     = 5
-}
-
-variable "grafana_autoscaling_cpu_target" {
-  type        = number
-  default     = 70
-}
-
-variable "renderer_desired_count" {
-  type        = number
-  default     = 1
-}
-
-variable "renderer_autoscaling_min" {
-  type        = number
-  default     = 1
-}
-
-variable "renderer_autoscaling_max" {
-  type        = number
-  default     = 5
-}
-
-variable "renderer_autoscaling_cpu_target" {
-  type        = number
-  default     = 70
-}
-
-variable "redis_desired_count" {
-  type        = number
-  default     = 1
-}
-
-variable "redis_autoscaling_min" {
-  type        = number
-  default     = 1
-}
-
-variable "redis_autoscaling_max" {
-  type        = number
-  default     = 5
-}
-
-variable "redis_autoscaling_cpu_target" {
-  type        = number
-  default     = 70
-}
+variable "renderer_desired_count" {}
+variable "renderer_autoscaling_min" {}
+variable "renderer_autoscaling_max" {}
+variable "renderer_autoscaling_cpu_target" {}

@@ -32,6 +32,18 @@ resource "aws_service_discovery_service" "redis" {
   }
 }
 
+resource "aws_service_discovery_service" "grafana" {
+  name = "grafana"
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.main.id
+    dns_records {
+      type = "A"
+      ttl  = 300
+    }
+    routing_policy = "MULTIVALUE"
+  }
+}
+
 # Redis Task Definition
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis"
@@ -42,27 +54,23 @@ resource "aws_ecs_task_definition" "redis" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "redis"
-      image     = "redis:latest"
-      essential = true
-      portMappings = [
-        {
-          containerPort = 6379
-          protocol      = "tcp"
-        }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = "/ecs/redis"
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "redis"
-        }
+  container_definitions = jsonencode([{
+    name      = "redis"
+    image     = "redis:latest"
+    essential = true
+    portMappings = [{
+      containerPort = 6379
+      protocol      = "tcp"
+    }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "/ecs/redis"
+        "awslogs-region"        = "us-east-1"
+        "awslogs-stream-prefix" = "redis"
       }
     }
-  ])
+  }])
 }
 
 resource "aws_ecs_service" "redis" {
@@ -116,27 +124,23 @@ resource "aws_ecs_task_definition" "renderer" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "renderer"
-      image     = "grafana/grafana-image-renderer:3.12.5"
-      essential = true
-      portMappings = [
-        {
-          containerPort = 8081
-          protocol      = "tcp"
-        }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = "/ecs/renderer"
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "renderer"
-        }
+  container_definitions = jsonencode([{
+    name      = "renderer"
+    image     = "grafana/grafana-image-renderer:3.12.5"
+    essential = true
+    portMappings = [{
+      containerPort = 8081
+      protocol      = "tcp"
+    }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "/ecs/renderer"
+        "awslogs-region"        = "us-east-1"
+        "awslogs-stream-prefix" = "renderer"
       }
     }
-  ])
+  }])
 }
 
 resource "aws_ecs_service" "renderer" {
@@ -190,52 +194,43 @@ resource "aws_ecs_task_definition" "grafana" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "grafana"
-      image     = "grafana/grafana-enterprise:11.6.1"
-      essential = true
-      portMappings = [
-        {
-          containerPort = 3000
-          protocol      = "tcp"
-        }
-      ]
-
-      environment = [
-        { name = "REDIS_PATH", value = "redis.local:6379" },
-        { name = "REDIS_DB", value = "1" },
-        { name = "REDIS_CACHETIME", value = "12000" },
-        { name = "CACHING", value = "Y" },
-        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-        { name = "GF_RENDERING_SERVER_URL", value = "http://renderer.local:8081/render" },
-        { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.local:3000/" },
-        { name = "GF_LOG_FILTERS", value = "rendering: debug" },
-
-        # Database connection details
-        { name = "GF_DATABASE_NAME", value = "grafana" },
-        { name = "GF_DATABASE_USER", value = "rajesh" },
-        { name = "GF_DATABASE_HOST", value = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com" },
-        { name = "GF_DATABASE_TYPE", value = "postgres" }
-      ]
-
-      secrets = [
-        {
-          name      = "GF_DATABASE_PASSWORD"
-          valueFrom = var.db_secret_arn
-        }
-      ]
-
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = "/ecs/grafana"
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "grafana"
-        }
+  container_definitions = jsonencode([{
+    name      = "grafana"
+    image     = "grafana/grafana-enterprise:11.6.1"
+    essential = true
+    portMappings = [{
+      containerPort = 3000
+      protocol      = "tcp"
+    }]
+    environment = [
+      { name = "REDIS_PATH", value = "redis.local:6379" },
+      { name = "REDIS_DB", value = "1" },
+      { name = "REDIS_CACHETIME", value = "12000" },
+      { name = "CACHING", value = "Y" },
+      { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
+      { name = "GF_RENDERING_SERVER_URL", value = "http://renderer.local:8081/render" },
+      { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.local:3000/" },
+      { name = "GF_LOG_FILTERS", value = "rendering: debug" },
+      { name = "GF_DATABASE_NAME", value = "grafana" },
+      { name = "GF_DATABASE_USER", value = "rajesh" },
+      { name = "GF_DATABASE_HOST", value = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com" },
+      { name = "GF_DATABASE_TYPE", value = "postgres" }
+    ]
+    secrets = [
+      {
+        name      = "GF_DATABASE_PASSWORD"
+        valueFrom = var.db_secret_arn
+      }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "/ecs/grafana"
+        "awslogs-region"        = "us-east-1"
+        "awslogs-stream-prefix" = "grafana"
       }
     }
-  ])
+  }])
 }
 
 resource "aws_ecs_service" "grafana" {
@@ -252,7 +247,7 @@ resource "aws_ecs_service" "grafana" {
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_private_dns_namespace.main.arn # Optional: you can register Grafana too
+    registry_arn = aws_service_discovery_service.grafana.arn
   }
 }
 
