@@ -1,34 +1,19 @@
 output "grafana_service_name" {
-  description = "Name of the ECS Grafana service"
+  description = "ECS Service name for Grafana"
   value       = aws_ecs_service.grafana.name
 }
 
-output "renderer_service_name" {
-  description = "Name of the ECS Renderer service"
-  value       = aws_ecs_service.renderer.name
-}
-
-output "redis_service_name" {
-  description = "Name of the ECS Redis service"
-  value       = aws_ecs_service.redis.name
-}
-
-output "cloudmap_namespace_id" {
-  description = "Cloud Map Private DNS Namespace ID"
-  value       = aws_service_discovery_private_dns_namespace.namespace.id
-}
-
 output "grafana_task_definition_arn" {
-  description = "ARN of the Grafana ECS task definition"
-  value       = aws_ecs_task_definition.grafana_task.arn
+  description = "ECS Task Definition ARN for Grafana"
+  value       = aws_ecs_task_definition.grafana.arn
 }
 
-output "renderer_task_definition_arn" {
-  description = "ARN of the Renderer ECS task definition"
-  value       = aws_ecs_task_definition.renderer_task.arn
+output "grafana_service_discovery_id" {
+  description = "Cloud Map Service Discovery ID for Grafana"
+  value       = aws_service_discovery_service.grafana.id
 }
 
-output "redis_task_definition_arn" {
-  description = "ARN of the Redis ECS task definition"
-  value       = aws_ecs_task_definition.redis_task.arn
+output "grafana_log_group_name" {
+  description = "CloudWatch Log Group name for Grafana"
+  value       = aws_cloudwatch_log_group.grafana.name
 }
