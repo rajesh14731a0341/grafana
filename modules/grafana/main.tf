@@ -254,7 +254,7 @@ resource "aws_ecs_task_definition" "grafana" {
           name  = "GF_LOG_FILTERS"
           value = "rendering: debug"
         }
-      ]
+      ],
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -262,10 +262,13 @@ resource "aws_ecs_task_definition" "grafana" {
           "awslogs-region"        = "us-east-1"
           "awslogs-stream-prefix" = "grafana"
         }
-      }
+      },
+      dnsServers = ["10.0.0.2"],
+      dnsSearchDomains = ["service.local"]
     }
   ])
 }
+
 
 resource "aws_cloudwatch_log_group" "grafana" {
   name              = "${local.log_group_prefix}-grafana"
