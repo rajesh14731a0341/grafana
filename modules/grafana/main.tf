@@ -61,7 +61,7 @@ resource "aws_service_discovery_service" "grafana" {
   }
 }
 
-# Redis
+# Redis ECS Task Definition
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis"
   network_mode             = "awsvpc"
@@ -79,6 +79,13 @@ resource "aws_ecs_task_definition" "redis" {
       containerPort = 6379
       protocol      = "tcp"
     }]
+    # Redis listens on 0.0.0.0 by default, so environment var not strictly needed, but here if you want to be explicit:
+    environment = [
+      {
+        name  = "REDIS_BIND"
+        value = "0.0.0.0"
+      }
+    ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -89,7 +96,6 @@ resource "aws_ecs_task_definition" "redis" {
     }
   }])
 }
-
 resource "aws_ecs_service" "redis" {
   name            = "rajesh-redis-svc"
   cluster         = var.ecs_cluster_id
@@ -131,7 +137,7 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
   }
 }
 
-# Renderer
+# Renderer ECS Task Definition
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer"
   network_mode             = "awsvpc"
@@ -149,6 +155,12 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
       protocol      = "tcp"
     }]
+    environment = [
+      {
+        name  = "GF_RENDERER_SERVER_HOST"
+        value = "0.0.0.0"
+      }
+    ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
