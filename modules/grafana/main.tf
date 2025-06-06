@@ -2,6 +2,23 @@ locals {
   cluster_name = element(split("/", var.ecs_cluster_id), 1)
 }
 
+# CloudWatch Log Groups
+resource "aws_cloudwatch_log_group" "grafana" {
+  name              = "/ecs/grafana"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_group" "redis" {
+  name              = "/ecs/redis"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_group" "renderer" {
+  name              = "/ecs/renderer"
+  retention_in_days = 7
+}
+
+# Service Discovery
 resource "aws_service_discovery_private_dns_namespace" "main" {
   name        = "local"
   description = "Private namespace for ECS service discovery"
@@ -44,7 +61,7 @@ resource "aws_service_discovery_service" "grafana" {
   }
 }
 
-# Redis Task Definition
+# Redis
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis"
   network_mode             = "awsvpc"
@@ -65,9 +82,9 @@ resource "aws_ecs_task_definition" "redis" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = "/ecs/redis"
-        "awslogs-region"        = "us-east-1"
-        "awslogs-stream-prefix" = "redis"
+        awslogs-group         = aws_cloudwatch_log_group.redis.name
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "redis"
       }
     }
   }])
@@ -114,7 +131,7 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
   }
 }
 
-# Renderer Task Definition
+# Renderer
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer"
   network_mode             = "awsvpc"
@@ -135,9 +152,9 @@ resource "aws_ecs_task_definition" "renderer" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = "/ecs/renderer"
-        "awslogs-region"        = "us-east-1"
-        "awslogs-stream-prefix" = "renderer"
+        awslogs-group         = aws_cloudwatch_log_group.renderer.name
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "renderer"
       }
     }
   }])
@@ -184,7 +201,7 @@ resource "aws_appautoscaling_policy" "renderer_cpu" {
   }
 }
 
-# Grafana Task Definition
+# Grafana
 resource "aws_ecs_task_definition" "grafana" {
   family                   = "grafana"
   network_mode             = "awsvpc"
@@ -225,9 +242,9 @@ resource "aws_ecs_task_definition" "grafana" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = "/ecs/grafana"
-        "awslogs-region"        = "us-east-1"
-        "awslogs-stream-prefix" = "grafana"
+        awslogs-group         = aws_cloudwatch_log_group.grafana.name
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "grafana"
       }
     }
   }])
