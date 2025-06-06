@@ -1,3 +1,7 @@
+locals {
+  cluster_name = element(split("/", var.ecs_cluster_id), 1)
+}
+
 resource "aws_service_discovery_private_dns_namespace" "main" {
   name        = "local"
   description = "Private namespace for ECS service discovery"
@@ -82,7 +86,7 @@ resource "aws_ecs_service" "redis" {
 resource "aws_appautoscaling_target" "redis" {
   max_capacity       = var.redis_autoscaling_max
   min_capacity       = var.redis_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_id.split("/")[1]}/${aws_ecs_service.redis.name}"
+  resource_id        = "service/${local.cluster_name}/${aws_ecs_service.redis.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
@@ -156,7 +160,7 @@ resource "aws_ecs_service" "renderer" {
 resource "aws_appautoscaling_target" "renderer" {
   max_capacity       = var.renderer_autoscaling_max
   min_capacity       = var.renderer_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_id.split("/")[1]}/${aws_ecs_service.renderer.name}"
+  resource_id        = "service/${local.cluster_name}/${aws_ecs_service.renderer.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
@@ -234,7 +238,6 @@ resource "aws_ecs_task_definition" "grafana" {
   ])
 }
 
-
 resource "aws_ecs_service" "grafana" {
   name            = "rajesh-grafana-svc"
   cluster         = var.ecs_cluster_id
@@ -256,7 +259,7 @@ resource "aws_ecs_service" "grafana" {
 resource "aws_appautoscaling_target" "grafana" {
   max_capacity       = var.grafana_autoscaling_max
   min_capacity       = var.grafana_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_id.split("/")[1]}/${aws_ecs_service.grafana.name}"
+  resource_id        = "service/${local.cluster_name}/${aws_ecs_service.grafana.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
