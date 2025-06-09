@@ -3,6 +3,7 @@ module "grafana" {
   region           = var.region  # or "us-east-1"
 
   ecs_cluster_id       = var.ecs_cluster_id
+  ecs_cluster_name     = "rajesh-cluster"
   subnet_ids           = var.subnet_ids
   security_group_id    = var.security_group_id
 
