@@ -1,3 +1,7 @@
+variable "vpc_id" {
+  type = string
+}
+
 variable "ecs_cluster_id" {
   type = string
 }
@@ -22,66 +26,66 @@ variable "db_secret_arn" {
   type = string
 }
 
-variable "vpc_id" {
+variable "db_endpoint" {
+  type = string
+}
+
+variable "db_port" {
+  type = number
+}
+
+variable "db_name" {
+  type = string
+}
+
+variable "db_username" {
   type = string
 }
 
 variable "grafana_desired_count" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "grafana_autoscaling_min" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "grafana_autoscaling_max" {
-  type    = number
-  default = 5
+  type = number
 }
 
 variable "grafana_autoscaling_cpu_target" {
-  type    = number
-  default = 70
+  type = number
 }
 
 variable "renderer_desired_count" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "renderer_autoscaling_min" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "renderer_autoscaling_max" {
-  type    = number
-  default = 5
+  type = number
 }
 
 variable "renderer_autoscaling_cpu_target" {
-  type    = number
-  default = 70
+  type = number
 }
 
 variable "redis_desired_count" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "redis_autoscaling_min" {
-  type    = number
-  default = 1
+  type = number
 }
 
 variable "redis_autoscaling_max" {
-  type    = number
-  default = 5
+  type = number
 }
 
 variable "redis_autoscaling_cpu_target" {
-  type    = number
-  default = 70
+  type = number
 }

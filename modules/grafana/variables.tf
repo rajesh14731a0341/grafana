@@ -1,3 +1,7 @@
+variable "vpc_id" {
+  type = string
+}
+
 variable "ecs_cluster_id" {
   type = string
 }
@@ -22,7 +26,19 @@ variable "db_secret_arn" {
   type = string
 }
 
-variable "vpc_id" {
+variable "db_endpoint" {
+  type = string
+}
+
+variable "db_port" {
+  type = number
+}
+
+variable "db_name" {
+  type = string
+}
+
+variable "db_username" {
   type = string
 }
 
