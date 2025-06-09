@@ -1,5 +1,6 @@
 module "grafana" {
   source = "../../modules/grafana"
+  region           = var.region  # or "us-east-1"
 
   ecs_cluster_id       = var.ecs_cluster_id
   subnet_ids           = var.subnet_ids

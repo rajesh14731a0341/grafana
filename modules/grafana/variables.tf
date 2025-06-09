@@ -112,3 +112,9 @@ variable "redis_autoscaling_cpu_target" {
   description = "Redis CPU target percentage for autoscaling"
   type        = number
 }
+
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}

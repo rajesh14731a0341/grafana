@@ -127,3 +127,9 @@ variable "redis_autoscaling_cpu_target" {
   type        = number
   default     = 70
 }
+
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
