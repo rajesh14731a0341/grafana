@@ -29,13 +29,6 @@ resource "aws_ecs_task_definition" "redis" {
       containerPort = 6379
       protocol      = "tcp"
     }]
-    healthCheck = {
-      command     = ["CMD-SHELL", "redis-cli ping || exit 1"]
-      interval    = 30
-      timeout     = 5
-      retries     = 3
-      startPeriod = 10
-    }
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -59,10 +52,6 @@ resource "aws_service_discovery_service" "redis" {
       ttl  = 10
       type = "A"
     }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
   }
 }
 
@@ -106,13 +95,6 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
       protocol      = "tcp"
     }]
-    healthCheck = {
-      command     = ["CMD-SHELL", "wget -qO- http://localhost:8081/render/version || exit 1"]
-      interval    = 30
-      timeout     = 5
-      retries     = 3
-      startPeriod = 30
-    }
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -136,10 +118,6 @@ resource "aws_service_discovery_service" "renderer" {
       ttl  = 10
       type = "A"
     }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
   }
 }
 
@@ -205,13 +183,6 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.service.local:3000/" },
       { name = "GF_LOG_FILTERS",           value = "rendering: debug" }
     ]
-    healthCheck = {
-      command     = ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
-      interval    = 30
-      timeout     = 5
-      retries     = 3
-      startPeriod = 30
-    }
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -235,10 +206,6 @@ resource "aws_service_discovery_service" "grafana" {
       ttl  = 10
       type = "A"
     }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
   }
 }
 
