@@ -81,6 +81,8 @@ resource "aws_ecs_service" "redis" {
 
   service_registries {
     registry_arn = aws_service_discovery_service.redis.arn
+    container_name = "redis"
+    container_port = 6379
   }
 }
 
@@ -107,7 +109,7 @@ resource "aws_ecs_task_definition" "renderer" {
       protocol      = "tcp"
     }]
     healthCheck = {
-      command     = ["CMD-SHELL", "curl -f http://localhost:8081/ || exit 1"]
+      command     = ["CMD-SHELL", "curl -f http://localhost:8081/render/version || exit 1"]
       interval    = 30
       timeout     = 5
       retries     = 3
@@ -160,6 +162,8 @@ resource "aws_ecs_service" "renderer" {
 
   service_registries {
     registry_arn = aws_service_discovery_service.renderer.arn
+    container_name = "renderer"
+    container_port = 8081
   }
 }
 
@@ -257,5 +261,7 @@ resource "aws_ecs_service" "grafana" {
 
   service_registries {
     registry_arn = aws_service_discovery_service.grafana.arn
+    container_name = "grafana"
+    container_port = 3000
   }
 }
