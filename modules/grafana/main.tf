@@ -281,4 +281,4 @@ resource "aws_appautoscaling_target" "renderer" {
 }
 
 resource "aws_appautoscaling_policy" "renderer_cpu" {
-  name               = "renderer-cpu
+  name               = "renderer-cpu"
