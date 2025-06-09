@@ -81,8 +81,6 @@ resource "aws_ecs_service" "redis" {
 
   service_registries {
     registry_arn = aws_service_discovery_service.redis.arn
-    container_name = "redis"
-    container_port = 6379
   }
 }
 
@@ -162,8 +160,6 @@ resource "aws_ecs_service" "renderer" {
 
   service_registries {
     registry_arn = aws_service_discovery_service.renderer.arn
-    container_name = "renderer"
-    container_port = 8081
   }
 }
 
@@ -261,7 +257,5 @@ resource "aws_ecs_service" "grafana" {
 
   service_registries {
     registry_arn = aws_service_discovery_service.grafana.arn
-    container_name = "grafana"
-    container_port = 3000
   }
 }
