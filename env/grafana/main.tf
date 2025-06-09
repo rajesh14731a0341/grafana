@@ -1,22 +1,15 @@
 module "grafana" {
   source = "../../modules/grafana"
-  region           = var.region  # or "us-east-1"
 
-  ecs_cluster_id       = var.ecs_cluster_id
-  ecs_cluster_name     = "rajesh-cluster"
-  subnet_ids           = var.subnet_ids
-  security_group_id    = var.security_group_id
+  ecs_cluster_id    = var.ecs_cluster_id
+  subnet_ids        = var.subnet_ids
+  security_group_id = var.security_group_id
 
-  execution_role_arn   = var.execution_role_arn
-  task_role_arn        = var.task_role_arn
+  execution_role_arn = var.execution_role_arn
+  task_role_arn      = var.task_role_arn
 
-  db_secret_arn        = var.db_secret_arn
-  db_endpoint          = var.db_endpoint
-  db_port              = var.db_port
-  db_name              = var.db_name
-  db_username          = var.db_username
-
-  vpc_id               = var.vpc_id
+  db_secret_arn = var.db_secret_arn
+  vpc_id        = var.vpc_id
 
   grafana_desired_count          = var.grafana_desired_count
   grafana_autoscaling_min        = var.grafana_autoscaling_min
