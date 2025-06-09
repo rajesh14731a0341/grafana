@@ -1,10 +1,5 @@
 variable "ecs_cluster_id" {
-  description = "ECS cluster ARN"
-  type        = string
-}
-
-variable "ecs_cluster_name" {
-  description = "ECS cluster name (e.g., 'rajesh-cluster')"
+  description = "ARN of the existing ECS cluster"
   type        = string
 }
 
@@ -14,94 +9,106 @@ variable "subnet_ids" {
 }
 
 variable "security_group_id" {
-  description = "Security Group ID for ECS tasks"
+  description = "ID of the security group to assign to ECS tasks"
   type        = string
 }
 
 variable "execution_role_arn" {
-  description = "ECS task execution IAM role ARN"
+  description = "ARN of the ECS task execution role"
   type        = string
 }
 
 variable "task_role_arn" {
-  description = "ECS task IAM role ARN"
+  description = "ARN of the ECS task role"
   type        = string
 }
 
-variable "aws_region" {
-  description = "AWS Region"
+variable "db_secret_arn" {
+  description = "ARN of the Secrets Manager secret containing PostgreSQL credentials"
   type        = string
-  default     = "us-east-1"
+}
+
+variable "vpc_id" {
+  description = "ID of the VPC"
+  type        = string
 }
 
 variable "grafana_desired_count" {
-  description = "Desired count of Grafana ECS tasks"
+  description = "Desired count for Grafana service"
   type        = number
-  default     = 1
 }
 
 variable "grafana_autoscaling_min" {
-  description = "Minimum number of Grafana ECS tasks"
+  description = "Minimum instances for Grafana autoscaling"
   type        = number
-  default     = 1
 }
 
 variable "grafana_autoscaling_max" {
-  description = "Maximum number of Grafana ECS tasks"
+  description = "Maximum instances for Grafana autoscaling"
   type        = number
-  default     = 5
 }
 
 variable "grafana_autoscaling_cpu_target" {
-  description = "CPU utilization target for Grafana autoscaling"
+  description = "Target CPU utilization for Grafana autoscaling"
   type        = number
-  default     = 70
 }
 
 variable "renderer_desired_count" {
-  description = "Desired count of Renderer ECS tasks"
+  description = "Desired count for Renderer service"
   type        = number
-  default     = 1
 }
 
 variable "renderer_autoscaling_min" {
-  description = "Minimum number of Renderer ECS tasks"
+  description = "Minimum instances for Renderer autoscaling"
   type        = number
-  default     = 1
 }
 
 variable "renderer_autoscaling_max" {
-  description = "Maximum number of Renderer ECS tasks"
+  description = "Maximum instances for Renderer autoscaling"
   type        = number
-  default     = 5
 }
 
 variable "renderer_autoscaling_cpu_target" {
-  description = "CPU utilization target for Renderer autoscaling"
+  description = "Target CPU utilization for Renderer autoscaling"
   type        = number
-  default     = 70
 }
 
 variable "redis_desired_count" {
-  description = "Desired count of Redis ECS tasks"
+  description = "Desired count for Redis service"
   type        = number
-  default     = 1
 }
 
 variable "redis_autoscaling_min" {
-  description = "Minimum number of Redis ECS tasks"
+  description = "Minimum instances for Redis autoscaling"
   type        = number
-  default     = 1
 }
 
 variable "redis_autoscaling_max" {
-  description = "Maximum number of Redis ECS tasks"
+  description = "Maximum instances for Redis autoscaling"
   type        = number
-  default     = 5
 }
 
 variable "redis_autoscaling_cpu_target" {
-  description = "CPU utilization target for Redis autoscaling"
+  description = "Target CPU utilization for Redis autoscaling"
   type        = number
-  default     = 70
+}
+
+variable "db_endpoint" {
+  description = "RDS PostgreSQL endpoint"
+  type        = string
+}
+
+variable "db_port" {
+  description = "RDS PostgreSQL port"
+  type        = number
+}
+
+variable "db_name" {
+  description = "RDS PostgreSQL database name"
+  type        = string
+}
+
+variable "db_username" {
+  description = "RDS PostgreSQL username"
+  type        = string
 }
