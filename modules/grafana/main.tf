@@ -55,12 +55,14 @@ resource "aws_service_discovery_service" "redis" {
   }
 }
 
-resource "aws_ecs_service" "redis" {
-  name            = "rajesh-redis-svc"
+resource "aws_ecs_service" "renderer" {
+  name            = "rajesh-renderer-svc"
   cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.redis.arn
-  desired_count   = var.redis_desired_count
+  task_definition = aws_ecs_task_definition.renderer.arn
+  desired_count   = var.renderer_desired_count
   launch_type     = "FARGATE"
+
+  enable_execute_command = true # <-- Already added
 
   network_configuration {
     subnets          = var.subnet_ids
@@ -69,10 +71,10 @@ resource "aws_ecs_service" "redis" {
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.redis.arn
+    registry_arn = aws_service_discovery_service.renderer.arn
   }
-  enable_execute_command = true
 }
+
 
 ###############################
 # Renderer ECS Task Definition
@@ -140,7 +142,7 @@ resource "aws_ecs_service" "renderer" {
   service_registries {
     registry_arn = aws_service_discovery_service.renderer.arn
   }
-  enable_execute_command = true
+  
 }
 
 ###############################
@@ -218,6 +220,8 @@ resource "aws_ecs_service" "grafana" {
   desired_count   = var.grafana_desired_count
   launch_type     = "FARGATE"
 
+  enable_execute_command = true # <-- Added here
+
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.security_group_id]
@@ -227,5 +231,5 @@ resource "aws_ecs_service" "grafana" {
   service_registries {
     registry_arn = aws_service_discovery_service.grafana.arn
   }
-  enable_execute_command = true
 }
+
