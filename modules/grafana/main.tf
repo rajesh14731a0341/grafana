@@ -71,6 +71,7 @@ resource "aws_ecs_service" "redis" {
   service_registries {
     registry_arn = aws_service_discovery_service.redis.arn
   }
+  enable_execute_command = true
 }
 
 ###############################
@@ -139,6 +140,7 @@ resource "aws_ecs_service" "renderer" {
   service_registries {
     registry_arn = aws_service_discovery_service.renderer.arn
   }
+  enable_execute_command = true
 }
 
 ###############################
@@ -225,4 +227,5 @@ resource "aws_ecs_service" "grafana" {
   service_registries {
     registry_arn = aws_service_discovery_service.grafana.arn
   }
+  enable_execute_command = true
 }
