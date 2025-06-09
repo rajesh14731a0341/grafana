@@ -21,7 +21,7 @@ jobs:
 
       - name: Terraform Init
         working-directory: ./env/grafana
-        run: terraform init
+        run: terraform init -backend-config="bucket=redshift-data-migration-bucket" -backend-config="key=grafana/terraform.tfstate" -backend-config="region=us-east-1" -upgrade
 
       - name: Terraform Validate
         working-directory: ./env/grafana
