@@ -1,91 +1,26 @@
-variable "vpc_id" {
-  type = string
-}
-
-variable "ecs_cluster_id" {
-  type = string
-}
-
+variable "ecs_cluster_id" {}
 variable "subnet_ids" {
   type = list(string)
 }
+variable "security_group_id" {}
+variable "execution_role_arn" {}
+variable "task_role_arn" {}
+variable "db_secret_arn" {}
+variable "vpc_id" {}
 
-variable "security_group_id" {
-  type = string
-}
+# Autoscaling variables per service
 
-variable "execution_role_arn" {
-  type = string
-}
+variable "grafana_desired_count" { default = 1 }
+variable "grafana_autoscaling_min" { default = 1 }
+variable "grafana_autoscaling_max" { default = 5 }
+variable "grafana_autoscaling_cpu_target" { default = 70 }
 
-variable "task_role_arn" {
-  type = string
-}
+variable "renderer_desired_count" { default = 1 }
+variable "renderer_autoscaling_min" { default = 1 }
+variable "renderer_autoscaling_max" { default = 5 }
+variable "renderer_autoscaling_cpu_target" { default = 70 }
 
-variable "db_secret_arn" {
-  type = string
-}
-
-variable "db_endpoint" {
-  type = string
-}
-
-variable "db_port" {
-  type = number
-}
-
-variable "db_name" {
-  type = string
-}
-
-variable "db_username" {
-  type = string
-}
-
-variable "grafana_desired_count" {
-  type = number
-}
-
-variable "grafana_autoscaling_min" {
-  type = number
-}
-
-variable "grafana_autoscaling_max" {
-  type = number
-}
-
-variable "grafana_autoscaling_cpu_target" {
-  type = number
-}
-
-variable "renderer_desired_count" {
-  type = number
-}
-
-variable "renderer_autoscaling_min" {
-  type = number
-}
-
-variable "renderer_autoscaling_max" {
-  type = number
-}
-
-variable "renderer_autoscaling_cpu_target" {
-  type = number
-}
-
-variable "redis_desired_count" {
-  type = number
-}
-
-variable "redis_autoscaling_min" {
-  type = number
-}
-
-variable "redis_autoscaling_max" {
-  type = number
-}
-
-variable "redis_autoscaling_cpu_target" {
-  type = number
-}
+variable "redis_desired_count" { default = 1 }
+variable "redis_autoscaling_min" { default = 1 }
+variable "redis_autoscaling_max" { default = 5 }
+variable "redis_autoscaling_cpu_target" { default = 70 }
