@@ -104,7 +104,7 @@ resource "aws_ecs_service" "redis" {
 }
 
 ###############################
-# Renderer ECS
+# Renderer ECS Task Definition
 ###############################
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
@@ -125,6 +125,13 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
       protocol      = "tcp"
     }]
+    healthCheck = {
+      command     = ["CMD-SHELL", "curl -f http://localhost:8081/ || exit 1"]
+      interval    = 30
+      timeout     = 5
+      retries     = 3
+      startPeriod = 30
+    }
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -154,12 +161,17 @@ resource "aws_service_discovery_service" "renderer" {
   }
 }
 
+###############################
+# Renderer Service with ECS Exec enabled
+###############################
 resource "aws_ecs_service" "renderer" {
   name            = "rajesh-renderer-svc"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.renderer.arn
   desired_count   = var.renderer_desired_count
   launch_type     = "FARGATE"
+
+  enable_execute_command = true
 
   network_configuration {
     subnets          = var.subnet_ids
