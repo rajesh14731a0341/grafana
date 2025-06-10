@@ -64,7 +64,7 @@ resource "aws_ecs_service" "redis" {
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.security_group_id]
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   service_registries {
@@ -142,7 +142,7 @@ resource "aws_ecs_service" "renderer" {
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.security_group_id]
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   service_registries {
