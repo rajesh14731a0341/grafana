@@ -85,3 +85,8 @@ variable "redis_autoscaling_cpu_target" {
   type    = number
   default = 70
 }
+
+variable "cloudmap_namespace_id" {
+  description = "The ID of the Cloud Map namespace"
+  type        = string
+}

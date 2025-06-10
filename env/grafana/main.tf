@@ -10,7 +10,7 @@ module "grafana" {
 
   db_secret_arn = var.db_secret_arn
   vpc_id        = var.vpc_id
-
+  oudmap_namespace_id  = var.cloudmap_namespace_id
   grafana_desired_count          = var.grafana_desired_count
   grafana_autoscaling_min        = var.grafana_autoscaling_min
   grafana_autoscaling_max        = var.grafana_autoscaling_max
