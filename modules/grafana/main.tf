@@ -1,11 +1,4 @@
-###############################
-# Cloud Map Private DNS Namespace
-###############################
-resource "aws_service_discovery_private_dns_namespace" "namespace" {
-  name        = "service.local"
-  description = "Private DNS namespace for ECS services"
-  vpc         = var.vpc_id
-}
+
 
 ###############################
 # Redis ECS Task Definition
@@ -43,10 +36,10 @@ resource "aws_ecs_task_definition" "redis" {
 
 resource "aws_service_discovery_service" "redis" {
   name         = "redis"
-  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+  namespace_id = var.cloudmap_namespace_id
 
   dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
+    namespace_id   = var.cloudmap_namespace_id
     routing_policy = "MULTIVALUE"
     dns_records {
       ttl  = 10
@@ -73,7 +66,10 @@ resource "aws_ecs_service" "redis" {
   service_registries {
     registry_arn = aws_service_discovery_service.redis.arn
   }
+
+  depends_on = [aws_service_discovery_service.redis]
 }
+
 
 ###############################
 # Renderer ECS Task Definition
@@ -111,10 +107,10 @@ resource "aws_ecs_task_definition" "renderer" {
 
 resource "aws_service_discovery_service" "renderer" {
   name         = "renderer"
-  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+  namespace_id = var.cloudmap_namespace_id
 
   dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
+    namespace_id   = var.cloudmap_namespace_id
     routing_policy = "MULTIVALUE"
     dns_records {
       ttl  = 10
@@ -141,7 +137,10 @@ resource "aws_ecs_service" "renderer" {
   service_registries {
     registry_arn = aws_service_discovery_service.renderer.arn
   }
+
+  depends_on = [aws_service_discovery_service.renderer]
 }
+
 
 ###############################
 # Grafana ECS Task Definition
@@ -176,13 +175,13 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_DATABASE_USER",         value = "rajesh" },
       { name = "GF_DATABASE_PASSWORD",     value = data.aws_secretsmanager_secret_version.db_secret.secret_string },
       { name = "GF_DATABASE_SSL_MODE",     value = "require" },
-      { name = "REDIS_PATH",               value = "redis.service.local:6379" },
+      { name = "REDIS_PATH",               value = "redis.project:6379" },
       { name = "REDIS_DB",                 value = "1" },
       { name = "REDIS_CACHETIME",          value = "12000" },
       { name = "CACHING",                  value = "Y" },
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-      { name = "GF_RENDERING_SERVER_URL",  value = "http://renderer.service.local:8081/render" },
-      { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.service.local:3000/" },
+      { name = "GF_RENDERING_SERVER_URL",  value = "http://renderer.project:8081/render" },
+      { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.project:3000/" },
       { name = "GF_LOG_FILTERS",           value = "rendering: debug" }
     ]
     logConfiguration = {
@@ -199,10 +198,10 @@ resource "aws_ecs_task_definition" "grafana" {
 
 resource "aws_service_discovery_service" "grafana" {
   name         = "grafana"
-  namespace_id = aws_service_discovery_private_dns_namespace.namespace.id
+  namespace_id = var.cloudmap_namespace_id
 
   dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.namespace.id
+    namespace_id   = var.cloudmap_namespace_id
     routing_policy = "MULTIVALUE"
     dns_records {
       ttl  = 10
@@ -229,4 +228,7 @@ resource "aws_ecs_service" "grafana" {
   service_registries {
     registry_arn = aws_service_discovery_service.grafana.arn
   }
+
+  depends_on = [aws_service_discovery_service.grafana]
 }
+

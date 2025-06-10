@@ -73,3 +73,8 @@ variable "redis_autoscaling_max" {
 variable "redis_autoscaling_cpu_target" {
   type = number
 }
+
+variable "cloudmap_namespace_id" {
+  description = "Existing AWS Cloud Map namespace ID to use for service discovery"
+  type        = string
+}
