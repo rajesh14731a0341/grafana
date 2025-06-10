@@ -1,7 +1,9 @@
-
+locals {
+  log_group_prefix = "/ecs/grafana"
+}
 
 ###############################
-# Redis ECS Task Definition
+# Redis ECS
 ###############################
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
@@ -25,10 +27,10 @@ resource "aws_ecs_task_definition" "redis" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = "/ecs/grafana-redis"
-        "awslogs-region"        = "us-east-1"
-        "awslogs-stream-prefix" = "redis"
-        "awslogs-create-group"  = "true"
+        awslogs-create-group  = "true"
+        awslogs-group         = "${local.log_group_prefix}-redis"
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "redis"
       }
     }
   }])
@@ -46,6 +48,10 @@ resource "aws_service_discovery_service" "redis" {
       type = "A"
     }
   }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }
 
 resource "aws_ecs_service" "redis" {
@@ -54,8 +60,6 @@ resource "aws_ecs_service" "redis" {
   task_definition = aws_ecs_task_definition.redis.arn
   desired_count   = var.redis_desired_count
   launch_type     = "FARGATE"
-
-  enable_execute_command = true
 
   network_configuration {
     subnets          = var.subnet_ids
@@ -66,13 +70,10 @@ resource "aws_ecs_service" "redis" {
   service_registries {
     registry_arn = aws_service_discovery_service.redis.arn
   }
-
-  depends_on = [aws_service_discovery_service.redis]
 }
 
-
 ###############################
-# Renderer ECS Task Definition
+# Renderer ECS
 ###############################
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
@@ -93,13 +94,20 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
       protocol      = "tcp"
     }]
+    healthCheck = {
+      command     = ["CMD-SHELL", "curl -f http://localhost:8081/ || exit 1"]
+      interval    = 30
+      timeout     = 5
+      retries     = 3
+      startPeriod = 30
+    }
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = "/ecs/grafana-renderer"
-        "awslogs-region"        = "us-east-1"
-        "awslogs-stream-prefix" = "renderer"
-        "awslogs-create-group"  = "true"
+        awslogs-create-group  = "true"
+        awslogs-group         = "${local.log_group_prefix}-renderer"
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "renderer"
       }
     }
   }])
@@ -117,6 +125,10 @@ resource "aws_service_discovery_service" "renderer" {
       type = "A"
     }
   }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }
 
 resource "aws_ecs_service" "renderer" {
@@ -125,7 +137,6 @@ resource "aws_ecs_service" "renderer" {
   task_definition = aws_ecs_task_definition.renderer.arn
   desired_count   = var.renderer_desired_count
   launch_type     = "FARGATE"
-
   enable_execute_command = true
 
   network_configuration {
@@ -137,13 +148,10 @@ resource "aws_ecs_service" "renderer" {
   service_registries {
     registry_arn = aws_service_discovery_service.renderer.arn
   }
-
-  depends_on = [aws_service_discovery_service.renderer]
 }
 
-
 ###############################
-# Grafana ECS Task Definition
+# Grafana ECS
 ###############################
 data "aws_secretsmanager_secret_version" "db_secret" {
   secret_id = var.db_secret_arn
@@ -187,10 +195,10 @@ resource "aws_ecs_task_definition" "grafana" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = "/ecs/grafana-grafana"
-        "awslogs-region"        = "us-east-1"
-        "awslogs-stream-prefix" = "grafana"
-        "awslogs-create-group"  = "true"
+        awslogs-create-group  = "true"
+        awslogs-group         = "${local.log_group_prefix}-grafana"
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "grafana"
       }
     }
   }])
@@ -208,6 +216,10 @@ resource "aws_service_discovery_service" "grafana" {
       type = "A"
     }
   }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }
 
 resource "aws_ecs_service" "grafana" {
@@ -216,8 +228,6 @@ resource "aws_ecs_service" "grafana" {
   task_definition = aws_ecs_task_definition.grafana.arn
   desired_count   = var.grafana_desired_count
   launch_type     = "FARGATE"
-
-  enable_execute_command = true
 
   network_configuration {
     subnets          = var.subnet_ids
@@ -228,7 +238,4 @@ resource "aws_ecs_service" "grafana" {
   service_registries {
     registry_arn = aws_service_discovery_service.grafana.arn
   }
-
-  depends_on = [aws_service_discovery_service.grafana]
 }
-
