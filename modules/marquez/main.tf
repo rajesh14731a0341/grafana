@@ -39,6 +39,7 @@ resource "aws_ecs_task_definition" "this" {
       command = ["server"]  # ✅ tells Marquez to use env vars
       dependsOn = [{ containerName = "marquez-db", condition = "START" }]
       environment = [
+        { name = "MARQUEZ_CONFIG",     value = "ENV" },
         { name = "MARQUEZ_DB_URL",      value = "jdbc:postgresql://localhost:5432/marquez" },
         { name = "MARQUEZ_DB_USER",     value = "marquez" },
         { name = "MARQUEZ_DB_PASSWORD", value = "marquez" }
