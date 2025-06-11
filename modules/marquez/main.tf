@@ -6,7 +6,6 @@ locals {
       image = "marquezproject/marquez:0.47.0"
       port  = 5000
       env = [
-        { name = "MARQUEZ_CONFIG", value = "environment" },
         { name = "MARQUEZ_DB_HOST", value = "marquez-db.${var.cloudmap_namespace}" },
         { name = "MARQUEZ_DB_PORT", value = "5432" },
         { name = "MARQUEZ_DB_NAME", value = "marquez" },
@@ -68,6 +67,7 @@ resource "aws_ecs_task_definition" "task" {
       containerPort = each.value.port
       protocol      = "tcp"
     }]
+    command = each.key == "marquez-api" ? ["--config", "environment"] : null
     environment = each.value.env
     logConfiguration = {
       logDriver = "awslogs"
