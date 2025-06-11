@@ -3,20 +3,26 @@ locals {
 
   services = {
     marquez-api = {
-      image        = "marquezproject/marquez:0.47.0"
-      port         = 5000
-      env          = [
-        { name = "JAVA_OPTS", value = "-Dlogback.configurationFile=/etc/marquez/logback.xml" }
+      image = "marquezproject/marquez:0.47.0"
+      port  = 5000
+      env = [
+        { name = "JAVA_OPTS", value = "-Dlogback.configurationFile=/etc/marquez/logback.xml" },
+        { name = "POSTGRES_HOST", value = "marquez-db.${var.cloudmap_namespace}" },
+        { name = "POSTGRES_PORT", value = "5432" },
+        { name = "POSTGRES_DB", value = "marquez" },
+        { name = "POSTGRES_USER", value = "marquez" },
+        { name = "POSTGRES_PASSWORD", value = "marquez" }
       ]
       desired_count = var.marquez_api_desired_count
       min_capacity  = var.marquez_api_autoscaling_min
       max_capacity  = var.marquez_api_autoscaling_max
       cpu_target    = var.marquez_api_autoscaling_cpu_target
     }
+
     marquez-db = {
-      image        = "postgres:14"
-      port         = 5432
-      env          = [
+      image = "postgres:14"
+      port  = 5432
+      env = [
         { name = "POSTGRES_USER", value = "marquez" },
         { name = "POSTGRES_PASSWORD", value = "marquez" },
         { name = "POSTGRES_DB", value = "marquez" }
@@ -26,10 +32,11 @@ locals {
       max_capacity  = var.marquez_db_autoscaling_max
       cpu_target    = var.marquez_db_autoscaling_cpu_target
     }
+
     marquez-web = {
-      image        = "marquezproject/marquez-web:0.47.0"
-      port         = 3000
-      env          = [
+      image = "marquezproject/marquez-web:0.47.0"
+      port  = 3000
+      env = [
         { name = "MARQUEZ_HOST", value = "marquez-api.${var.cloudmap_namespace}" },
         { name = "MARQUEZ_PORT", value = "5000" }
       ]
@@ -42,14 +49,14 @@ locals {
 }
 
 resource "aws_ecs_task_definition" "task" {
-  for_each                   = local.services
-  family                     = each.key
-  network_mode               = "awsvpc"
-  requires_compatibilities   = ["FARGATE"]
-  cpu                        = "512"
-  memory                     = "1024"
-  execution_role_arn         = var.execution_role_arn
-  task_role_arn              = var.task_role_arn
+  for_each                 = local.services
+  family                   = each.key
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([{
     name         = each.key
@@ -84,8 +91,8 @@ resource "aws_ecs_service" "service" {
   enable_execute_command = true
 
   network_configuration {
-    subnets          = var.subnet_ids
-    security_groups  = [var.security_group_id]
+    subnets         = var.subnet_ids
+    security_groups = [var.security_group_id]
     assign_public_ip = true
   }
 
@@ -135,6 +142,7 @@ resource "aws_service_discovery_service" "discovery" {
   dns_config {
     namespace_id   = var.cloudmap_namespace_id
     routing_policy = "MULTIVALUE"
+
     dns_records {
       type = "A"
       ttl  = 10
