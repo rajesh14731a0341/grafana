@@ -5,18 +5,19 @@ variable "execution_role_arn" {}
 variable "task_role_arn" {}
 variable "vpc_id" {}
 variable "cloudmap_namespace_id" {}
+variable "cloudmap_namespace" {}
 
-variable "marquez-api_desired_count" {}
-variable "marquez-api_autoscaling_min" {}
-variable "marquez-api_autoscaling_max" {}
-variable "marquez-api_autoscaling_cpu_target" {}
+variable "marquez_api_desired_count" {}
+variable "marquez_api_autoscaling_min" {}
+variable "marquez_api_autoscaling_max" {}
+variable "marquez_api_autoscaling_cpu_target" {}
 
-variable "marquez-db_desired_count" {}
-variable "marquez-db_autoscaling_min" {}
-variable "marquez-db_autoscaling_max" {}
-variable "marquez-db_autoscaling_cpu_target" {}
+variable "marquez_db_desired_count" {}
+variable "marquez_db_autoscaling_min" {}
+variable "marquez_db_autoscaling_max" {}
+variable "marquez_db_autoscaling_cpu_target" {}
 
-variable "marquez-web_desired_count" {}
-variable "marquez-web_autoscaling_min" {}
-variable "marquez-web_autoscaling_max" {}
-variable "marquez-web_autoscaling_cpu_target" {}
+variable "marquez_web_desired_count" {}
+variable "marquez_web_autoscaling_min" {}
+variable "marquez_web_autoscaling_max" {}
+variable "marquez_web_autoscaling_cpu_target" {}

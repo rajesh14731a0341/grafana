@@ -5,18 +5,19 @@ execution_role_arn      = "arn:aws:iam::736747734611:role/rajesh-ecs-task-execut
 task_role_arn           = "arn:aws:iam::736747734611:role/rajesh-grafana-task-role"
 vpc_id                  = "vpc-0baac8b1f8f1ca391"
 cloudmap_namespace_id   = "ns-tnuncetvhizqywf7"
+cloudmap_namespace      = "project"
 
-marquez-api_desired_count           = 1
-marquez-api_autoscaling_min         = 1
-marquez-api_autoscaling_max         = 5
-marquez-api_autoscaling_cpu_target  = 70
+marquez_api_desired_count           = 1
+marquez_api_autoscaling_min         = 1
+marquez_api_autoscaling_max         = 5
+marquez_api_autoscaling_cpu_target  = 70
 
-marquez-db_desired_count            = 1
-marquez-db_autoscaling_min          = 1
-marquez-db_autoscaling_max          = 5
-marquez-db_autoscaling_cpu_target   = 70
+marquez_db_desired_count            = 1
+marquez_db_autoscaling_min          = 1
+marquez_db_autoscaling_max          = 5
+marquez_db_autoscaling_cpu_target   = 70
 
-marquez-web_desired_count           = 1
-marquez-web_autoscaling_min         = 1
-marquez-web_autoscaling_max         = 5
-marquez-web_autoscaling_cpu_target  = 70
+marquez_web_desired_count           = 1
+marquez_web_autoscaling_min         = 1
+marquez_web_autoscaling_max         = 5
+marquez_web_autoscaling_cpu_target  = 70

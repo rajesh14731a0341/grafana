@@ -9,24 +9,18 @@ module "marquez" {
   vpc_id                = var.vpc_id
   cloudmap_namespace_id = var.cloudmap_namespace_id
 
-  marquez-api_desired_count           = var.marquez-api_desired_count
-  marquez-api_autoscaling_min         = var.marquez-api_autoscaling_min
-  marquez-api_autoscaling_max         = var.marquez-api_autoscaling_max
-  marquez-api_autoscaling_cpu_target  = var.marquez-api_autoscaling_cpu_target
+  marquez_api_desired_count          = var.marquez_api_desired_count
+  marquez_api_autoscaling_min        = var.marquez_api_autoscaling_min
+  marquez_api_autoscaling_max        = var.marquez_api_autoscaling_max
+  marquez_api_autoscaling_cpu_target = var.marquez_api_autoscaling_cpu_target
 
-  marquez-db_desired_count            = var.marquez-db_desired_count
-  marquez-db_autoscaling_min          = var.marquez-db_autoscaling_min
-  marquez-db_autoscaling_max          = var.marquez-db_autoscaling_max
-  marquez-db_autoscaling_cpu_target   = var.marquez-db_autoscaling_cpu_target
+  marquez_db_desired_count           = var.marquez_db_desired_count
+  marquez_db_autoscaling_min         = var.marquez_db_autoscaling_min
+  marquez_db_autoscaling_max         = var.marquez_db_autoscaling_max
+  marquez_db_autoscaling_cpu_target  = var.marquez_db_autoscaling_cpu_target
 
-  marquez-web_desired_count           = var.marquez-web_desired_count
-  marquez-web_autoscaling_min         = var.marquez-web_autoscaling_min
-  marquez-web_autoscaling_max         = var.marquez-web_autoscaling_max
-  marquez-web_autoscaling_cpu_target  = var.marquez-web_autoscaling_cpu_target
-}
-
-### 📄 env/marquez/outputs.tf
-
-output "marquez_service_names" {
-  value = module.marquez.service_names
+  marquez_web_desired_count          = var.marquez_web_desired_count
+  marquez_web_autoscaling_min        = var.marquez_web_autoscaling_min
+  marquez_web_autoscaling_max        = var.marquez_web_autoscaling_max
+  marquez_web_autoscaling_cpu_target = var.marquez_web_autoscaling_cpu_target
 }
