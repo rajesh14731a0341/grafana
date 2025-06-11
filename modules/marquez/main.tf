@@ -9,7 +9,7 @@ locals {
         { name = "JAVA_OPTS", value = "-Dlogback.configurationFile=/etc/marquez/logback.xml" },
         { name = "MARQUEZ_DB_HOST", value = "marquez-db.${var.cloudmap_namespace}" },
         { name = "MARQUEZ_DB_PORT", value = "5432" },
-        { name = "MARQUEZ_DB_DB", value = "marquez" },
+        { name = "MARQUEZ_DB_NAME", value = "marquez" },
         { name = "MARQUEZ_DB_USER", value = "marquez" },
         { name = "MARQUEZ_DB_PASSWORD", value = "marquez" }
       ]
