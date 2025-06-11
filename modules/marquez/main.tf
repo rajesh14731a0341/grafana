@@ -13,17 +13,17 @@ resource "aws_ecs_task_definition" "this" {
       image     = "postgres:14"
       essential = true
       environment = [
-        { name = "POSTGRES_USER", value = "marquez" },
+        { name = "POSTGRES_USER",     value = "marquez" },
         { name = "POSTGRES_PASSWORD", value = "marquez" },
-        { name = "POSTGRES_DB", value = "marquez" }
+        { name = "POSTGRES_DB",       value = "marquez" }
       ]
       portMappings = [{ containerPort = 5432 }]
       logConfiguration = {
         logDriver = "awslogs",
         options = {
           awslogs-region        = "us-east-1",
-          awslogs-group         = "/ecs/${var.service_name}"
-          awslogs-stream-prefix = "marquez-db"
+          awslogs-group         = "/ecs/${var.service_name}",
+          awslogs-stream-prefix = "marquez-db",
           awslogs-create-group  = "true"
         }
       }
@@ -36,9 +36,10 @@ resource "aws_ecs_task_definition" "this" {
         { containerPort = 5000 },
         { containerPort = 5001 }
       ]
+      command = ["server"]  # ✅ tells Marquez to use env vars
       dependsOn = [{ containerName = "marquez-db", condition = "START" }]
       environment = [
-        { name = "MARQUEZ_DB_URL",      value = "jdbc:postgresql://marquez-db:5432/marquez" },
+        { name = "MARQUEZ_DB_URL",      value = "jdbc:postgresql://localhost:5432/marquez" },
         { name = "MARQUEZ_DB_USER",     value = "marquez" },
         { name = "MARQUEZ_DB_PASSWORD", value = "marquez" }
       ]
@@ -46,8 +47,8 @@ resource "aws_ecs_task_definition" "this" {
         logDriver = "awslogs",
         options = {
           awslogs-region        = "us-east-1",
-          awslogs-group         = "/ecs/${var.service_name}"
-          awslogs-stream-prefix = "marquez-api"
+          awslogs-group         = "/ecs/${var.service_name}",
+          awslogs-stream-prefix = "marquez-api",
           awslogs-create-group  = "true"
         }
       }
@@ -57,17 +58,17 @@ resource "aws_ecs_task_definition" "this" {
       image     = "marquezproject/marquez-web:0.47.0"
       essential = true
       portMappings = [{ containerPort = 3000 }]
+      dependsOn = [{ containerName = "marquez-api", condition = "START" }]
       environment = [
-        { name = "MARQUEZ_HOST", value = "marquez-api" },
+        { name = "MARQUEZ_HOST", value = "localhost" },
         { name = "MARQUEZ_PORT", value = "5000" }
       ]
-      dependsOn = [{ containerName = "marquez-api", condition = "START" }]
       logConfiguration = {
         logDriver = "awslogs",
         options = {
           awslogs-region        = "us-east-1",
-          awslogs-group         = "/ecs/${var.service_name}"
-          awslogs-stream-prefix = "marquez-web"
+          awslogs-group         = "/ecs/${var.service_name}",
+          awslogs-stream-prefix = "marquez-web",
           awslogs-create-group  = "true"
         }
       }
