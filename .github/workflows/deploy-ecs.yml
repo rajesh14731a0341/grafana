@@ -3,7 +3,7 @@ name: Deploy Marquez ECS
 on:
   push:
     branches:
-      - marquez
+      - marquez_single
 
 jobs:
   terraform:
