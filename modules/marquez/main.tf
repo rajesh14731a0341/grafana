@@ -11,7 +11,8 @@ locals {
         { name = "MARQUEZ_DB_NAME", value = "marquez" },
         { name = "MARQUEZ_DB_USER", value = "marquez" },
         { name = "MARQUEZ_DB_PASSWORD", value = "marquez" },
-        { name = "MARQUEZ_JDBC_URL", value = "jdbc:postgresql://marquez-db.${var.cloudmap_namespace}:5432/marquez" }
+        { name = "MARQUEZ_JDBC_URL", value = "jdbc:postgresql://marquez-db.${var.cloudmap_namespace}:5432/marquez" },
+        { name = "MARQUEZ_CONFIG", value = "environment" }
       ]
       desired_count = var.marquez_api_desired_count
       min_capacity  = var.marquez_api_autoscaling_min
@@ -68,7 +69,7 @@ resource "aws_ecs_task_definition" "task" {
       containerPort = each.value.port
       protocol      = "tcp"
     }]
-    command = each.key == "marquez-api" ? ["--config", "environment"] : null
+    command = each.key == "marquez-api" ? ["server", "environment"] : null
     environment = each.value.env
     logConfiguration = {
       logDriver = "awslogs"
