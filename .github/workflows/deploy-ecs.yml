@@ -1,4 +1,4 @@
-name: Deploy Grafana ECS
+name: Deploy Marquez ECS
 
 on:
   push:
@@ -11,26 +11,26 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Terraform CLI
+      - name: 🔧 Setup Terraform CLI
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.6
 
-      - name: Terraform Init
+      - name: 🧱 Terraform Init
         working-directory: ./env/marquez
         run: terraform init
 
-      - name: Terraform Validate
+      - name: ✅ Terraform Validate
         working-directory: ./env/marquez
         run: terraform validate
 
-      - name: Terraform Plan
+      - name: 📐 Terraform Plan
         working-directory: ./env/marquez
         run: terraform plan -out=tfplan
 
-      - name: Terraform Apply
+      - name: 🚀 Terraform Apply
         working-directory: ./env/marquez
         run: terraform apply -auto-approve tfplan
