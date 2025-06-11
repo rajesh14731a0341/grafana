@@ -1,4 +1,6 @@
 locals {
+  log_group_prefix = "/ecs/marquez"
+
   services = {
     marquez-api = {
       image        = "marquezproject/marquez:0.47.0"
@@ -6,10 +8,10 @@ locals {
       env          = [
         { name = "JAVA_OPTS", value = "-Dlogback.configurationFile=/etc/marquez/logback.xml" }
       ]
-      desired_count           = var.marquez_api_desired_count
-      min_capacity            = var.marquez_api_autoscaling_min
-      max_capacity            = var.marquez_api_autoscaling_max
-      cpu_target              = var.marquez_api_autoscaling_cpu_target
+      desired_count = var.marquez_api_desired_count
+      min_capacity  = var.marquez_api_autoscaling_min
+      max_capacity  = var.marquez_api_autoscaling_max
+      cpu_target    = var.marquez_api_autoscaling_cpu_target
     }
     marquez-db = {
       image        = "postgres:14"
@@ -19,10 +21,10 @@ locals {
         { name = "POSTGRES_PASSWORD", value = "marquez" },
         { name = "POSTGRES_DB", value = "marquez" }
       ]
-      desired_count           = var.marquez_db_desired_count
-      min_capacity            = var.marquez_db_autoscaling_min
-      max_capacity            = var.marquez_db_autoscaling_max
-      cpu_target              = var.marquez_db_autoscaling_cpu_target
+      desired_count = var.marquez_db_desired_count
+      min_capacity  = var.marquez_db_autoscaling_min
+      max_capacity  = var.marquez_db_autoscaling_max
+      cpu_target    = var.marquez_db_autoscaling_cpu_target
     }
     marquez-web = {
       image        = "marquezproject/marquez-web:0.47.0"
@@ -31,27 +33,30 @@ locals {
         { name = "MARQUEZ_HOST", value = "marquez-api.${var.cloudmap_namespace}" },
         { name = "MARQUEZ_PORT", value = "5000" }
       ]
-      desired_count           = var.marquez_web_desired_count
-      min_capacity            = var.marquez_web_autoscaling_min
-      max_capacity            = var.marquez_web_autoscaling_max
-      cpu_target              = var.marquez_web_autoscaling_cpu_target
+      desired_count = var.marquez_web_desired_count
+      min_capacity  = var.marquez_web_autoscaling_min
+      max_capacity  = var.marquez_web_autoscaling_max
+      cpu_target    = var.marquez_web_autoscaling_cpu_target
     }
   }
 }
 
 resource "aws_ecs_task_definition" "task" {
-  for_each             = local.services
-  family               = each.key
-  network_mode         = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                  = "512"
-  memory               = "1024"
-  execution_role_arn   = var.execution_role_arn
-  task_role_arn        = var.task_role_arn
+  for_each                   = local.services
+  family                     = each.key
+  network_mode               = "awsvpc"
+  requires_compatibilities   = ["FARGATE"]
+  cpu                        = "512"
+  memory                     = "1024"
+  execution_role_arn         = var.execution_role_arn
+  task_role_arn              = var.task_role_arn
 
   container_definitions = jsonencode([{
-    name      = each.key
-    image     = each.value.image
+    name         = each.key
+    image        = each.value.image
+    cpu          = 512
+    memory       = 1024
+    essential    = true
     portMappings = [{
       containerPort = each.value.port
       protocol      = "tcp"
@@ -60,21 +65,22 @@ resource "aws_ecs_task_definition" "task" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
+        awslogs-create-group  = "true"
         awslogs-region        = "us-east-1"
-        awslogs-group         = "/ecs/${each.key}"
-        awslogs-stream-prefix = "ecs"
+        awslogs-group         = "${local.log_group_prefix}-${each.key}"
+        awslogs-stream-prefix = each.key
       }
     }
   }])
 }
 
 resource "aws_ecs_service" "service" {
-  for_each            = local.services
-  name                = each.key
-  cluster             = var.ecs_cluster_id
-  task_definition     = aws_ecs_task_definition.task[each.key].arn
-  desired_count       = each.value.desired_count
-  launch_type         = "FARGATE"
+  for_each               = local.services
+  name                   = each.key
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.task[each.key].arn
+  desired_count          = each.value.desired_count
+  launch_type            = "FARGATE"
   enable_execute_command = true
 
   network_configuration {
@@ -127,12 +133,12 @@ resource "aws_service_discovery_service" "discovery" {
   name = each.key
 
   dns_config {
-    namespace_id = var.cloudmap_namespace_id
+    namespace_id   = var.cloudmap_namespace_id
+    routing_policy = "MULTIVALUE"
     dns_records {
       type = "A"
       ttl  = 10
     }
-    routing_policy = "MULTIVALUE"
   }
 
   health_check_custom_config {
