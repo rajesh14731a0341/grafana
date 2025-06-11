@@ -58,27 +58,35 @@ resource "aws_ecs_task_definition" "task" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([{
-    name         = each.key
-    image        = each.value.image
-    cpu          = 512
-    memory       = 1024
-    essential    = true
-    portMappings = [{
-      containerPort = each.value.port
-      protocol      = "tcp"
-    }]
-    environment = each.value.env
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-create-group  = "true"
-        awslogs-region        = "us-east-1"
-        awslogs-group         = "${local.log_group_prefix}-${each.key}"
-        awslogs-stream-prefix = each.key
+  container_definitions = jsonencode([
+    {
+      name         = each.key
+      image        = each.value.image
+      cpu          = 512
+      memory       = 1024
+      essential    = true
+      portMappings = [
+        {
+          containerPort = each.value.port
+          protocol      = "tcp"
+        }
+      ]
+      # ✅ THIS IS CRITICAL: Ensure env variables are encoded properly
+      environment = [for env in each.value.env : {
+        name  = env.name
+        value = env.value
+      }]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-create-group  = "true"
+          awslogs-region        = "us-east-1"
+          awslogs-group         = "${local.log_group_prefix}-${each.key}"
+          awslogs-stream-prefix = each.key
+        }
       }
     }
-  }])
+  ])
 }
 
 resource "aws_ecs_service" "service" {
