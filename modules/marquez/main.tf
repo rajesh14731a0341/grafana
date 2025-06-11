@@ -37,6 +37,11 @@ resource "aws_ecs_task_definition" "this" {
         { containerPort = 5001 }
       ]
       dependsOn = [{ containerName = "marquez-db", condition = "START" }]
+      environment = [
+        { name = "MARQUEZ_DB_URL",      value = "jdbc:postgresql://marquez-db:5432/marquez" },
+        { name = "MARQUEZ_DB_USER",     value = "marquez" },
+        { name = "MARQUEZ_DB_PASSWORD", value = "marquez" }
+      ]
       logConfiguration = {
         logDriver = "awslogs",
         options = {
@@ -53,7 +58,7 @@ resource "aws_ecs_task_definition" "this" {
       essential = true
       portMappings = [{ containerPort = 3000 }]
       environment = [
-        { name = "MARQUEZ_HOST", value = "localhost" },
+        { name = "MARQUEZ_HOST", value = "marquez-api" },
         { name = "MARQUEZ_PORT", value = "5000" }
       ]
       dependsOn = [{ containerName = "marquez-api", condition = "START" }]
@@ -71,16 +76,16 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = var.service_name
-  cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.this.arn
-  desired_count   = var.desired_count
-  launch_type     = "FARGATE"
+  name                 = var.service_name
+  cluster              = var.ecs_cluster_id
+  task_definition      = aws_ecs_task_definition.this.arn
+  desired_count        = var.desired_count
+  launch_type          = "FARGATE"
   enable_execute_command = true
 
   network_configuration {
-    subnets         = var.subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = var.assign_public_ip
   }
 }
@@ -102,7 +107,7 @@ resource "aws_appautoscaling_policy" "cpu" {
   policy_type = "TargetTrackingScaling"
 
   target_tracking_scaling_policy_configuration {
-    target_value       = var.autoscaling_cpu_target
+    target_value = var.autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
