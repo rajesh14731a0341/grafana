@@ -1,235 +1,118 @@
 locals {
-  name_prefix = "marquez"
-}
-
-resource "aws_cloudwatch_log_group" "default" {
-  for_each = toset(["api", "db", "web"])
-  name     = "/ecs/${local.name_prefix}-${each.key}"
-  retention_in_days = 7
-}
-
-##################
-# Task Definitions
-##################
-
-resource "aws_ecs_task_definition" "marquez_api" {
-  family                   = "${local.name_prefix}-api"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "512"
-  memory                   = "1024"
-  execution_role_arn       = var.execution_role_arn
-  task_role_arn            = var.task_role_arn
-  container_definitions = jsonencode([
-    {
-      name      = "marquez-api"
-      image     = "marquezproject/marquez:0.47.0"
-      portMappings = [
-        { containerPort = 5000 },
-        { containerPort = 5001 }
+  services = {
+    marquez-api = {
+      image        = "marquezproject/marquez:0.47.0"
+      port         = 5000
+      env          = [
+        { name = "JAVA_OPTS", value = "-Dlogback.configurationFile=/etc/marquez/logback.xml" }
       ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "/ecs/${local.name_prefix}-api"
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "ecs"
-        }
-      }
+      desired_count           = var.marquez_api_desired_count
+      min_capacity            = var.marquez_api_autoscaling_min
+      max_capacity            = var.marquez_api_autoscaling_max
+      cpu_target              = var.marquez_api_autoscaling_cpu_target
     }
-  ])
-}
-
-resource "aws_ecs_task_definition" "marquez_db" {
-  family                   = "${local.name_prefix}-db"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "512"
-  memory                   = "1024"
-  execution_role_arn       = var.execution_role_arn
-  task_role_arn            = var.task_role_arn
-  container_definitions = jsonencode([
-    {
-      name      = "marquez-db"
-      image     = "postgres:14"
-      portMappings = [{ containerPort = 5432 }]
-      environment = [
+    marquez-db = {
+      image        = "postgres:14"
+      port         = 5432
+      env          = [
         { name = "POSTGRES_USER", value = "marquez" },
         { name = "POSTGRES_PASSWORD", value = "marquez" },
         { name = "POSTGRES_DB", value = "marquez" }
       ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "/ecs/${local.name_prefix}-db"
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "ecs"
-        }
-      }
+      desired_count           = var.marquez_db_desired_count
+      min_capacity            = var.marquez_db_autoscaling_min
+      max_capacity            = var.marquez_db_autoscaling_max
+      cpu_target              = var.marquez_db_autoscaling_cpu_target
     }
-  ])
-}
-
-resource "aws_ecs_task_definition" "marquez_web" {
-  family                   = "${local.name_prefix}-web"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = var.execution_role_arn
-  task_role_arn            = var.task_role_arn
-  container_definitions = jsonencode([
-    {
-      name      = "marquez-web"
-      image     = "marquezproject/marquez-web:0.47.0"
-      portMappings = [{ containerPort = 3000 }]
-      environment = [
+    marquez-web = {
+      image        = "marquezproject/marquez-web:0.47.0"
+      port         = 3000
+      env          = [
         { name = "MARQUEZ_HOST", value = "marquez-api.${var.cloudmap_namespace}" },
         { name = "MARQUEZ_PORT", value = "5000" }
       ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "/ecs/${local.name_prefix}-web"
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "ecs"
-        }
+      desired_count           = var.marquez_web_desired_count
+      min_capacity            = var.marquez_web_autoscaling_min
+      max_capacity            = var.marquez_web_autoscaling_max
+      cpu_target              = var.marquez_web_autoscaling_cpu_target
+    }
+  }
+}
+
+resource "aws_ecs_task_definition" "task" {
+  for_each             = local.services
+  family               = each.key
+  network_mode         = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                  = "512"
+  memory               = "1024"
+  execution_role_arn   = var.execution_role_arn
+  task_role_arn        = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name      = each.key
+    image     = each.value.image
+    portMappings = [{
+      containerPort = each.value.port
+      protocol      = "tcp"
+    }]
+    environment = each.value.env
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-region        = "us-east-1"
+        awslogs-group         = "/ecs/${each.key}"
+        awslogs-stream-prefix = "ecs"
       }
     }
-  ])
+  }])
 }
 
-##################
-# Services
-##################
-
-resource "aws_ecs_service" "marquez_api" {
-  name            = "${local.name_prefix}-api"
-  cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.marquez_api.arn
-  launch_type     = "FARGATE"
-  desired_count   = var.marquez_api_desired_count
+resource "aws_ecs_service" "service" {
+  for_each            = local.services
+  name                = each.key
+  cluster             = var.ecs_cluster_id
+  task_definition     = aws_ecs_task_definition.task[each.key].arn
+  desired_count       = each.value.desired_count
+  launch_type         = "FARGATE"
   enable_execute_command = true
 
   network_configuration {
-    subnets         = var.subnet_ids
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = true
-    security_groups = [var.security_group_id]
   }
 
   service_registries {
-    registry_arn = aws_service_discovery_service.marquez_api.arn
+    registry_arn = aws_service_discovery_service.discovery[each.key].arn
+  }
+
+  lifecycle {
+    ignore_changes = [task_definition]
   }
 }
 
-resource "aws_ecs_service" "marquez_db" {
-  name            = "${local.name_prefix}-db"
-  cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.marquez_db.arn
-  launch_type     = "FARGATE"
-  desired_count   = var.marquez_db_desired_count
-  enable_execute_command = true
-
-  network_configuration {
-    subnets         = var.subnet_ids
-    assign_public_ip = true
-    security_groups = [var.security_group_id]
-  }
-
-  service_registries {
-    registry_arn = aws_service_discovery_service.marquez_db.arn
-  }
-}
-
-resource "aws_ecs_service" "marquez_web" {
-  name            = "${local.name_prefix}-web"
-  cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.marquez_web.arn
-  launch_type     = "FARGATE"
-  desired_count   = var.marquez_web_desired_count
-  enable_execute_command = true
-
-  network_configuration {
-    subnets         = var.subnet_ids
-    assign_public_ip = true
-    security_groups = [var.security_group_id]
-  }
-
-  service_registries {
-    registry_arn = aws_service_discovery_service.marquez_web.arn
-  }
-}
-
-##################
-# Cloud Map Services
-##################
-
-resource "aws_service_discovery_service" "marquez_api" {
-  name = "marquez-api"
-  dns_config {
-    namespace_id = var.cloudmap_namespace_id
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-    routing_policy = "MULTIVALUE"
-  }
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-resource "aws_service_discovery_service" "marquez_db" {
-  name = "marquez-db"
-  dns_config {
-    namespace_id = var.cloudmap_namespace_id
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-    routing_policy = "MULTIVALUE"
-  }
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-resource "aws_service_discovery_service" "marquez_web" {
-  name = "marquez-web"
-  dns_config {
-    namespace_id = var.cloudmap_namespace_id
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-    routing_policy = "MULTIVALUE"
-  }
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
-##################
-# Autoscaling
-##################
-
-resource "aws_appautoscaling_target" "api" {
-  max_capacity       = var.marquez_api_autoscaling_max
-  min_capacity       = var.marquez_api_autoscaling_min
-  resource_id        = "service/${split("/", var.ecs_cluster_id)[1]}/${aws_ecs_service.marquez_api.name}"
+resource "aws_appautoscaling_target" "ecs_target" {
+  for_each           = local.services
+  max_capacity       = each.value.max_capacity
+  min_capacity       = each.value.min_capacity
+  resource_id        = "service/${split("/", var.ecs_cluster_id)[1]}/${each.key}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
 
-resource "aws_appautoscaling_policy" "api" {
-  name               = "cpu-scaling"
-  policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.api.resource_id
-  scalable_dimension = aws_appautoscaling_target.api.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.api.service_namespace
+resource "aws_appautoscaling_policy" "cpu_policy" {
+  for_each = local.services
+
+  name               = "${each.key}-cpu-policy"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.ecs_target[each.key].resource_id
+  scalable_dimension = "ecs:service:DesiredCount"
+
+  policy_type = "TargetTrackingScaling"
 
   target_tracking_scaling_policy_configuration {
-    target_value       = var.marquez_api_autoscaling_cpu_target
+    target_value       = each.value.cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
@@ -238,54 +121,21 @@ resource "aws_appautoscaling_policy" "api" {
   }
 }
 
-# Repeat for DB and Web autoscaling
+resource "aws_service_discovery_service" "discovery" {
+  for_each = local.services
 
-resource "aws_appautoscaling_target" "db" {
-  max_capacity       = var.marquez_db_autoscaling_max
-  min_capacity       = var.marquez_db_autoscaling_min
-  resource_id        = "service/${split("/", var.ecs_cluster_id)[1]}/${aws_ecs_service.marquez_db.name}"
-  scalable_dimension = "ecs:service:DesiredCount"
-  service_namespace  = "ecs"
-}
+  name = each.key
 
-resource "aws_appautoscaling_policy" "db" {
-  name               = "cpu-scaling"
-  policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.db.resource_id
-  scalable_dimension = aws_appautoscaling_target.db.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.db.service_namespace
-
-  target_tracking_scaling_policy_configuration {
-    target_value       = var.marquez_db_autoscaling_cpu_target
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+  dns_config {
+    namespace_id = var.cloudmap_namespace_id
+    dns_records {
+      type = "A"
+      ttl  = 10
     }
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
+    routing_policy = "MULTIVALUE"
   }
-}
 
-resource "aws_appautoscaling_target" "web" {
-  max_capacity       = var.marquez_web_autoscaling_max
-  min_capacity       = var.marquez_web_autoscaling_min
-  resource_id        = "service/${split("/", var.ecs_cluster_id)[1]}/${aws_ecs_service.marquez_web.name}"
-  scalable_dimension = "ecs:service:DesiredCount"
-  service_namespace  = "ecs"
-}
-
-resource "aws_appautoscaling_policy" "web" {
-  name               = "cpu-scaling"
-  policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.web.resource_id
-  scalable_dimension = aws_appautoscaling_target.web.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.web.service_namespace
-
-  target_tracking_scaling_policy_configuration {
-    target_value       = var.marquez_web_autoscaling_cpu_target
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
+  health_check_custom_config {
+    failure_threshold = 1
   }
 }

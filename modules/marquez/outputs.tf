@@ -1,11 +1,11 @@
-output "marquez_api_service_name" {
-  value = aws_ecs_service.marquez_api.name
+output "service_names" {
+  value = [for s in aws_ecs_service.service : s.name]
 }
 
-output "marquez_db_service_name" {
-  value = aws_ecs_service.marquez_db.name
+output "task_definitions" {
+  value = [for t in aws_ecs_task_definition.task : t.family]
 }
 
-output "marquez_web_service_name" {
-  value = aws_ecs_service.marquez_web.name
+output "discovery_services" {
+  value = [for d in aws_service_discovery_service.discovery : d.name]
 }
