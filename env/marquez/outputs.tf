@@ -1,11 +1,11 @@
-output "marquez_api_service_name" {
-  value = module.marquez.api_service_name
+output "marquez_service_names" {
+  value = module.marquez.service_names
 }
 
-output "marquez_db_service_name" {
-  value = module.marquez.db_service_name
+output "marquez_task_definitions" {
+  value = module.marquez.task_definitions
 }
 
-output "marquez_web_service_name" {
-  value = module.marquez.web_service_name
+output "marquez_discovery_services" {
+  value = module.marquez.discovery_services
 }
