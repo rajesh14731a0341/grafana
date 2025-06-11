@@ -69,7 +69,6 @@ resource "aws_ecs_task_definition" "task" {
       containerPort = each.value.port
       protocol      = "tcp"
     }]
-    command = each.key == "marquez-api" ? ["server", "environment"] : null
     environment = each.value.env
     logConfiguration = {
       logDriver = "awslogs"
