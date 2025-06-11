@@ -2,22 +2,34 @@ locals {
   log_group_prefix = "/ecs/marquez"
 
   services = {
-    marquez-api = {
-      image = "marquezproject/marquez:0.47.0"
-      port  = 5000
-      env = [
-        { name = "MARQUEZ_DB_HOST", value = "marquez-db.${var.cloudmap_namespace}" },
-        { name = "MARQUEZ_DB_PORT", value = "5432" },
-        { name = "MARQUEZ_DB_NAME", value = "marquez" },
-        { name = "MARQUEZ_DB_USER", value = "marquez" },
-        { name = "MARQUEZ_DB_PASSWORD", value = "marquez" },
-        { name = "MARQUEZ_JDBC_URL", value = "jdbc:postgresql://marquez-db.${var.cloudmap_namespace}:5432/marquez" },
-      ]
-      desired_count = var.marquez_api_desired_count
-      min_capacity  = var.marquez_api_autoscaling_min
-      max_capacity  = var.marquez_api_autoscaling_max
-      cpu_target    = var.marquez_api_autoscaling_cpu_target
-    }
+marquez-api = {
+  image = "marquezproject/marquez:0.47.0"
+  port  = 5000
+  env = [
+    # 🔧 Standard PostgreSQL env vars
+    { name = "POSTGRES_HOST", value = "marquez-db.${var.cloudmap_namespace}" },
+    { name = "POSTGRES_PORT", value = "5432" },
+    { name = "POSTGRES_DB", value = "marquez" },
+    { name = "POSTGRES_USER", value = "marquez" },
+    { name = "POSTGRES_PASSWORD", value = "marquez" },
+
+    # 🔧 Marquez-specific env vars
+    { name = "MARQUEZ_DB_HOST", value = "marquez-db.${var.cloudmap_namespace}" },
+    { name = "MARQUEZ_DB_PORT", value = "5432" },
+    { name = "MARQUEZ_DB_NAME", value = "marquez" },
+    { name = "MARQUEZ_DB_USER", value = "marquez" },
+    { name = "MARQUEZ_DB_PASSWORD", value = "marquez" },
+    { name = "MARQUEZ_JDBC_URL", value = "jdbc:postgresql://marquez-db.${var.cloudmap_namespace}:5432/marquez" },
+
+    # 🔍 Optional debug logging
+    { name = "LOG_LEVEL", value = "DEBUG" }
+  ]
+  desired_count = var.marquez_api_desired_count
+  min_capacity  = var.marquez_api_autoscaling_min
+  max_capacity  = var.marquez_api_autoscaling_max
+  cpu_target    = var.marquez_api_autoscaling_cpu_target
+}
+
 
     marquez-db = {
       image = "postgres:14"
