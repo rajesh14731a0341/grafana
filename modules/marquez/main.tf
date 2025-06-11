@@ -7,11 +7,11 @@ locals {
       port  = 5000
       env = [
         { name = "JAVA_OPTS", value = "-Dlogback.configurationFile=/etc/marquez/logback.xml" },
-        { name = "POSTGRES_HOST", value = "marquez-db.${var.cloudmap_namespace}" },
-        { name = "POSTGRES_PORT", value = "5432" },
-        { name = "POSTGRES_DB", value = "marquez" },
-        { name = "POSTGRES_USER", value = "marquez" },
-        { name = "POSTGRES_PASSWORD", value = "marquez" }
+        { name = "MARQUEZ_DB_HOST", value = "marquez-db.${var.cloudmap_namespace}" },
+        { name = "MARQUEZ_DB_PORT", value = "5432" },
+        { name = "MARQUEZ_DB_DB", value = "marquez" },
+        { name = "MARQUEZ_DB_USER", value = "marquez" },
+        { name = "MARQUEZ_DB_PASSWORD", value = "marquez" }
       ]
       desired_count = var.marquez_api_desired_count
       min_capacity  = var.marquez_api_autoscaling_min
