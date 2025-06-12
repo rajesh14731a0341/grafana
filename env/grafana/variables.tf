@@ -24,3 +24,8 @@ variable "redis_desired_count" {}
 variable "redis_autoscaling_min" {}
 variable "redis_autoscaling_max" {}
 variable "redis_autoscaling_cpu_target" {}
+
+variable "vpc_id" {
+  description = "VPC ID where resources will be deployed"
+  type        = string
+}
