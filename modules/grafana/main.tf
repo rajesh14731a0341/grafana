@@ -7,8 +7,9 @@ data "aws_secretsmanager_secret_version" "db" {
 }
 
 locals {
-  db_password = jsondecode(data.aws_secretsmanager_secret_version.db.secret_string)["password"]
+  db_password = data.aws_secretsmanager_secret_version.db.secret_string
 }
+
 
 ###############################
 # CloudWatch Log Groups
