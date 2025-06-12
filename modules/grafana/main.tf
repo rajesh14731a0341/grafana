@@ -23,7 +23,7 @@ resource "aws_ecs_task_definition" "redis" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "/ecs/redis-task}"
+        awslogs-group         = "/ecs/redis-task"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "redis"
       }
@@ -92,7 +92,7 @@ resource "aws_ecs_task_definition" "renderer" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "/ecs/renderer-task}"
+        awslogs-group         = "/ecs/renderer-task"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "renderer"
       }
@@ -182,7 +182,7 @@ resource "aws_ecs_task_definition" "grafana" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "/ecs/grafana-task}"
+        awslogs-group         = "/ecs/grafana-task"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "grafana"
       }
