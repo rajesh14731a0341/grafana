@@ -1,4 +1,24 @@
 ###############################
+# CloudWatch Log Groups
+###############################
+
+resource "aws_cloudwatch_log_group" "redis" {
+  name              = "/ecs/redis-task"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_group" "renderer" {
+  name              = "/ecs/renderer-task"
+  retention_in_days = 7
+}
+
+resource "aws_cloudwatch_log_group" "grafana" {
+  name              = "/ecs/grafana-task"
+  retention_in_days = 7
+}
+
+
+###############################
 # Redis ECS
 ###############################
 resource "aws_ecs_task_definition" "redis" {
