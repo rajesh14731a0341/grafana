@@ -29,3 +29,8 @@ variable "vpc_id" {
   description = "VPC ID used for target groups"
   type        = string
 }
+
+variable "ecs_cluster_name" {
+  description = "ECS cluster name for autoscaling target resource ID"
+  type        = string
+}

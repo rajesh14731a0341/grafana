@@ -5,6 +5,7 @@ module "grafana" {
   subnet_ids            = var.subnet_ids
   security_group_id     = var.security_group_id
   vpc_id            = var.vpc_id
+  ecs_cluster_name  = var.ecs_cluster_name
 
   execution_role_arn    = var.execution_role_arn
   task_role_arn         = var.task_role_arn
