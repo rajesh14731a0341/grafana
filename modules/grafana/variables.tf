@@ -3,10 +3,12 @@ variable "subnet_ids" {
   type = list(string)
 }
 variable "security_group_id" {}
+
 variable "execution_role_arn" {}
 variable "task_role_arn" {}
+
 variable "db_secret_arn" {}
-variable "cloudmap_namespace_id" {}
+variable "db_endpoint" {}
 
 variable "grafana_desired_count" {}
 variable "grafana_autoscaling_min" {}
@@ -22,12 +24,3 @@ variable "redis_desired_count" {}
 variable "redis_autoscaling_min" {}
 variable "redis_autoscaling_max" {}
 variable "redis_autoscaling_cpu_target" {}
-variable "vpc_id" {
-  description = "VPC ID used for service discovery and ECS services"
-  type        = string
-}
-
-variable "cloudmap_namespace" {
-  description = "Name of the Cloud Map namespace (e.g., 'project') used for service DNS resolution"
-  type        = string
-}

@@ -1,11 +1,11 @@
-output "grafana_service_name" {
-  value = "rajesh-grafana-svc"
+output "grafana_alb_dns" {
+  value = module.grafana.grafana_alb_dns
 }
 
-output "renderer_service_name" {
-  value = "rajesh-renderer-svc"
+output "renderer_alb_dns" {
+  value = module.grafana.renderer_alb_dns
 }
 
-output "redis_service_name" {
-  value = "rajesh-redis-svc"
+output "redis_alb_dns" {
+  value = module.grafana.redis_alb_dns
 }
