@@ -1,7 +1,3 @@
-locals {
-  log_group_prefix = "/ecs/grafana_3"
-}
-
 ###############################
 # Redis ECS
 ###############################
@@ -27,7 +23,7 @@ resource "aws_ecs_task_definition" "redis" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "${local.log_group_prefix}-redis"
+        awslogs-group         = "/ecs/${aws_ecs_task_definition.redis.family}"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "redis"
       }
@@ -93,11 +89,10 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
       protocol      = "tcp"
     }]
-    
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "${local.log_group_prefix}-renderer"
+        awslogs-group         = "/ecs/${aws_ecs_task_definition.renderer.family}"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "renderer"
       }
@@ -187,7 +182,7 @@ resource "aws_ecs_task_definition" "grafana" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "${local.log_group_prefix}-grafana"
+        awslogs-group         = "/ecs/${aws_ecs_task_definition.grafana.family}"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "grafana"
       }
