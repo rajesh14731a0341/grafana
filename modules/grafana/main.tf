@@ -1,5 +1,5 @@
 locals {
-  log_group_prefix = "/ecs/grafana"
+  log_group_prefix = "/ecs/grafana_3"
 }
 
 ###############################
@@ -27,7 +27,6 @@ resource "aws_ecs_task_definition" "redis" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-create-group  = "true"
         awslogs-group         = "${local.log_group_prefix}-redis"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "redis"
@@ -55,7 +54,7 @@ resource "aws_service_discovery_service" "redis" {
 }
 
 resource "aws_ecs_service" "redis" {
-  name            = "rajesh-redis-svc"
+  name            = "rajesh-2-redis-svc"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.redis.arn
   desired_count   = var.redis_desired_count
@@ -94,17 +93,10 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
       protocol      = "tcp"
     }]
-    healthCheck = {
-      command     = ["CMD-SHELL", "curl -f http://localhost:8081/ || exit 1"]
-      interval    = 30
-      timeout     = 5
-      retries     = 3
-      startPeriod = 30
-    }
+    
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-create-group  = "true"
         awslogs-group         = "${local.log_group_prefix}-renderer"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "renderer"
@@ -132,7 +124,7 @@ resource "aws_service_discovery_service" "renderer" {
 }
 
 resource "aws_ecs_service" "renderer" {
-  name            = "rajesh-renderer-svc"
+  name            = "rajesh-2-renderer-svc"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.renderer.arn
   desired_count   = var.renderer_desired_count
@@ -183,19 +175,18 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_DATABASE_USER",         value = "rajesh" },
       { name = "GF_DATABASE_PASSWORD",     value = data.aws_secretsmanager_secret_version.db_secret.secret_string },
       { name = "GF_DATABASE_SSL_MODE",     value = "require" },
-      { name = "REDIS_PATH",               value = "redis.project:6379" },
+      { name = "REDIS_PATH",               value = "redis.${var.cloudmap_namespace}:6379" },
       { name = "REDIS_DB",                 value = "1" },
       { name = "REDIS_CACHETIME",          value = "12000" },
       { name = "CACHING",                  value = "Y" },
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-      { name = "GF_RENDERING_SERVER_URL",  value = "http://renderer.project:8081/render" },
-      { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.project:3000/" },
+      { name = "GF_RENDERING_SERVER_URL",  value = "http://renderer.${var.cloudmap_namespace}:8081/render" },
+      { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.${var.cloudmap_namespace}:3000/" },
       { name = "GF_LOG_FILTERS",           value = "rendering: debug" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-create-group  = "true"
         awslogs-group         = "${local.log_group_prefix}-grafana"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "grafana"
@@ -223,7 +214,7 @@ resource "aws_service_discovery_service" "grafana" {
 }
 
 resource "aws_ecs_service" "grafana" {
-  name            = "rajesh-grafana-svc"
+  name            = "rajesh-2-grafana-svc"
   cluster         = var.ecs_cluster_id
   task_definition = aws_ecs_task_definition.grafana.arn
   desired_count   = var.grafana_desired_count

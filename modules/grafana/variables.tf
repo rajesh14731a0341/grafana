@@ -26,3 +26,8 @@ variable "vpc_id" {
   description = "VPC ID used for service discovery and ECS services"
   type        = string
 }
+
+variable "cloudmap_namespace" {
+  description = "Name of the Cloud Map namespace (e.g., 'project') used for service DNS resolution"
+  type        = string
+}

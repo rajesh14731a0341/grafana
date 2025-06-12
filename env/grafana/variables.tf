@@ -6,6 +6,9 @@ variable "task_role_arn" {}
 variable "db_secret_arn" {}
 variable "vpc_id" {}
 variable "cloudmap_namespace_id" {}
+variable "cloudmap_namespace" {}
+
+
 
 variable "grafana_desired_count" {}
 variable "grafana_autoscaling_min" {}

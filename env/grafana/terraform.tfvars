@@ -6,6 +6,7 @@ task_role_arn           = "arn:aws:iam::736747734611:role/rajesh-grafana-task-ro
 db_secret_arn           = "arn:aws:secretsmanager:us-east-1:736747734611:secret:grafana/psql/rajesh-password-7YOPwB"
 vpc_id                  = "vpc-0baac8b1f8f1ca391"
 cloudmap_namespace_id   = "ns-tnuncetvhizqywf7"
+cloudmap_namespace    = "project"
 
 grafana_desired_count           = 1
 grafana_autoscaling_min         = 1
