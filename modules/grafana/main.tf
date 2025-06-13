@@ -28,7 +28,7 @@ resource "aws_lb_target_group" "grafana_tg" {
   target_type = "ip"
 
   health_check {
-    path                = "/"
+    path                = "/api/health"
     protocol            = "HTTP"
     interval            = 30
     timeout             = 5
@@ -380,4 +380,35 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
     }
     target_value = var.redis_autoscaling_cpu_target
   }
+}
+
+
+resource "aws_ecs_task_definition" "test_env_task" {
+  family                   = "test-env-task"
+  cpu                      = 256
+  memory                   = 512
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name        = "test-container"
+      image       = "busybox" # A very lightweight image
+      environment = [
+        { name = "MY_TEST_VARIABLE", value = "ThisIsASecretValue" },
+        { name = "ANOTHER_VAR", value = "Testing123" }
+      ],
+      command = ["sh", "-c", "echo 'Container started. Environment variables:' && env && sleep 3600"], # This command will print all env vars
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.grafana_log_group.name, # Using existing log group for simplicity
+          awslogs-region        = "us-east-1",
+          awslogs-stream-prefix = "test-env"
+        }
+      }
+    }
+  ])
 }
