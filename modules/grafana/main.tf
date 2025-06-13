@@ -121,7 +121,6 @@ data "aws_secretsmanager_secret_version" "grafana_password" {
   secret_id = var.db_secret_arn
 }
 
-
 ############################################
 # CloudWatch Log Groups
 ############################################
@@ -133,16 +132,15 @@ resource "aws_cloudwatch_log_group" "grafana_log_group" {
 
 resource "aws_cloudwatch_log_group" "renderer_log_group" {
   name = "/ecs/renderer-service"
-  # Optional: Set retention in days
+  # Optional: Set retention in days, e.g., 30 for 30 days
   # retention_in_days = 30
 }
 
 resource "aws_cloudwatch_log_group" "redis_log_group" {
   name = "/ecs/redis-service"
-  # Optional: Set retention in days
+  # Optional: Set retention in days, e.g., 30 for 30 days
   # retention_in_days = 30
 }
-
 
 ############################################
 # ECS Task Definitions
@@ -176,8 +174,7 @@ resource "aws_ecs_task_definition" "grafana" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          # CORRECTED: Referencing the log group name dynamically
-          awslogs-group         = aws_cloudwatch_log_group.grafana_log_group.name,
+          awslogs-group         = aws_cloudwatch_log_group.grafana_log_group.name, # Referencing the created log group
           awslogs-region        = "us-east-1",
           awslogs-stream-prefix = "grafana"
         }
@@ -203,8 +200,7 @@ resource "aws_ecs_task_definition" "renderer" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          # CORRECTED: Referencing the log group name dynamically
-          awslogs-group         = aws_cloudwatch_log_group.renderer_log_group.name,
+          awslogs-group         = aws_cloudwatch_log_group.renderer_log_group.name, # Referencing the created log group
           awslogs-region        = "us-east-1",
           awslogs-stream-prefix = "renderer"
         }
@@ -230,8 +226,7 @@ resource "aws_ecs_task_definition" "redis" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          # CORRECTED: Referencing the log group name dynamically
-          awslogs-group         = aws_cloudwatch_log_group.redis_log_group.name,
+          awslogs-group         = aws_cloudwatch_log_group.redis_log_group.name, # Referencing the created log group
           awslogs-region        = "us-east-1",
           awslogs-stream-prefix = "redis"
         }
@@ -239,7 +234,6 @@ resource "aws_ecs_task_definition" "redis" {
     }
   ])
 }
-
 
 
 ############################################
@@ -306,16 +300,17 @@ resource "aws_ecs_service" "redis" {
 }
 
 
-
 ############################################
 # Autoscaling (Grafana, Renderer, Redis)
 ############################################
 resource "aws_appautoscaling_target" "grafana" {
   max_capacity       = var.grafana_autoscaling_max
   min_capacity       = var.grafana_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_name}/grafana-service"
+  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.grafana.name}" # Use .name
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
+  # Explicitly depend on the ECS service to be fully created and stable
+  depends_on = [aws_ecs_service.grafana]
 }
 
 resource "aws_appautoscaling_policy" "grafana_cpu" {
@@ -336,9 +331,11 @@ resource "aws_appautoscaling_policy" "grafana_cpu" {
 resource "aws_appautoscaling_target" "renderer" {
   max_capacity       = var.renderer_autoscaling_max
   min_capacity       = var.renderer_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_name}/renderer-service"
+  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.renderer.name}" # Use .name
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
+  # Explicitly depend on the ECS service to be fully created and stable
+  depends_on = [aws_ecs_service.renderer]
 }
 
 resource "aws_appautoscaling_policy" "renderer_cpu" {
@@ -359,9 +356,11 @@ resource "aws_appautoscaling_policy" "renderer_cpu" {
 resource "aws_appautoscaling_target" "redis" {
   max_capacity       = var.redis_autoscaling_max
   min_capacity       = var.redis_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_name}/redis-service"
+  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.redis.name}" # Use .name
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
+  # Explicitly depend on the ECS service to be fully created and stable
+  depends_on = [aws_ecs_service.redis]
 }
 
 resource "aws_appautoscaling_policy" "redis_cpu" {
