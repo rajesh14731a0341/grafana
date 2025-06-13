@@ -121,7 +121,6 @@ data "aws_secretsmanager_secret_version" "grafana_password" {
   secret_id = var.db_secret_arn
 }
 
----
 
 ############################################
 # CloudWatch Log Groups
@@ -144,7 +143,6 @@ resource "aws_cloudwatch_log_group" "redis_log_group" {
   # retention_in_days = 30
 }
 
----
 
 ############################################
 # ECS Task Definitions
