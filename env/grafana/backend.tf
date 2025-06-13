@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket = "your-s3-bucket-name"
+    bucket = "redshift-data-migration-bucket"
     key    = "grafana/terraform.tfstate"
     region = "us-east-1"
   }
