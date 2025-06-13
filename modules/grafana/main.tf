@@ -1,6 +1,6 @@
 locals {
   log_group_prefix = "/ecs/grafana"
-  postgres_user    = "grafana"
+  postgres_user    = "rajesh"
   postgres_db      = "grafana"
 }
 
