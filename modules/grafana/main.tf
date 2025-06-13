@@ -45,7 +45,8 @@ resource "aws_lb_target_group" "renderer_tg" {
   target_type = "ip"
 
   health_check {
-    path                = "/render"
+    # Changed health check path to a known unauthenticated endpoint
+    path                = "/render/version" # Changed from "/render"
     protocol            = "HTTP"
     interval            = 30
     timeout             = 5
@@ -62,10 +63,10 @@ resource "aws_lb_target_group" "redis_tg" {
   target_type = "ip"
   # Optional: Add a TCP health check if desired for Redis.
   # health_check {
-  #   protocol          = "TCP"
-  #   interval          = 30
-  #   timeout           = 5
-  #   healthy_threshold = 2
+  #   protocol            = "TCP"
+  #   interval            = 30
+  #   timeout             = 5
+  #   healthy_threshold   = 2
   #   unhealthy_threshold = 2
   # }
 }
@@ -156,8 +157,8 @@ resource "aws_ecs_task_definition" "grafana" {
 
   container_definitions = jsonencode([
     {
-      name  = "grafana"
-      image = "grafana/grafana-enterprise:11.6.1"
+      name        = "grafana"
+      image       = "grafana/grafana-enterprise:11.6.1"
       portMappings = [{ containerPort = 3000 }]
       environment = [
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
@@ -194,9 +195,12 @@ resource "aws_ecs_task_definition" "renderer" {
 
   container_definitions = jsonencode([
     {
-      name  = "renderer"
-      image = "grafana/grafana-image-renderer:3.12.5"
+      name        = "renderer"
+      image       = "grafana/grafana-image-renderer:3.12.5"
       portMappings = [{ containerPort = 8081 }]
+      environment = [ # Added environment variable to disable auth
+        { name = "GF_RENDERER_AUTH_TOKEN_REQUIRED", value = "false" }
+      ]
       logConfiguration = {
         logDriver = "awslogs",
         options = {
@@ -220,8 +224,8 @@ resource "aws_ecs_task_definition" "redis" {
 
   container_definitions = jsonencode([
     {
-      name  = "redis"
-      image = "redis:latest"
+      name        = "redis"
+      image       = "redis:latest"
       portMappings = [{ containerPort = 6379 }]
       logConfiguration = {
         logDriver = "awslogs",
@@ -247,8 +251,8 @@ resource "aws_ecs_service" "grafana" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -267,8 +271,8 @@ resource "aws_ecs_service" "renderer" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -287,8 +291,8 @@ resource "aws_ecs_service" "redis" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
