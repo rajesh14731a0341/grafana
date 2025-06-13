@@ -2,16 +2,15 @@ module "grafana" {
   source = "../../modules/grafana"
 
   ecs_cluster_id        = var.ecs_cluster_id
+  ecs_cluster_name      = var.ecs_cluster_name
   subnet_ids            = var.subnet_ids
   security_group_id     = var.security_group_id
-  vpc_id            = var.vpc_id
-  ecs_cluster_name  = var.ecs_cluster_name
-
   execution_role_arn    = var.execution_role_arn
   task_role_arn         = var.task_role_arn
+  vpc_id                = var.vpc_id
 
-  db_secret_arn         = var.db_secret_arn
   db_endpoint           = var.db_endpoint
+  db_secret_arn         = var.db_secret_arn
 
   grafana_desired_count          = var.grafana_desired_count
   grafana_autoscaling_min        = var.grafana_autoscaling_min

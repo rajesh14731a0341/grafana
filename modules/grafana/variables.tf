@@ -1,11 +1,12 @@
 variable "ecs_cluster_id" {}
+variable "ecs_cluster_name" {}
 variable "subnet_ids" {
   type = list(string)
 }
 variable "security_group_id" {}
-
 variable "execution_role_arn" {}
 variable "task_role_arn" {}
+variable "vpc_id" {}
 
 variable "db_secret_arn" {}
 variable "db_endpoint" {}
@@ -24,13 +25,3 @@ variable "redis_desired_count" {}
 variable "redis_autoscaling_min" {}
 variable "redis_autoscaling_max" {}
 variable "redis_autoscaling_cpu_target" {}
-
-variable "vpc_id" {
-  description = "VPC ID used for target groups"
-  type        = string
-}
-
-variable "ecs_cluster_name" {
-  description = "ECS cluster name for autoscaling target resource ID"
-  type        = string
-}
