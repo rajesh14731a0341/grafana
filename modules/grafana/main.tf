@@ -240,7 +240,7 @@ resource "aws_ecs_task_definition" "redis" {
   ])
 }
 
----
+
 
 ############################################
 # ECS Services
@@ -305,7 +305,7 @@ resource "aws_ecs_service" "redis" {
   }
 }
 
----
+
 
 ############################################
 # Autoscaling (Grafana, Renderer, Redis)
