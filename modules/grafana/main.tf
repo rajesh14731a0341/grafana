@@ -16,7 +16,6 @@ resource "aws_lb" "internal_nlb" {
   subnets            = var.private_subnet_ids
 }
 
----
 
 ############################################
 # Target Groups
@@ -58,11 +57,10 @@ resource "aws_lb_target_group" "renderer_tg" {
 resource "aws_lb_target_group" "redis_tg" {
   name        = "redis-tg"
   port        = 6379
-  protocol    = "TCP" # Redis typically uses TCP
+  protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
-  # For Redis, a simple TCP health check might be sufficient or none, depending on your needs.
-  # If you wanted a TCP health check, it would look like this:
+  # Optional: Add a TCP health check if desired for Redis.
   # health_check {
   #   protocol          = "TCP"
   #   interval          = 30
@@ -72,7 +70,6 @@ resource "aws_lb_target_group" "redis_tg" {
   # }
 }
 
----
 
 ############################################
 # Listeners
@@ -104,7 +101,7 @@ resource "aws_lb_listener_rule" "render_rule" {
   }
 }
 
-# This is the crucial addition: a listener for the internal NLB to direct traffic to Redis.
+# Listener for the internal NLB to direct traffic to Redis.
 resource "aws_lb_listener" "nlb_redis_listener" {
   load_balancer_arn = aws_lb.internal_nlb.arn
   port              = 6379 # The standard port for Redis
@@ -116,7 +113,6 @@ resource "aws_lb_listener" "nlb_redis_listener" {
   }
 }
 
----
 
 ############################################
 # Secrets Manager
@@ -125,7 +121,6 @@ data "aws_secretsmanager_secret_version" "grafana_password" {
   secret_id = var.db_secret_arn
 }
 
----
 
 ############################################
 # ECS Task Definitions
@@ -149,6 +144,7 @@ resource "aws_ecs_task_definition" "grafana" {
         { name = "GF_DATABASE_NAME", value = "grafana" },
         { name = "GF_DATABASE_USER", value = "rajesh" },
         { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.grafana_password.secret_string },
+        { name = "GF_DATABASE_SSL_MODE", value = "require" },
         { name = "REDIS_PATH", value = aws_lb.internal_nlb.dns_name }, # Now points to NLB with Redis listener
         { name = "GF_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
         { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/" },
@@ -219,7 +215,6 @@ resource "aws_ecs_task_definition" "redis" {
   ])
 }
 
----
 
 ############################################
 # ECS Services
@@ -284,7 +279,6 @@ resource "aws_ecs_service" "redis" {
   }
 }
 
----
 
 ############################################
 # Autoscaling (Grafana, Renderer, Redis)
