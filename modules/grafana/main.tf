@@ -121,6 +121,8 @@ data "aws_secretsmanager_secret_version" "grafana_password" {
   secret_id = var.db_secret_arn
 }
 
+---
+
 ############################################
 # CloudWatch Log Groups
 ############################################
@@ -141,6 +143,8 @@ resource "aws_cloudwatch_log_group" "redis_log_group" {
   # Optional: Set retention in days
   # retention_in_days = 30
 }
+
+---
 
 ############################################
 # ECS Task Definitions
@@ -174,7 +178,8 @@ resource "aws_ecs_task_definition" "grafana" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group         = "/ecs/grafana-service",
+          # CORRECTED: Referencing the log group name dynamically
+          awslogs-group         = aws_cloudwatch_log_group.grafana_log_group.name,
           awslogs-region        = "us-east-1",
           awslogs-stream-prefix = "grafana"
         }
@@ -200,7 +205,8 @@ resource "aws_ecs_task_definition" "renderer" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group         = "/ecs/renderer-service",
+          # CORRECTED: Referencing the log group name dynamically
+          awslogs-group         = aws_cloudwatch_log_group.renderer_log_group.name,
           awslogs-region        = "us-east-1",
           awslogs-stream-prefix = "renderer"
         }
@@ -226,7 +232,8 @@ resource "aws_ecs_task_definition" "redis" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group         = "/ecs/redis-service",
+          # CORRECTED: Referencing the log group name dynamically
+          awslogs-group         = aws_cloudwatch_log_group.redis_log_group.name,
           awslogs-region        = "us-east-1",
           awslogs-stream-prefix = "redis"
         }
@@ -235,6 +242,7 @@ resource "aws_ecs_task_definition" "redis" {
   ])
 }
 
+---
 
 ############################################
 # ECS Services
@@ -299,6 +307,7 @@ resource "aws_ecs_service" "redis" {
   }
 }
 
+---
 
 ############################################
 # Autoscaling (Grafana, Renderer, Redis)
