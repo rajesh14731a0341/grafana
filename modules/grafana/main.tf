@@ -194,11 +194,13 @@ resource "aws_ecs_task_definition" "renderer" {
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
-  
+
   container_definitions = jsonencode([
     {
       name        = "renderer"
-      image       = "grafana/grafana-image-renderer:3.12.5"
+      # --- IMPORTANT CHANGE HERE ---
+      image       = "grafana/grafana-image-renderer:3.11.0" # Changed from 3.12.5
+      # ---------------------------
       portMappings = [{ containerPort = 8081 }]
       environment = [
         { name = "GF_RENDERER_AUTH_TOKEN_REQUIRED", value = "false" }
@@ -214,6 +216,7 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   ])
 }
+
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
   cpu                      = 512
@@ -284,7 +287,7 @@ resource "aws_ecs_service" "renderer" {
   }
 
   force_new_deployment = true
-  enable_execute_command = true # <--- ADD THIS LINE HERE (in the service, not task definition)
+  enable_execute_command = true # This line is correctly placed here
 
   lifecycle {
     ignore_changes = [desired_count]
@@ -389,5 +392,3 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
     target_value = var.redis_autoscaling_cpu_target
   }
 }
-
-
