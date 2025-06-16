@@ -151,6 +151,8 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "REDIS_PATH", value = "${aws_lb.internal_nlb.dns_name}:6379" },
       { name = "GF_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
       { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
+      { name = "GF_PLUGIN_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
+      { name = "GF_PLUGIN_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
       { name = "GF_RENDERING_SERVER_ENABLE_AUTH", value = "false" },
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
       { name = "GF_LOG_FILTERS", value = "rendering:debug" }
@@ -183,7 +185,8 @@ resource "aws_ecs_task_definition" "renderer" {
       { name = "RENDERING_SERVER_ENABLE_AUTH", value = "false" },
       { name = "RENDERING_SERVER_HOST", value = "0.0.0.0" },
       { name = "RENDERING_SERVER_PORT", value = "8081" },
-      { name = "RENDERING_MODE", value = "server" }
+      { name = "RENDERING_MODE", value = "server" },
+      { name = "ALLOW_ANONYMOUS", value = "true" }
     ]
     logConfiguration = {
       logDriver = "awslogs",
