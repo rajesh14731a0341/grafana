@@ -202,29 +202,28 @@ resource "aws_ecs_task_definition" "renderer" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name        = "renderer"
-      image       = "grafana/grafana-image-renderer:3.11.0"
-      portMappings = [
-        { containerPort = 8081 }
-      ]
-      command = ["--no-sandbox"]
-      environment = [
-        { name = "RENDERER_AUTH_TOKEN_ENABLED", value = "false" },
-        { name = "RENDERER_AUTH_TOKEN_REQUIRED", value = "false" },
-        { name = "RENDERER_AUTH_TOKEN", value = "" }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs",
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.renderer_log_group.name,
-          awslogs-region        = "us-east-1",
-          awslogs-stream-prefix = "renderer"
-        }
-      }
+  container_definitions = jsonencode([{
+  name  = "renderer"
+  image = "grafana/grafana-image-renderer:3.11.0"
+  portMappings = [{
+    containerPort = 8081
+  }]
+  environment = [
+    { name = "RENDERER_AUTH_TOKEN_ENABLED", value = "false" },
+    { name = "RENDERER_AUTH_TOKEN_REQUIRED", value = "false" },
+    { name = "RENDERER_AUTH_TOKEN", value = "" }
+  ]
+  entryPoint = ["/usr/src/app/run.sh"]
+  command    = ["--no-sandbox"]
+  logConfiguration = {
+    logDriver = "awslogs",
+    options = {
+      awslogs-group         = aws_cloudwatch_log_group.renderer_log_group.name,
+      awslogs-region        = "us-east-1",
+      awslogs-stream-prefix = "renderer"
     }
-  ])
+  }
+}])
 }
 
 
