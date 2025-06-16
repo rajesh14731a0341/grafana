@@ -49,7 +49,7 @@ resource "aws_lb_target_group" "renderer_tg" {
   health_check {
     # Changed health check path to a known unauthenticated endpoint
     path                = "/render/version" # Changed from "/render"
-    protocol            = "HTTP"
+    protocol            = "tcp"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
