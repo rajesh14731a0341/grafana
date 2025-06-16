@@ -42,19 +42,21 @@ resource "aws_lb_target_group" "grafana_tg" {
 resource "aws_lb_target_group" "renderer_tg" {
   name        = "renderer-tg"
   port        = 8081
-  protocol    = "HTTP"            # Required for ALB even if health check is TCP
+  protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
-    protocol            = "TCP"   # TCP since container does not expose HTTP endpoint
-    port                = "8081" # Default: checks the listener port
+    path                = "/render/version"
+    protocol            = "HTTP"
+    matcher             = "200"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
   }
 }
+
 
 
 resource "aws_lb_target_group" "redis_tg" {
@@ -168,23 +170,28 @@ resource "aws_ecs_task_definition" "grafana" {
         { name = "GF_DATABASE_USER", value = "rajesh" },
         { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.grafana_password.secret_string },
         { name = "GF_DATABASE_SSL_MODE", value = "require" },
-        { name = "REDIS_PATH", value = aws_lb.internal_nlb.dns_name }, # Now points to NLB with Redis listener
+        { name = "REDIS_PATH", value = aws_lb.internal_nlb.dns_name },
         { name = "GF_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
         { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/" },
         { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-        { name = "GF_LOG_FILTERS", value = "rendering:debug" }
+        { name = "GF_LOG_FILTERS", value = "rendering:debug" },
+        { name = "GF_RENDERING_SERVER_SKIP_TLS_VERIFY", value = "true" },
+        { name = "GF_RENDERING_SERVER_CERTIFICATE_VERIFICATION", value = "false" },
+        { name = "GF_RENDERING_SERVER_COOKIE_SAMESITE", value = "none" },
+        { name = "GF_RENDERING_SERVER_COOKIE_SECURE", value = "false" }
       ]
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group       = aws_cloudwatch_log_group.grafana_log_group.name, # Referencing the created log group
-          awslogs-region      = "us-east-1",
+          awslogs-group         = aws_cloudwatch_log_group.grafana_log_group.name,
+          awslogs-region        = "us-east-1",
           awslogs-stream-prefix = "grafana"
         }
       }
     }
   ])
 }
+
 
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
@@ -198,24 +205,25 @@ resource "aws_ecs_task_definition" "renderer" {
   container_definitions = jsonencode([
     {
       name        = "renderer"
-      # --- IMPORTANT CHANGE HERE ---
-      image       = "grafana/grafana-image-renderer:3.11.0" # Changed from 3.12.5
-      # ---------------------------
+      image       = "grafana/grafana-image-renderer:3.11.0"
       portMappings = [{ containerPort = 8081 }]
       environment = [
-        { name = "GF_RENDERER_AUTH_TOKEN_REQUIRED", value = "false" }
+        { name = "GF_RENDERER_AUTH_TOKEN_ENABLED", value = "false" },
+        { name = "GF_RENDERER_AUTH_TOKEN_REQUIRED", value = "false" },
+        { name = "GF_RENDERER_AUTH_TOKEN", value = "" }
       ]
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group       = aws_cloudwatch_log_group.renderer_log_group.name,
-          awslogs-region      = "us-east-1",
+          awslogs-group         = aws_cloudwatch_log_group.renderer_log_group.name,
+          awslogs-region        = "us-east-1",
           awslogs-stream-prefix = "renderer"
         }
       }
     }
   ])
 }
+
 
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
