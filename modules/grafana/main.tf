@@ -152,7 +152,7 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
       { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
       { name = "GF_PLUGIN_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
-      { name = "GF_PLUGIN_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
+      { name = "GF_PLUGIN_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/" },
       { name = "GF_RENDERING_SERVER_ENABLE_AUTH", value = "false" },
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
       { name = "GF_LOG_FILTERS", value = "rendering:debug" }
