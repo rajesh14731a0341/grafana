@@ -281,6 +281,14 @@ resource "aws_ecs_service" "renderer" {
     container_name   = "renderer"
     container_port   = 8081
   }
+
+  # Add this line to force a new deployment
+  force_new_deployment = true
+
+  # Lifecycle rule to ignore changes to desired_count by auto-scaling
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
 }
 
 resource "aws_ecs_service" "redis" {
