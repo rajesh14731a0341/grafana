@@ -31,6 +31,6 @@ jobs:
         working-directory: ./env/grafana
         run: terraform plan -out=tfplan
 
-      - name: 🚀 Terraform apply
+      - name: 🚀 Terraform Apply
         working-directory: ./env/grafana
-        run: terraform destroy -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan
