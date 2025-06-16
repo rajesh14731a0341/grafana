@@ -48,7 +48,7 @@ resource "aws_lb_target_group" "renderer_tg" {
 
   health_check {
     # --- IMPORTANT CHANGE FOR HTTP HEALTH CHECK ---
-    path                = "/"    # Added path for HTTP health check
+    path                = "/health"    # Added path for HTTP health check
     protocol            = "HTTP" # Changed health check protocol to HTTP
     interval            = 30
     timeout             = 5
