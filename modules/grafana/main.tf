@@ -213,8 +213,6 @@ resource "aws_ecs_task_definition" "renderer" {
     { name = "RENDERER_AUTH_TOKEN_REQUIRED", value = "false" },
     { name = "RENDERER_AUTH_TOKEN", value = "" }
   ]
-  entryPoint = ["/usr/src/app/run.sh"]
-  command    = ["--no-sandbox"]
   logConfiguration = {
     logDriver = "awslogs",
     options = {
@@ -264,6 +262,7 @@ resource "aws_ecs_service" "grafana" {
   task_definition = aws_ecs_task_definition.grafana.arn
   desired_count   = var.grafana_desired_count
   launch_type     = "FARGATE"
+  force_new_deployment = true
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -284,6 +283,7 @@ resource "aws_ecs_service" "renderer" {
   task_definition = aws_ecs_task_definition.renderer.arn
   desired_count   = var.renderer_desired_count
   launch_type     = "FARGATE"
+  force_new_deployment = true
 
   network_configuration {
     subnets          = var.private_subnet_ids
@@ -297,13 +297,13 @@ resource "aws_ecs_service" "renderer" {
     container_port   = 8081
   }
 
-  force_new_deployment = true
-  enable_execute_command = true # This line is correctly placed here
+  enable_execute_command = true
 
   lifecycle {
     ignore_changes = [desired_count]
   }
 }
+
 
 resource "aws_ecs_service" "redis" {
   name            = "redis-service"
@@ -311,6 +311,7 @@ resource "aws_ecs_service" "redis" {
   task_definition = aws_ecs_task_definition.redis.arn
   desired_count   = var.redis_desired_count
   launch_type     = "FARGATE"
+  force_new_deployment = true
 
   network_configuration {
     subnets          = var.private_subnet_ids
