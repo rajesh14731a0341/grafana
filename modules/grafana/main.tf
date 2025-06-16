@@ -208,9 +208,9 @@ resource "aws_ecs_task_definition" "renderer" {
       image       = "grafana/grafana-image-renderer:3.11.0"
       portMappings = [{ containerPort = 8081 }]
       environment = [
-        { name = "GF_RENDERER_AUTH_TOKEN_ENABLED", value = "false" },
-        { name = "GF_RENDERER_AUTH_TOKEN_REQUIRED", value = "false" },
-        { name = "GF_RENDERER_AUTH_TOKEN", value = "" }
+        { name = "RENDERER_AUTH_TOKEN_ENABLED", value = "false" },
+        { name = "RENDERER_AUTH_TOKEN_REQUIRED", value = "false" },
+        { name = "RENDERER_AUTH_TOKEN", value = "" }
       ]
       logConfiguration = {
         logDriver = "awslogs",
