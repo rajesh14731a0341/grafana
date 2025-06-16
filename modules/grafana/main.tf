@@ -209,9 +209,10 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
     }]
     environment = [
-      { name = "RENDERER_AUTH_TOKEN_ENABLED", value = "false" },
-      { name = "RENDERER_AUTH_TOKEN_REQUIRED", value = "false" },
-      { name = "RENDERER_AUTH_TOKEN", value = "" }
+      {
+        name  = "RENDERING_SERVER_ENABLE_AUTH"
+        value = "false"
+      }
     ]
     logConfiguration = {
       logDriver = "awslogs",
@@ -223,6 +224,7 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   }])
 }
+
 
 
 
