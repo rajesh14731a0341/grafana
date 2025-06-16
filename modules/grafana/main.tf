@@ -48,7 +48,7 @@ resource "aws_lb_target_group" "renderer_tg" {
 
   health_check {
     protocol            = "TCP"   # TCP since container does not expose HTTP endpoint
-    port                = "traffic-port" # Default: checks the listener port
+    port                = "8081" # Default: checks the listener port
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
