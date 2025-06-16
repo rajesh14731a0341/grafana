@@ -206,7 +206,10 @@ resource "aws_ecs_task_definition" "renderer" {
     {
       name        = "renderer"
       image       = "grafana/grafana-image-renderer:3.11.0"
-      portMappings = [{ containerPort = 8081 }]
+      portMappings = [
+        { containerPort = 8081 }
+      ]
+      command = ["--no-sandbox"]
       environment = [
         { name = "RENDERER_AUTH_TOKEN_ENABLED", value = "false" },
         { name = "RENDERER_AUTH_TOKEN_REQUIRED", value = "false" },
@@ -223,6 +226,7 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   ])
 }
+
 
 
 resource "aws_ecs_task_definition" "redis" {
