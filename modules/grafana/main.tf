@@ -33,7 +33,9 @@ resource "aws_lb_target_group" "grafana_tg" {
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
-    unhealthy_threshold = 10
+    unhealthy_threshold = 2
+    # Add this line to accept 302 as a healthy status code
+    matcher             = "200,302"
   }
 }
 
