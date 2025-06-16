@@ -33,4 +33,4 @@ jobs:
 
       - name: 🚀 Terraform destroy
         working-directory: ./env/grafana
-        run: terraform destroy -auto-approve tfplan
+        run: terraform destroy -auto-approve -var-file="terraform.tfvars"
