@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - alb
-      
+
 jobs:
   terraform:
     name: Terraform Apply

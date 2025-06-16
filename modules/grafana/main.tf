@@ -45,7 +45,7 @@ resource "aws_lb_target_group" "renderer_tg" {
   target_type = "ip"
 
   health_check {
-    path                = "/render/version"
+    path                = "/"
     protocol            = "HTTP"
     matcher             = "200-499"
     interval            = 30
