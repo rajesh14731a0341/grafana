@@ -42,15 +42,18 @@ resource "aws_lb_target_group" "grafana_tg" {
 resource "aws_lb_target_group" "renderer_tg" {
   name        = "renderer-tg"
   port        = 8081
-  protocol    = "HTTP" # Keep this as HTTP because Grafana talks HTTP to it
+  protocol    = "HTTP" # Keep this as HTTP for the target group itself
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
-    # --- IMPORTANT CHANGE HERE: REMOVE THE 'path' ATTRIBUTE FOR TCP HEALTH CHECKS ---
-    # path = "/render/version" # This line must be removed for TCP protocol
-    # -------------------------------------------------------------------------------
-    protocol            = "TCP"             # <--- Changed this to TCP
+    # --- IMPORTANT: FOR TCP HEALTH CHECKS, NEITHER 'path' NOR 'matcher' ARE ALLOWED ---
+    # The 'path' attribute is removed here:
+    # path                = "/render/version" # REMOVE THIS LINE
+    # The 'matcher' attribute is removed here:
+    # matcher             = "200,302"         # REMOVE THIS LINE
+    # ----------------------------------------------------------------------------------
+    protocol            = "TCP"             # <--- Protocol must be TCP for health check
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
