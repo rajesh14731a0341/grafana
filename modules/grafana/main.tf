@@ -149,8 +149,8 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.grafana_password.secret_string },
       { name = "GF_DATABASE_SSL_MODE", value = "require" },
       { name = "REDIS_PATH", value = aws_lb.internal_nlb.dns_name },
-      { name = "GF_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
-      { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/" },
+      { name = "GF_RENDERING_SERVER_URL", value = "http://renderer:8081" },
+      { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
       { name = "GF_RENDERING_SERVER_ENABLE_AUTH", value = "false" },
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
       { name = "GF_LOG_FILTERS", value = "rendering:debug" }
