@@ -53,7 +53,7 @@ resource "aws_lb_target_group" "renderer_tg" {
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
-    unhealthy_threshold = 2
+    unhealthy_threshold = 20
   }
 }
 
@@ -194,19 +194,20 @@ resource "aws_ecs_task_definition" "renderer" {
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
+  enable_execute_command   = true # <--- ADD THIS LINE
 
   container_definitions = jsonencode([
     {
       name        = "renderer"
       image       = "grafana/grafana-image-renderer:3.12.5"
       portMappings = [{ containerPort = 8081 }]
-      environment = [ # Added environment variable to disable auth
+      environment = [
         { name = "GF_RENDERER_AUTH_TOKEN_REQUIRED", value = "false" }
       ]
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.renderer_log_group.name, # Referencing the created log group
+          awslogs-group         = aws_cloudwatch_log_group.renderer_log_group.name,
           awslogs-region        = "us-east-1",
           awslogs-stream-prefix = "renderer"
         }
@@ -214,7 +215,6 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   ])
 }
-
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
   cpu                      = 512
