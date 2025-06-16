@@ -42,22 +42,20 @@ resource "aws_lb_target_group" "grafana_tg" {
 resource "aws_lb_target_group" "renderer_tg" {
   name        = "renderer-tg"
   port        = 8081
-  protocol    = "HTTP" # Target Group itself handles HTTP traffic
+  protocol    = "HTTP"            # Required for ALB even if health check is TCP
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
-    # --- IMPORTANT CHANGE FOR HTTP HEALTH CHECK ---
-    path                = "/health"    # Added path for HTTP health check
-    protocol            = "HTTP" # Changed health check protocol to HTTP
+    protocol            = "TCP"   # TCP since container does not expose HTTP endpoint
+    port                = "traffic-port" # Default: checks the listener port
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
-    unhealthy_threshold = 2 # Typically 2 for HTTP checks
-    matcher             = "200,302" # Re-added matcher for HTTP health check
-    # ----------------------------------------------
+    unhealthy_threshold = 2
   }
 }
+
 
 resource "aws_lb_target_group" "redis_tg" {
   name        = "redis-tg"
