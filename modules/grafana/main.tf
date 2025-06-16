@@ -194,8 +194,7 @@ resource "aws_ecs_task_definition" "renderer" {
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
-  enable_execute_command   = true # <--- ADD THIS LINE
-
+  
   container_definitions = jsonencode([
     {
       name        = "renderer"
@@ -284,10 +283,9 @@ resource "aws_ecs_service" "renderer" {
     container_port   = 8081
   }
 
-  # Add this line to force a new deployment
   force_new_deployment = true
+  enable_execute_command = true # <--- ADD THIS LINE HERE (in the service, not task definition)
 
-  # Lifecycle rule to ignore changes to desired_count by auto-scaling
   lifecycle {
     ignore_changes = [desired_count]
   }
