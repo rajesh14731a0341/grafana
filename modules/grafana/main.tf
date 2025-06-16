@@ -2,18 +2,18 @@
 # Load Balancers
 ############################################
 resource "aws_lb" "public_alb" {
-  name               = "grafana-public-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [var.security_group_id]
-  subnets            = var.public_subnet_ids
+  name                = "grafana-public-alb"
+  internal            = false
+  load_balancer_type  = "application"
+  security_groups     = [var.security_group_id]
+  subnets             = var.public_subnet_ids
 }
 
 resource "aws_lb" "internal_nlb" {
-  name               = "grafana-internal-nlb"
-  internal           = true
-  load_balancer_type = "network"
-  subnets            = var.private_subnet_ids
+  name                = "grafana-internal-nlb"
+  internal            = true
+  load_balancer_type  = "network"
+  subnets             = var.private_subnet_ids
 }
 
 
@@ -47,13 +47,15 @@ resource "aws_lb_target_group" "renderer_tg" {
   target_type = "ip"
 
   health_check {
-    protocol            = "TCP"             # <-- This is correct
+    # --- IMPORTANT CHANGE FOR HTTP HEALTH CHECK ---
+    path                = "/"    # Added path for HTTP health check
+    protocol            = "HTTP" # Changed health check protocol to HTTP
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
-    unhealthy_threshold = 10
-    # NO 'path' ATTRIBUTE HERE
-    # NO 'matcher' ATTRIBUTE HERE
+    unhealthy_threshold = 2 # Typically 2 for HTTP checks
+    matcher             = "200,302" # Re-added matcher for HTTP health check
+    # ----------------------------------------------
   }
 }
 
@@ -177,8 +179,8 @@ resource "aws_ecs_task_definition" "grafana" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.grafana_log_group.name, # Referencing the created log group
-          awslogs-region        = "us-east-1",
+          awslogs-group       = aws_cloudwatch_log_group.grafana_log_group.name, # Referencing the created log group
+          awslogs-region      = "us-east-1",
           awslogs-stream-prefix = "grafana"
         }
       }
@@ -208,8 +210,8 @@ resource "aws_ecs_task_definition" "renderer" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.renderer_log_group.name,
-          awslogs-region        = "us-east-1",
+          awslogs-group       = aws_cloudwatch_log_group.renderer_log_group.name,
+          awslogs-region      = "us-east-1",
           awslogs-stream-prefix = "renderer"
         }
       }
@@ -234,8 +236,8 @@ resource "aws_ecs_task_definition" "redis" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.redis_log_group.name, # Referencing the created log group
-          awslogs-region        = "us-east-1",
+          awslogs-group       = aws_cloudwatch_log_group.redis_log_group.name, # Referencing the created log group
+          awslogs-region      = "us-east-1",
           awslogs-stream-prefix = "redis"
         }
       }
