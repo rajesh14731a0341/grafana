@@ -1,6 +1,6 @@
-############################################
+# ---------------------------------------------
 # Load Balancers
-############################################
+# ---------------------------------------------
 resource "aws_lb" "public_alb" {
   name                = "grafana-public-alb"
   internal            = false
@@ -16,10 +16,9 @@ resource "aws_lb" "internal_nlb" {
   subnets             = var.private_subnet_ids
 }
 
-
-############################################
+# ---------------------------------------------
 # Target Groups
-############################################
+# ---------------------------------------------
 resource "aws_lb_target_group" "grafana_tg" {
   name        = "grafana-tg"
   port        = 3000
@@ -30,12 +29,11 @@ resource "aws_lb_target_group" "grafana_tg" {
   health_check {
     path                = "/"
     protocol            = "HTTP"
+    matcher             = "200,302"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
-    # Add this line to accept 302 as a healthy status code
-    matcher             = "200,302"
   }
 }
 
@@ -57,28 +55,17 @@ resource "aws_lb_target_group" "renderer_tg" {
   }
 }
 
-
-
 resource "aws_lb_target_group" "redis_tg" {
   name        = "redis-tg"
   port        = 6379
   protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
-  # Optional: Add a TCP health check if desired for Redis.
-  # health_check {
-  #   protocol            = "TCP"
-  #   interval            = 30
-  #   timeout             = 5
-  #   healthy_threshold   = 2
-  #   unhealthy_threshold = 2
-  # }
 }
 
-
-############################################
+# ---------------------------------------------
 # Listeners
-############################################
+# ---------------------------------------------
 resource "aws_lb_listener" "alb_listener" {
   load_balancer_arn = aws_lb.public_alb.arn
   port              = 80
@@ -106,11 +93,10 @@ resource "aws_lb_listener_rule" "render_rule" {
   }
 }
 
-# Listener for the internal NLB to direct traffic to Redis.
 resource "aws_lb_listener" "nlb_redis_listener" {
   load_balancer_arn = aws_lb.internal_nlb.arn
-  port              = 6379 # The standard port for Redis
-  protocol          = "TCP" # Use TCP for Redis traffic
+  port              = 6379
+  protocol          = "TCP"
 
   default_action {
     type             = "forward"
@@ -118,38 +104,31 @@ resource "aws_lb_listener" "nlb_redis_listener" {
   }
 }
 
-
-############################################
+# ---------------------------------------------
 # Secrets Manager
-############################################
+# ---------------------------------------------
 data "aws_secretsmanager_secret_version" "grafana_password" {
   secret_id = var.db_secret_arn
 }
 
-############################################
+# ---------------------------------------------
 # CloudWatch Log Groups
-############################################
+# ---------------------------------------------
 resource "aws_cloudwatch_log_group" "grafana_log_group" {
   name = "/ecs/grafana-service"
-  # Optional: Set retention in days, e.g., 30 for 30 days
-  # retention_in_days = 30
 }
 
 resource "aws_cloudwatch_log_group" "renderer_log_group" {
   name = "/ecs/renderer-service"
-  # Optional: Set retention in days, e.g., 30 for 30 days
-  # retention_in_days = 30
 }
 
 resource "aws_cloudwatch_log_group" "redis_log_group" {
   name = "/ecs/redis-service"
-  # Optional: Set retention in days, e.g., 30 for 30 days
-  # retention_in_days = 30
 }
 
-############################################
+# ---------------------------------------------
 # ECS Task Definitions
-############################################
+# ---------------------------------------------
 resource "aws_ecs_task_definition" "grafana" {
   family                   = "grafana-task"
   cpu                      = 512
@@ -159,39 +138,33 @@ resource "aws_ecs_task_definition" "grafana" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name        = "grafana"
-      image       = "grafana/grafana-enterprise:11.6.1"
-      portMappings = [{ containerPort = 3000 }]
-      environment = [
-        { name = "GF_DATABASE_HOST", value = var.db_endpoint },
-        { name = "GF_DATABASE_NAME", value = "grafana" },
-        { name = "GF_DATABASE_USER", value = "rajesh" },
-        { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.grafana_password.secret_string },
-        { name = "GF_DATABASE_SSL_MODE", value = "require" },
-        { name = "REDIS_PATH", value = aws_lb.internal_nlb.dns_name },
-        { name = "GF_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
-        { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/" },
-        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-        { name = "GF_LOG_FILTERS", value = "rendering:debug" },
-        { name = "GF_RENDERING_SERVER_SKIP_TLS_VERIFY", value = "true" },
-        { name = "GF_RENDERING_SERVER_CERTIFICATE_VERIFICATION", value = "false" },
-        { name = "GF_RENDERING_SERVER_COOKIE_SAMESITE", value = "none" },
-        { name = "GF_RENDERING_SERVER_COOKIE_SECURE", value = "false" }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs",
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.grafana_log_group.name,
-          awslogs-region        = "us-east-1",
-          awslogs-stream-prefix = "grafana"
-        }
+  container_definitions = jsonencode([{
+    name  = "grafana"
+    image = "grafana/grafana-enterprise:11.6.1"
+    portMappings = [{ containerPort = 3000 }]
+    environment = [
+      { name = "GF_DATABASE_HOST", value = var.db_endpoint },
+      { name = "GF_DATABASE_NAME", value = "grafana" },
+      { name = "GF_DATABASE_USER", value = "rajesh" },
+      { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.grafana_password.secret_string },
+      { name = "GF_DATABASE_SSL_MODE", value = "require" },
+      { name = "REDIS_PATH", value = aws_lb.internal_nlb.dns_name },
+      { name = "GF_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
+      { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/" },
+      { name = "GF_RENDERING_SERVER_ENABLE_AUTH", value = "false" },
+      { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
+      { name = "GF_LOG_FILTERS", value = "rendering:debug" }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs",
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.grafana_log_group.name,
+        awslogs-region        = "us-east-1",
+        awslogs-stream-prefix = "grafana"
       }
     }
-  ])
+  }])
 }
-
 
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
@@ -205,14 +178,12 @@ resource "aws_ecs_task_definition" "renderer" {
   container_definitions = jsonencode([{
     name  = "renderer"
     image = "grafana/grafana-image-renderer:3.11.1"
-    portMappings = [{
-      containerPort = 8081
-    }]
+    portMappings = [{ containerPort = 8081 }]
     environment = [
-      {
-        name  = "RENDERING_SERVER_ENABLE_AUTH"
-        value = "false"
-      }
+      { name = "RENDERING_SERVER_ENABLE_AUTH", value = "false" },
+      { name = "RENDERING_SERVER_HOST", value = "0.0.0.0" },
+      { name = "RENDERING_SERVER_PORT", value = "8081" },
+      { name = "RENDERING_MODE", value = "server" }
     ]
     logConfiguration = {
       logDriver = "awslogs",
@@ -225,10 +196,6 @@ resource "aws_ecs_task_definition" "renderer" {
   }])
 }
 
-
-
-
-
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
   cpu                      = 512
@@ -238,21 +205,19 @@ resource "aws_ecs_task_definition" "redis" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name        = "redis"
-      image       = "redis:latest"
-      portMappings = [{ containerPort = 6379 }]
-      logConfiguration = {
-        logDriver = "awslogs",
-        options = {
-          awslogs-group       = aws_cloudwatch_log_group.redis_log_group.name, # Referencing the created log group
-          awslogs-region      = "us-east-1",
-          awslogs-stream-prefix = "redis"
-        }
+  container_definitions = jsonencode([{
+    name  = "redis"
+    image = "redis:latest"
+    portMappings = [{ containerPort = 6379 }]
+    logConfiguration = {
+      logDriver = "awslogs",
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.redis_log_group.name,
+        awslogs-region        = "us-east-1",
+        awslogs-stream-prefix = "redis"
       }
     }
-  ])
+  }])
 }
 
 
