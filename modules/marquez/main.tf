@@ -60,7 +60,7 @@ resource "aws_lb_target_group" "tg" {
   target_type = "ip"
 
   health_check {
-    path                = "/"
+    path                = "/api/v1/namespaces"
     port                = "traffic-port"
     protocol            = "HTTP"
     healthy_threshold   = 2
@@ -137,7 +137,7 @@ resource "aws_ecs_task_definition" "task" {
           { name = "POSTGRES_DB", value = "marquez" }
         ] :
         each.key == "marquez-api" ? [
-          { name = "DATABASE_URL", value = "postgres://marquez:marquez@marquez-db:5432/marquez" }
+          { name = "DATABASE_URL", value = "jdbc:postgresql://marquez-db:5432/marquez?user=marquez&password=marquez" }
         ] :
         each.key == "marquez-web" ? [
           { name = "MARQUEZ_HOST", value = "marquez-api" },
