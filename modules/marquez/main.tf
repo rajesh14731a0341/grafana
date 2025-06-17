@@ -137,11 +137,7 @@ resource "aws_ecs_task_definition" "task" {
           { name = "POSTGRES_DB", value = "marquez" }
         ] :
         each.key == "marquez-api" ? [
-          { name = "POSTGRES_USER", value = "marquez" },
-          { name = "POSTGRES_PASSWORD", value = "marquez" },
-          { name = "POSTGRES_DB", value = "marquez" },
-          { name = "POSTGRES_HOST", value = "marquez-db" },
-          { name = "POSTGRES_PORT", value = "5432" }
+          { name = "DATABASE_URL", value = "postgres://marquez:marquez@marquez-db:5432/marquez" }
         ] :
         each.key == "marquez-web" ? [
           { name = "MARQUEZ_HOST", value = "marquez-api" },
@@ -168,10 +164,10 @@ resource "aws_ecs_task_definition" "task" {
 resource "aws_ecs_service" "service" {
   for_each = local.service_configs
 
-  name            = each.key
-  cluster         = var.ecs_cluster_id
-  launch_type     = "FARGATE"
-  desired_count   = 1
+  name                   = each.key
+  cluster                = var.ecs_cluster_id
+  launch_type            = "FARGATE"
+  desired_count          = 1
   enable_execute_command = true
 
   network_configuration {
