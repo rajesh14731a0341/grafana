@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
-    bucket = "redshift-data-migration-bucket"
-    key    = "marquez/new/terraform.tfstate"
+    bucket = "your-s3-tfstate-bucket"
+    key    = "marquez/terraform.tfstate"
     region = "us-east-1"
   }
 }
