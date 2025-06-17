@@ -20,6 +20,10 @@ locals {
   }
 }
 
+######################################
+# Load Balancer
+######################################
+
 resource "aws_lb" "public_alb" {
   name               = "marquez-public-alb"
   internal           = false
@@ -32,6 +36,7 @@ resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.public_alb.arn
   port              = 80
   protocol          = "HTTP"
+
   default_action {
     type = "fixed-response"
     fixed_response {
@@ -53,6 +58,7 @@ resource "aws_lb_target_group" "tg" {
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+
   health_check {
     path                = "/"
     port                = "traffic-port"
@@ -72,10 +78,12 @@ resource "aws_lb_listener_rule" "listener_rules" {
 
   listener_arn = aws_lb_listener.http.arn
   priority     = each.key == "marquez-web" ? 10 : 20
+
   action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.tg[each.key].arn
   }
+
   condition {
     path_pattern {
       values = [each.value.host_path]
@@ -83,11 +91,19 @@ resource "aws_lb_listener_rule" "listener_rules" {
   }
 }
 
+######################################
+# CloudWatch Logs
+######################################
+
 resource "aws_cloudwatch_log_group" "logs" {
   for_each = local.service_configs
-  name     = "/ecs/${each.key}"
+  name              = "/ecs/${each.key}"
   retention_in_days = 7
 }
+
+######################################
+# Task Definitions
+######################################
 
 resource "aws_ecs_task_definition" "task" {
   for_each = local.service_configs
@@ -99,11 +115,13 @@ resource "aws_ecs_task_definition" "task" {
   network_mode             = "awsvpc"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
-  container_definitions    = jsonencode([
+
+  container_definitions = jsonencode([
     {
       name      = each.key
       image     = each.value.image
       essential = true
+
       portMappings = [
         {
           containerPort = each.value.container_port
@@ -111,6 +129,7 @@ resource "aws_ecs_task_definition" "task" {
           protocol      = "tcp"
         }
       ]
+
       environment = (
         each.key == "marquez-db" ? [
           { name = "POSTGRES_USER", value = "marquez" },
@@ -122,6 +141,7 @@ resource "aws_ecs_task_definition" "task" {
           { name = "MARQUEZ_PORT", value = "5000" }
         ] : []
       )
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -133,6 +153,10 @@ resource "aws_ecs_task_definition" "task" {
     }
   ])
 }
+
+######################################
+# ECS Services
+######################################
 
 resource "aws_ecs_service" "service" {
   for_each = local.service_configs
@@ -163,6 +187,10 @@ resource "aws_ecs_service" "service" {
   depends_on = [aws_lb_listener.http]
 }
 
+######################################
+# Auto Scaling (with dependency fix)
+######################################
+
 resource "aws_appautoscaling_target" "ecs_target" {
   for_each = local.service_configs
 
@@ -171,6 +199,8 @@ resource "aws_appautoscaling_target" "ecs_target" {
   resource_id        = "service/${var.ecs_cluster_name}/${each.key}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
+
+  depends_on = [aws_ecs_service.service[each.key]]
 }
 
 resource "aws_appautoscaling_policy" "cpu_policy" {
@@ -190,4 +220,6 @@ resource "aws_appautoscaling_policy" "cpu_policy" {
     scale_in_cooldown  = 60
     scale_out_cooldown = 60
   }
+
+  depends_on = [aws_appautoscaling_target.ecs_target[each.key]]
 }
