@@ -136,6 +136,13 @@ resource "aws_ecs_task_definition" "task" {
           { name = "POSTGRES_PASSWORD", value = "marquez" },
           { name = "POSTGRES_DB", value = "marquez" }
         ] :
+        each.key == "marquez-api" ? [
+          { name = "POSTGRES_USER", value = "marquez" },
+          { name = "POSTGRES_PASSWORD", value = "marquez" },
+          { name = "POSTGRES_DB", value = "marquez" },
+          { name = "POSTGRES_HOST", value = "marquez-db" },
+          { name = "POSTGRES_PORT", value = "5432" }
+        ] :
         each.key == "marquez-web" ? [
           { name = "MARQUEZ_HOST", value = "marquez-api" },
           { name = "MARQUEZ_PORT", value = "5000" }
@@ -168,9 +175,9 @@ resource "aws_ecs_service" "service" {
   enable_execute_command = true
 
   network_configuration {
-    subnets         = var.private_subnet_ids
+    subnets          = var.private_subnet_ids
     assign_public_ip = false
-    security_groups = [var.security_group_id]
+    security_groups  = [var.security_group_id]
   }
 
   task_definition = aws_ecs_task_definition.task[each.key].arn
@@ -188,7 +195,7 @@ resource "aws_ecs_service" "service" {
 }
 
 ######################################
-# Auto Scaling (with dependency fix)
+# Auto Scaling
 ######################################
 
 resource "aws_appautoscaling_target" "ecs_target" {
@@ -202,7 +209,6 @@ resource "aws_appautoscaling_target" "ecs_target" {
 
   depends_on = [aws_ecs_service.service]
 }
-
 
 resource "aws_appautoscaling_policy" "cpu_policy" {
   for_each = local.service_configs
