@@ -27,7 +27,7 @@ resource "aws_lb_target_group" "grafana_tg" {
   target_type = "ip"
 
   health_check {
-    path                = "/"
+    path                = "/api/health"
     protocol            = "HTTP"
     matcher             = "200,302"
     interval            = 30
