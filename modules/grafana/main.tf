@@ -83,6 +83,9 @@ resource "aws_ecs_service" "redis" {
   desired_count   = var.redis_desired_count
   launch_type     = "FARGATE"
 
+  enable_execute_command = true
+  force_new_deployment   = true
+
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.security_group_id]
@@ -92,8 +95,11 @@ resource "aws_ecs_service" "redis" {
   service_registries {
     registry_arn = aws_service_discovery_service.redis.arn
   }
-}
 
+  deployment_controller {
+    type = "ECS"
+  }
+}
 resource "aws_appautoscaling_target" "redis" {
   max_capacity       = var.redis_autoscaling_max
   min_capacity       = var.redis_autoscaling_min
@@ -177,7 +183,9 @@ resource "aws_ecs_service" "renderer" {
   task_definition = aws_ecs_task_definition.renderer.arn
   desired_count   = var.renderer_desired_count
   launch_type     = "FARGATE"
+
   enable_execute_command = true
+  force_new_deployment   = true
 
   network_configuration {
     subnets          = var.subnet_ids
@@ -188,7 +196,12 @@ resource "aws_ecs_service" "renderer" {
   service_registries {
     registry_arn = aws_service_discovery_service.renderer.arn
   }
+
+  deployment_controller {
+    type = "ECS"
+  }
 }
+
 
 resource "aws_appautoscaling_target" "renderer" {
   max_capacity       = var.renderer_autoscaling_max
@@ -295,6 +308,9 @@ resource "aws_ecs_service" "grafana" {
   desired_count   = var.grafana_desired_count
   launch_type     = "FARGATE"
 
+  enable_execute_command = true
+  force_new_deployment   = true
+
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.security_group_id]
@@ -304,7 +320,12 @@ resource "aws_ecs_service" "grafana" {
   service_registries {
     registry_arn = aws_service_discovery_service.grafana.arn
   }
+
+  deployment_controller {
+    type = "ECS"
+  }
 }
+
 
 resource "aws_appautoscaling_target" "grafana" {
   max_capacity       = var.grafana_autoscaling_max
