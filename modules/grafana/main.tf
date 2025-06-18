@@ -1,4 +1,11 @@
 ###############################
+# Locals (for ECS cluster name)
+###############################
+locals {
+  ecs_cluster_name = element(split("/", var.ecs_cluster_id), length(split("/", var.ecs_cluster_id)) - 1)
+}
+
+###############################
 # CloudWatch Log Groups
 ###############################
 
@@ -17,10 +24,10 @@ resource "aws_cloudwatch_log_group" "grafana" {
   retention_in_days = 7
 }
 
-
 ###############################
 # Redis ECS
 ###############################
+
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
   cpu                      = "256"
@@ -59,7 +66,7 @@ resource "aws_service_discovery_service" "redis" {
     namespace_id   = var.cloudmap_namespace_id
     routing_policy = "MULTIVALUE"
     dns_records {
-      ttl  = 10
+      ttl  = 30
       type = "A"
     }
   }
@@ -87,9 +94,35 @@ resource "aws_ecs_service" "redis" {
   }
 }
 
+resource "aws_appautoscaling_target" "redis" {
+  max_capacity       = var.redis_autoscaling_max
+  min_capacity       = var.redis_autoscaling_min
+  resource_id        = "service/${local.ecs_cluster_name}/${aws_ecs_service.redis.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "redis_cpu" {
+  name               = "redis-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.redis.resource_id
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = var.redis_autoscaling_cpu_target
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 60
+  }
+}
+
 ###############################
 # Renderer ECS
 ###############################
+
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
   cpu                      = "256"
@@ -128,7 +161,7 @@ resource "aws_service_discovery_service" "renderer" {
     namespace_id   = var.cloudmap_namespace_id
     routing_policy = "MULTIVALUE"
     dns_records {
-      ttl  = 10
+      ttl  = 30
       type = "A"
     }
   }
@@ -157,9 +190,35 @@ resource "aws_ecs_service" "renderer" {
   }
 }
 
+resource "aws_appautoscaling_target" "renderer" {
+  max_capacity       = var.renderer_autoscaling_max
+  min_capacity       = var.renderer_autoscaling_min
+  resource_id        = "service/${local.ecs_cluster_name}/${aws_ecs_service.renderer.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "renderer_cpu" {
+  name               = "renderer-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.renderer.resource_id
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = var.renderer_autoscaling_cpu_target
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 60
+  }
+}
+
 ###############################
 # Grafana ECS
 ###############################
+
 data "aws_secretsmanager_secret_version" "db_secret" {
   secret_id = var.db_secret_arn
 }
@@ -243,5 +302,30 @@ resource "aws_ecs_service" "grafana" {
 
   service_registries {
     registry_arn = aws_service_discovery_service.grafana.arn
+  }
+}
+
+resource "aws_appautoscaling_target" "grafana" {
+  max_capacity       = var.grafana_autoscaling_max
+  min_capacity       = var.grafana_autoscaling_min
+  resource_id        = "service/${local.ecs_cluster_name}/${aws_ecs_service.grafana.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "grafana_cpu" {
+  name               = "grafana-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.grafana.resource_id
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = var.grafana_autoscaling_cpu_target
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 60
   }
 }
