@@ -259,6 +259,7 @@ resource "aws_ecs_task_definition" "grafana" {
       protocol      = "tcp"
     }]
     environment = [
+      # PostgreSQL Configuration
       { name = "GF_DATABASE_TYPE",               value = "postgres" },
       { name = "GF_DATABASE_HOST",               value = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com" },
       { name = "GF_DATABASE_NAME",               value = "grafana" },
@@ -266,25 +267,27 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_DATABASE_PASSWORD",           value = data.aws_secretsmanager_secret_version.db_secret.secret_string },
       { name = "GF_DATABASE_SSL_MODE",           value = "require" },
 
-      # Redis Caching
+      # Redis Caching (Optional)
       { name = "REDIS_PATH",                     value = "redis.${var.cloudmap_namespace}:6379" },
       { name = "REDIS_DB",                       value = "1" },
       { name = "REDIS_CACHETIME",                value = "12000" },
       { name = "CACHING",                        value = "Y" },
 
-      # Grafana Features
+      # Grafana Rendering Setup
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE",     value = "true" },
       { name = "GF_RENDERING_SERVER_URL",        value = "http://renderer.${var.cloudmap_namespace}:8081/render" },
       { name = "GF_RENDERING_CALLBACK_URL",      value = "http://grafana.${var.cloudmap_namespace}:3000/" },
       { name = "GF_RENDERING_EXTERNAL_ENABLED",  value = "true" },
+      { name = "GF_RENDERING_MODE",              value = "remote" },
 
-      # Shared Secret for Secure Rendering
+      # Shared Secret (must match renderer)
       { name = "GF_RENDERING_SERVER_COOKIE",     value = "render_key=Rajesh@341" },
       { name = "GF_RENDERING_SERVER_SECRET",     value = "Rajesh@341" },
 
+      # Logging & Debug
       { name = "GF_LOG_FILTERS",                 value = "rendering: debug" },
 
-      # Optional Anonymous Access (for test/debug)
+      # Anonymous Access (for dev/debug)
       { name = "GF_AUTH_ANONYMOUS_ENABLED",      value = "true" },
       { name = "GF_AUTH_ANONYMOUS_ORG_ROLE",     value = "Admin" },
       { name = "GF_AUTH_DISABLE_LOGIN_FORM",     value = "false" },
@@ -300,6 +303,7 @@ resource "aws_ecs_task_definition" "grafana" {
     }
   }])
 }
+
 
 
 resource "aws_service_discovery_service" "grafana" {
