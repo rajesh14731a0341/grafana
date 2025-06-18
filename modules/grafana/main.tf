@@ -256,6 +256,7 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
       { name = "GF_RENDERING_SERVER_URL",  value = "http://renderer.${var.cloudmap_namespace}:8081/render" },
       { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.${var.cloudmap_namespace}:3000/" },
+      { name = "GF_RENDERING_EXTERNAL_ENABLED", value = "true" }, # ✅ REQUIRED!
       { name = "GF_LOG_FILTERS",           value = "rendering: debug" }
     ]
     logConfiguration = {
