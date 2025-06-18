@@ -148,7 +148,7 @@ resource "aws_ecs_task_definition" "renderer" {
       protocol      = "tcp"
     }]
     environment = [
-      { name = "RENDERING_SERVER_SECRET", value = "mysecret" }
+      { name = "RENDERING_SERVER_SECRET", value = "Rajesh@341" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -279,8 +279,8 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_RENDERING_EXTERNAL_ENABLED",  value = "true" },
 
       # Shared Secret for Secure Rendering
-      { name = "GF_RENDERING_SERVER_COOKIE",     value = "render_key=mysecret" },
-      { name = "GF_RENDERING_SERVER_SECRET",     value = "mysecret" },
+      { name = "GF_RENDERING_SERVER_COOKIE",     value = "render_key=Rajesh@341" },
+      { name = "GF_RENDERING_SERVER_SECRET",     value = "Rajesh@341" },
 
       { name = "GF_LOG_FILTERS",                 value = "rendering: debug" },
 
