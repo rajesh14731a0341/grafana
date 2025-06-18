@@ -128,7 +128,6 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
 ###############################
 # Renderer ECS
 ###############################
-
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
   cpu                      = "256"
@@ -148,6 +147,9 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
       protocol      = "tcp"
     }]
+    environment = [
+      { name = "RENDERING_SERVER_SECRET", value = "mysecret" }
+    ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -158,6 +160,7 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   }])
 }
+
 
 resource "aws_service_discovery_service" "renderer" {
   name         = "renderer"
@@ -274,9 +277,14 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_RENDERING_SERVER_URL",        value = "http://renderer.${var.cloudmap_namespace}:8081/render" },
       { name = "GF_RENDERING_CALLBACK_URL",      value = "http://grafana.${var.cloudmap_namespace}:3000/" },
       { name = "GF_RENDERING_EXTERNAL_ENABLED",  value = "true" },
+
+      # Shared Secret for Secure Rendering
+      { name = "GF_RENDERING_SERVER_COOKIE",     value = "render_key=mysecret" },
+      { name = "GF_RENDERING_SERVER_SECRET",     value = "mysecret" },
+
       { name = "GF_LOG_FILTERS",                 value = "rendering: debug" },
 
-      # Anonymous Auth for Renderer
+      # Optional Anonymous Access (for test/debug)
       { name = "GF_AUTH_ANONYMOUS_ENABLED",      value = "true" },
       { name = "GF_AUTH_ANONYMOUS_ORG_ROLE",     value = "Admin" },
       { name = "GF_AUTH_DISABLE_LOGIN_FORM",     value = "false" },
@@ -292,6 +300,7 @@ resource "aws_ecs_task_definition" "grafana" {
     }
   }])
 }
+
 
 resource "aws_service_discovery_service" "grafana" {
   name         = "grafana"
