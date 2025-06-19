@@ -254,11 +254,12 @@ resource "aws_ecs_task_definition" "redis" {
     }]
     command = ["redis-server", "--bind", "0.0.0.0"]
     logConfiguration = {
-      logDriver = "awslogs",
+      logDriver = "awslogs"
       options = {
-        awslogs-group         = aws_cloudwatch_log_group.redis_log_group.name,
-        awslogs-region        = "us-east-1",
+        awslogs-group         = "${local.log_prefix}-redis"
+        awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "redis"
+        awslogs-create-group  = "true"
       }
     }
   }])
