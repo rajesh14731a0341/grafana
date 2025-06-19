@@ -147,7 +147,7 @@ resource "aws_ecs_task_definition" "grafana" {
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
         { name = "GF_DATABASE_NAME", value = "grafana" },
         { name = "GF_DATABASE_USER", value = "grafana" },
-        { name = "GF_DATABASE_PASSWORD", value = jsondecode(data.aws_secretsmanager_secret_version.db.secret_string)["password"] },
+        { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.db.secret_string },
         { name = "GF_DATABASE_SSL_MODE", value = "require" },
 
         { name = "GF_RENDERING_SERVER_URL", value = "http://${data.aws_lb.public_alb.dns_name}/render" },
@@ -173,6 +173,7 @@ resource "aws_ecs_task_definition" "grafana" {
     }
   ])
 }
+
 
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
