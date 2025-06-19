@@ -1,6 +1,9 @@
 module "grafana" {
   source = "../../modules/grafana"
 
+  alb_name = var.alb_name
+  nlb_name = var.nlb_name
+
   ecs_cluster_id          = var.ecs_cluster_id
   ecs_cluster_name        = var.ecs_cluster_name
   vpc_id                  = var.vpc_id
