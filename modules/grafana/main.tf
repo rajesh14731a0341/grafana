@@ -3,7 +3,7 @@ locals {
 }
 
 ##############################
-# Data Sources for Existing Load Balancers
+# Data Sources for Load Balancers
 ##############################
 
 data "aws_lb" "public_alb" {
@@ -15,7 +15,7 @@ data "aws_lb" "internal_nlb" {
 }
 
 ##############################
-# Target Groups (WITHOUT load_balancer_arns!)
+# Target Groups
 ##############################
 
 resource "aws_lb_target_group" "grafana_tg" {
@@ -55,7 +55,7 @@ resource "aws_lb_target_group" "redis_tg" {
 }
 
 ##############################
-# Listeners and Listener Rules
+# Load Balancer Listeners
 ##############################
 
 resource "aws_lb_listener" "public_listener" {
@@ -105,8 +105,19 @@ resource "aws_lb_listener_rule" "renderer_rule" {
   }
 }
 
+resource "aws_lb_listener" "redis_tcp" {
+  load_balancer_arn = data.aws_lb.internal_nlb.arn
+  port              = 6379
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.redis_tg.arn
+  }
+}
+
 ##############################
-# IAM & Secrets
+# Secrets Manager
 ##############################
 
 data "aws_secretsmanager_secret_version" "db" {
@@ -114,7 +125,7 @@ data "aws_secretsmanager_secret_version" "db" {
 }
 
 ##############################
-# Task Definitions
+# ECS Task Definitions
 ##############################
 
 resource "aws_ecs_task_definition" "grafana" {
@@ -136,14 +147,12 @@ resource "aws_ecs_task_definition" "grafana" {
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
         { name = "GF_DATABASE_NAME", value = "grafana" },
         { name = "GF_DATABASE_USER", value = "grafana" },
-        { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.db.secret_string },
+        { name = "GF_DATABASE_PASSWORD", value = jsondecode(data.aws_secretsmanager_secret_version.db.secret_string)["password"] },
         { name = "GF_DATABASE_SSL_MODE", value = "require" },
 
-        # Renderer via public ALB /render path
         { name = "GF_RENDERING_SERVER_URL", value = "http://${data.aws_lb.public_alb.dns_name}/render" },
         { name = "GF_RENDERING_CALLBACK_URL", value = "http://${data.aws_lb.public_alb.dns_name}/grafana" },
 
-        # Redis via internal NLB DNS name and port
         { name = "REDIS_PATH", value = "${data.aws_lb.internal_nlb.dns_name}:6379" },
         { name = "REDIS_DB", value = "1" },
         { name = "REDIS_CACHETIME", value = "12000" },
@@ -289,6 +298,7 @@ resource "aws_ecs_service" "redis" {
   }
 
   enable_execute_command = true
+  depends_on             = [aws_lb_listener.redis_tcp]
 }
 
 ##############################
@@ -301,6 +311,7 @@ resource "aws_appautoscaling_target" "grafana" {
   scalable_dimension = "ecs:service:DesiredCount"
   min_capacity       = var.grafana_autoscaling_min
   max_capacity       = var.grafana_autoscaling_max
+  depends_on         = [aws_ecs_service.grafana]
 }
 
 resource "aws_appautoscaling_policy" "grafana_cpu" {
@@ -326,6 +337,7 @@ resource "aws_appautoscaling_target" "renderer" {
   scalable_dimension = "ecs:service:DesiredCount"
   min_capacity       = var.renderer_autoscaling_min
   max_capacity       = var.renderer_autoscaling_max
+  depends_on         = [aws_ecs_service.renderer]
 }
 
 resource "aws_appautoscaling_policy" "renderer_cpu" {
@@ -351,6 +363,7 @@ resource "aws_appautoscaling_target" "redis" {
   scalable_dimension = "ecs:service:DesiredCount"
   min_capacity       = var.redis_autoscaling_min
   max_capacity       = var.redis_autoscaling_max
+  depends_on         = [aws_ecs_service.redis]
 }
 
 resource "aws_appautoscaling_policy" "redis_cpu" {
