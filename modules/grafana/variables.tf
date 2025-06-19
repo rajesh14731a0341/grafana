@@ -110,3 +110,13 @@ variable "redis_autoscaling_cpu_target" {
   description = "CPU target percentage for Redis"
   type        = number
 }
+
+variable "alb_name" {
+  description = "The name of the existing Application Load Balancer"
+  type        = string
+}
+
+variable "nlb_name" {
+  description = "The name of the existing Network Load Balancer"
+  type        = string
+}
