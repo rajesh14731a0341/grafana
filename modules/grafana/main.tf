@@ -3,22 +3,24 @@ locals {
 }
 
 ##############################
-# Load Balancers
+# Data sources for existing Load Balancers
 ##############################
 
-resource "aws_lb" "public_alb" {
-  name               = var.alb_name
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [var.security_group_id]
-  subnets            = var.public_subnet_ids
+data "aws_lb" "public_alb" {
+  name = var.alb_name
 }
 
-resource "aws_lb" "internal_nlb" {
-  name               = var.nlb_name
-  internal           = true
-  load_balancer_type = "network"
-  subnets            = var.private_subnet_ids
+data "aws_lb" "internal_nlb" {
+  name = var.nlb_name
+}
+
+##############################
+# Data source for existing ALB listener (port 80)
+##############################
+
+data "aws_lb_listener" "public_listener" {
+  load_balancer_arn = data.aws_lb.public_alb.arn
+  port              = 80
 }
 
 ##############################
@@ -31,6 +33,8 @@ resource "aws_lb_target_group" "grafana_tg" {
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+
+  load_balancer_arns = [data.aws_lb.public_alb.arn]
 
   health_check {
     path     = "/login"
@@ -46,6 +50,8 @@ resource "aws_lb_target_group" "renderer_tg" {
   vpc_id      = var.vpc_id
   target_type = "ip"
 
+  load_balancer_arns = [data.aws_lb.public_alb.arn]
+
   health_check {
     path     = "/render"
     protocol = "HTTP"
@@ -59,33 +65,23 @@ resource "aws_lb_target_group" "redis_tg" {
   protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+
+  load_balancer_arns = [data.aws_lb.internal_nlb.arn]
 }
 
 ##############################
-# Listeners
+# Listener Rules
 ##############################
-
-resource "aws_lb_listener" "public_listener" {
-  load_balancer_arn = aws_lb.public_alb.arn
-  port              = 80
-  protocol          = "HTTP"
-  default_action {
-    type = "fixed-response"
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "Not Found"
-      status_code  = "404"
-    }
-  }
-}
 
 resource "aws_lb_listener_rule" "grafana_rule" {
-  listener_arn = aws_lb_listener.public_listener.arn
+  listener_arn = data.aws_lb_listener.public_listener.arn
   priority     = 100
+
   action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.grafana_tg.arn
   }
+
   condition {
     path_pattern {
       values = ["/grafana*"]
@@ -94,12 +90,14 @@ resource "aws_lb_listener_rule" "grafana_rule" {
 }
 
 resource "aws_lb_listener_rule" "renderer_rule" {
-  listener_arn = aws_lb_listener.public_listener.arn
+  listener_arn = data.aws_lb_listener.public_listener.arn
   priority     = 200
+
   action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.renderer_tg.arn
   }
+
   condition {
     path_pattern {
       values = ["/render*"]
@@ -108,7 +106,7 @@ resource "aws_lb_listener_rule" "renderer_rule" {
 }
 
 ##############################
-# IAM & Secrets
+# IAM & Secrets Manager
 ##############################
 
 data "aws_secretsmanager_secret_version" "db" {
@@ -116,7 +114,7 @@ data "aws_secretsmanager_secret_version" "db" {
 }
 
 ##############################
-# Task Definitions
+# ECS Task Definitions
 ##############################
 
 resource "aws_ecs_task_definition" "grafana" {
@@ -132,7 +130,12 @@ resource "aws_ecs_task_definition" "grafana" {
     {
       name  = "grafana"
       image = "grafana/grafana-enterprise:latest"
-      portMappings = [{ containerPort = 3000 }]
+      portMappings = [
+        {
+          containerPort = 3000
+          protocol      = "tcp"
+        }
+      ]
       environment = [
         { name = "GF_DATABASE_TYPE", value = "postgres" },
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
@@ -141,12 +144,12 @@ resource "aws_ecs_task_definition" "grafana" {
         { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.db.secret_string },
         { name = "GF_DATABASE_SSL_MODE", value = "require" },
 
-        # Renderer via public ALB /render path
-        { name = "GF_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
-        { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/grafana" },
+        # Renderer via ALB /render path
+        { name = "GF_RENDERING_SERVER_URL", value = "http://${data.aws_lb.public_alb.dns_name}/render" },
+        { name = "GF_RENDERING_CALLBACK_URL", value = "http://${data.aws_lb.public_alb.dns_name}/grafana" },
 
-        # Redis via internal NLB DNS name and port
-        { name = "REDIS_PATH", value = "${aws_lb.internal_nlb.dns_name}:6379" },
+        # Redis via internal NLB DNS and port
+        { name = "REDIS_PATH", value = "${data.aws_lb.internal_nlb.dns_name}:6379" },
         { name = "REDIS_DB", value = "1" },
         { name = "REDIS_CACHETIME", value = "12000" },
         { name = "CACHING", value = "Y" },
@@ -154,12 +157,13 @@ resource "aws_ecs_task_definition" "grafana" {
         { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
         { name = "GF_LOG_FILTERS", value = "rendering:debug" }
       ]
+
       logConfiguration = {
-        logDriver = "awslogs",
+        logDriver = "awslogs"
         options = {
-          awslogs-group         = "${local.log_prefix}-grafana",
-          awslogs-region        = "us-east-1",
-          awslogs-stream-prefix = "grafana",
+          awslogs-group         = "${local.log_prefix}-grafana"
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "grafana"
           awslogs-create-group  = "true"
         }
       }
@@ -180,13 +184,18 @@ resource "aws_ecs_task_definition" "renderer" {
     {
       name  = "renderer"
       image = "grafana/grafana-image-renderer:latest"
-      portMappings = [{ containerPort = 8081 }]
+      portMappings = [
+        {
+          containerPort = 8081
+          protocol      = "tcp"
+        }
+      ]
       logConfiguration = {
-        logDriver = "awslogs",
+        logDriver = "awslogs"
         options = {
-          awslogs-group         = "${local.log_prefix}-renderer",
-          awslogs-region        = "us-east-1",
-          awslogs-stream-prefix = "renderer",
+          awslogs-group         = "${local.log_prefix}-renderer"
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "renderer"
           awslogs-create-group  = "true"
         }
       }
@@ -207,13 +216,18 @@ resource "aws_ecs_task_definition" "redis" {
     {
       name  = "redis"
       image = "redis:7"
-      portMappings = [{ containerPort = 6379 }]
+      portMappings = [
+        {
+          containerPort = 6379
+          protocol      = "tcp"
+        }
+      ]
       logConfiguration = {
-        logDriver = "awslogs",
+        logDriver = "awslogs"
         options = {
-          awslogs-group         = "${local.log_prefix}-redis",
-          awslogs-region        = "us-east-1",
-          awslogs-stream-prefix = "redis",
+          awslogs-group         = "${local.log_prefix}-redis"
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "redis"
           awslogs-create-group  = "true"
         }
       }
@@ -245,7 +259,8 @@ resource "aws_ecs_service" "grafana" {
   }
 
   enable_execute_command = true
-  depends_on             = [aws_lb_listener_rule.grafana_rule]
+
+  depends_on = [aws_lb_listener_rule.grafana_rule]
 }
 
 resource "aws_ecs_service" "renderer" {
@@ -268,7 +283,8 @@ resource "aws_ecs_service" "renderer" {
   }
 
   enable_execute_command = true
-  depends_on             = [aws_lb_listener_rule.renderer_rule]
+
+  depends_on = [aws_lb_listener_rule.renderer_rule]
 }
 
 resource "aws_ecs_service" "redis" {
