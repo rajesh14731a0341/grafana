@@ -271,7 +271,7 @@ resource "aws_ecs_task_definition" "redis" {
 ##############################
 
 resource "aws_ecs_service" "grafana" {
-  name            = "rajesh_grafana_working"
+  name            = "grafana"
   cluster         = var.ecs_cluster_id
   launch_type     = "FARGATE"
   desired_count   = var.grafana_desired_count
@@ -294,7 +294,7 @@ resource "aws_ecs_service" "grafana" {
 }
 
 resource "aws_ecs_service" "renderer" {
-  name            = "rajesh_renderer_working"
+  name            = "renderer"
   cluster         = var.ecs_cluster_id
   launch_type     = "FARGATE"
   desired_count   = var.renderer_desired_count
@@ -317,7 +317,7 @@ resource "aws_ecs_service" "renderer" {
 }
 
 resource "aws_ecs_service" "redis" {
-  name            = "rajesh_redis_working"
+  name            = "redis"
   cluster         = var.ecs_cluster_id
   launch_type     = "FARGATE"
   desired_count   = var.redis_desired_count
