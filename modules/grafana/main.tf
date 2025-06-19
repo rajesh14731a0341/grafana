@@ -57,7 +57,17 @@ resource "aws_lb_target_group" "redis_tg" {
   protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+
+  health_check {
+    protocol            = "TCP"
+    port                = "traffic-port"  # ✅ This matches port 6379
+    interval            = 30
+    timeout             = 10
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+  }
 }
+
 
 ##############################
 # Load Balancer Listeners
@@ -229,37 +239,38 @@ resource "aws_ecs_task_definition" "renderer" {
 
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = 512
+  memory                   = 1024
   network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name  = "redis"
-      image = "redis:7"
-      portMappings = [{ containerPort = 6379 }]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "${local.log_prefix}-redis"
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "redis"
-          awslogs-create-group  = "true"
-        }
+  container_definitions = jsonencode([{
+    name  = "redis"
+    image = "redis:latest"
+    portMappings = [{
+      containerPort = 6379
+    }]
+    command = ["redis-server", "--bind", "0.0.0.0"]
+    logConfiguration = {
+      logDriver = "awslogs",
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.redis_log_group.name,
+        awslogs-region        = "us-east-1",
+        awslogs-stream-prefix = "redis"
       }
     }
-  ])
+  }])
 }
+
 
 ##############################
 # ECS Services
 ##############################
 
 resource "aws_ecs_service" "grafana" {
-  name            = "grafana"
+  name            = "rajesh_grafana_working"
   cluster         = var.ecs_cluster_id
   launch_type     = "FARGATE"
   desired_count   = var.grafana_desired_count
@@ -282,7 +293,7 @@ resource "aws_ecs_service" "grafana" {
 }
 
 resource "aws_ecs_service" "renderer" {
-  name            = "renderer"
+  name            = "rajesh_renderer_working"
   cluster         = var.ecs_cluster_id
   launch_type     = "FARGATE"
   desired_count   = var.renderer_desired_count
@@ -305,7 +316,7 @@ resource "aws_ecs_service" "renderer" {
 }
 
 resource "aws_ecs_service" "redis" {
-  name            = "redis"
+  name            = "rajesh_redis_working"
   cluster         = var.ecs_cluster_id
   launch_type     = "FARGATE"
   desired_count   = var.redis_desired_count
