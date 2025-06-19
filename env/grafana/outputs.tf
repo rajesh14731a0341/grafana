@@ -1,14 +1,14 @@
-output "grafana_alb_dns" {
-  description = "Public ALB DNS name to access Grafana"
-  value       = module.grafana.grafana_alb_dns
+output "grafana_alb_dns_name" {
+  description = "DNS name of the public ALB routing to Grafana"
+  value       = module.grafana.grafana_alb_dns_name
 }
 
-output "renderer_path_url" {
-  description = "Renderer path URL for internal rendering"
-  value       = "${module.grafana.grafana_alb_dns}/render"
+output "renderer_alb_dns_name" {
+  description = "DNS name of the public ALB routing to Renderer"
+  value       = module.grafana.renderer_alb_dns_name
 }
 
-output "redis_nlb_dns" {
-  description = "Internal NLB DNS for Redis"
-  value       = module.grafana.redis_nlb_dns
+output "redis_nlb_dns_name" {
+  description = "DNS name of the internal NLB for Redis"
+  value       = module.grafana.redis_nlb_dns_name
 }

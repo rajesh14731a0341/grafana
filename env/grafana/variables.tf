@@ -1,36 +1,110 @@
-variable "ecs_cluster_id" {}
-variable "ecs_cluster_name" {}
-variable "vpc_id" {}
+variable "ecs_cluster_id" {
+  type        = string
+  description = "ECS Cluster ARN"
+}
+
+variable "ecs_cluster_name" {
+  type        = string
+  description = "ECS Cluster Name"
+}
+
+variable "vpc_id" {
+  type        = string
+  description = "VPC ID"
+}
 
 variable "public_subnet_ids" {
-  type = list(string)
+  type        = list(string)
+  description = "List of public subnet IDs"
 }
 
 variable "private_subnet_ids" {
-  type = list(string)
+  type        = list(string)
+  description = "List of private subnet IDs"
 }
 
-variable "security_group_id" {}
-variable "execution_role_arn" {}
-variable "task_role_arn" {}
+variable "security_group_id" {
+  type        = string
+  description = "Security group ID"
+}
 
-variable "db_secret_arn" {}
-variable "db_endpoint" {}
+variable "execution_role_arn" {
+  type        = string
+  description = "ECS task execution role ARN"
+}
 
-variable "alb_name" {}
-variable "nlb_name" {}
+variable "task_role_arn" {
+  type        = string
+  description = "ECS task role ARN"
+}
 
-variable "grafana_desired_count" {}
-variable "grafana_autoscaling_min" {}
-variable "grafana_autoscaling_max" {}
-variable "grafana_autoscaling_cpu_target" {}
+variable "db_secret_arn" {
+  type        = string
+  description = "Secrets Manager ARN for DB password"
+}
 
-variable "renderer_desired_count" {}
-variable "renderer_autoscaling_min" {}
-variable "renderer_autoscaling_max" {}
-variable "renderer_autoscaling_cpu_target" {}
+variable "db_endpoint" {
+  type        = string
+  description = "PostgreSQL RDS endpoint"
+}
 
-variable "redis_desired_count" {}
-variable "redis_autoscaling_min" {}
-variable "redis_autoscaling_max" {}
-variable "redis_autoscaling_cpu_target" {}
+variable "alb_name" {
+  type        = string
+  description = "Name of the existing ALB"
+}
+
+variable "nlb_name" {
+  type        = string
+  description = "Name of the existing NLB"
+}
+
+# Grafana scaling
+variable "grafana_desired_count" {
+  type        = number
+}
+
+variable "grafana_autoscaling_min" {
+  type        = number
+}
+
+variable "grafana_autoscaling_max" {
+  type        = number
+}
+
+variable "grafana_autoscaling_cpu_target" {
+  type        = number
+}
+
+# Renderer scaling
+variable "renderer_desired_count" {
+  type        = number
+}
+
+variable "renderer_autoscaling_min" {
+  type        = number
+}
+
+variable "renderer_autoscaling_max" {
+  type        = number
+}
+
+variable "renderer_autoscaling_cpu_target" {
+  type        = number
+}
+
+# Redis scaling
+variable "redis_desired_count" {
+  type        = number
+}
+
+variable "redis_autoscaling_min" {
+  type        = number
+}
+
+variable "redis_autoscaling_max" {
+  type        = number
+}
+
+variable "redis_autoscaling_cpu_target" {
+  type        = number
+}

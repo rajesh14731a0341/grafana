@@ -1,4 +1,4 @@
-module "grafana" {
+module "grafana_stack" {
   source = "../../modules/grafana"
 
   ecs_cluster_id     = var.ecs_cluster_id
