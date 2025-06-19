@@ -1,24 +1,24 @@
 output "grafana_alb_dns_name" {
-  description = "Public DNS name of the Grafana ALB"
+  description = "Public DNS name of the ALB used by Grafana and Renderer"
   value       = aws_lb.public_alb.dns_name
 }
 
-output "internal_nlb_dns_name" {
-  description = "Internal DNS name of the Redis NLB"
+output "redis_nlb_dns_name" {
+  description = "Internal DNS name of the NLB used for Redis"
   value       = aws_lb.internal_nlb.dns_name
 }
 
 output "grafana_service_name" {
-  value       = aws_ecs_service.grafana.name
-  description = "Grafana ECS Service Name"
+  description = "Name of the ECS service for Grafana"
+  value       = aws_ecs_service.grafana_service.name
 }
 
 output "renderer_service_name" {
-  value       = aws_ecs_service.renderer.name
-  description = "Renderer ECS Service Name"
+  description = "Name of the ECS service for Renderer"
+  value       = aws_ecs_service.renderer_service.name
 }
 
 output "redis_service_name" {
-  value       = aws_ecs_service.redis.name
-  description = "Redis ECS Service Name"
+  description = "Name of the ECS service for Redis"
+  value       = aws_ecs_service.redis_service.name
 }

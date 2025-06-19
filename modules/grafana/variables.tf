@@ -4,111 +4,109 @@ variable "ecs_cluster_id" {
 }
 
 variable "ecs_cluster_name" {
-  description = "ECS Cluster name (used for autoscaling resource_id)"
+  description = "ECS Cluster name"
   type        = string
 }
 
 variable "vpc_id" {
-  description = "VPC ID where services will run"
+  description = "VPC ID"
   type        = string
 }
 
-variable "private_subnet_ids" {
-  description = "List of private subnet IDs for ECS tasks"
+variable "public_subnet_ids" {
+  description = "List of public subnet IDs"
   type        = list(string)
 }
 
-variable "public_subnet_ids" {
-  description = "List of public subnet IDs for ALB"
+variable "private_subnet_ids" {
+  description = "List of private subnet IDs"
   type        = list(string)
 }
 
 variable "security_group_id" {
-  description = "Security Group ID for ECS tasks"
+  description = "Security group ID for ECS services"
   type        = string
 }
 
 variable "execution_role_arn" {
-  description = "ECS Task Execution Role ARN"
+  description = "ECS Task execution role ARN"
   type        = string
 }
 
 variable "task_role_arn" {
-  description = "ECS Task Role ARN"
+  description = "ECS Task role ARN"
   type        = string
 }
 
 variable "db_secret_arn" {
-  description = "ARN of the Secrets Manager secret for Grafana DB password"
+  description = "Secrets Manager ARN for PostgreSQL password"
   type        = string
 }
 
 variable "db_endpoint" {
-  description = "Endpoint of the PostgreSQL RDS database"
+  description = "PostgreSQL RDS endpoint"
   type        = string
 }
 
-# Desired Counts
+# Grafana Autoscaling
 variable "grafana_desired_count" {
-  default     = 1
-  description = "Initial desired task count for Grafana"
+  description = "Desired task count for Grafana service"
   type        = number
 }
 
-variable "renderer_desired_count" {
-  default     = 1
-  description = "Initial desired task count for Renderer"
-  type        = number
-}
-
-variable "redis_desired_count" {
-  default     = 1
-  description = "Initial desired task count for Redis"
-  type        = number
-}
-
-# Autoscaling Parameters
 variable "grafana_autoscaling_min" {
-  default     = 1
+  description = "Min tasks for Grafana"
   type        = number
 }
 
 variable "grafana_autoscaling_max" {
-  default     = 5
+  description = "Max tasks for Grafana"
   type        = number
 }
 
 variable "grafana_autoscaling_cpu_target" {
-  default     = 70
+  description = "CPU target percentage for Grafana"
+  type        = number
+}
+
+# Renderer Autoscaling
+variable "renderer_desired_count" {
+  description = "Desired task count for Renderer service"
   type        = number
 }
 
 variable "renderer_autoscaling_min" {
-  default     = 1
+  description = "Min tasks for Renderer"
   type        = number
 }
 
 variable "renderer_autoscaling_max" {
-  default     = 5
+  description = "Max tasks for Renderer"
   type        = number
 }
 
 variable "renderer_autoscaling_cpu_target" {
-  default     = 70
+  description = "CPU target percentage for Renderer"
+  type        = number
+}
+
+# Redis Autoscaling
+variable "redis_desired_count" {
+  description = "Desired task count for Redis service"
   type        = number
 }
 
 variable "redis_autoscaling_min" {
-  default     = 1
+  description = "Min tasks for Redis"
   type        = number
 }
 
 variable "redis_autoscaling_max" {
-  default     = 5
+  description = "Max tasks for Redis"
   type        = number
 }
 
 variable "redis_autoscaling_cpu_target" {
-  default     = 70
+  description = "CPU target percentage for Redis"
   type        = number
 }
