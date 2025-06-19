@@ -40,11 +40,16 @@ resource "aws_lb_target_group" "renderer_tg" {
   target_type = "ip"
 
   health_check {
-    path     = "/render"
-    protocol = "HTTP"
-    matcher  = "200-399"
+    path                = "/render/version"
+    protocol            = "HTTP"
+    matcher             = "200-399"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
   }
 }
+
 
 resource "aws_lb_target_group" "redis_tg" {
   name        = "redis-tg"
