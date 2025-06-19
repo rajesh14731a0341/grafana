@@ -50,7 +50,6 @@ resource "aws_lb_target_group" "renderer_tg" {
   }
 }
 
-
 resource "aws_lb_target_group" "redis_tg" {
   name        = "redis-tg"
   port        = 6379
@@ -89,7 +88,7 @@ resource "aws_lb_listener_rule" "grafana_rule" {
 
   condition {
     path_pattern {
-      values = ["/grafana*"]
+      values = ["/grafana", "/grafana/*"]
     }
   }
 }
@@ -105,7 +104,7 @@ resource "aws_lb_listener_rule" "renderer_rule" {
 
   condition {
     path_pattern {
-      values = ["/render*"]
+      values = ["/render", "/render/*"]
     }
   }
 }
@@ -149,22 +148,18 @@ resource "aws_ecs_task_definition" "grafana" {
       portMappings = [{ containerPort = 3000 }]
       environment = [
         { name = "GF_SERVER_ROOT_URL", value = "http://${data.aws_lb.public_alb.dns_name}/grafana" },
-
         { name = "GF_DATABASE_TYPE", value = "postgres" },
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
         { name = "GF_DATABASE_NAME", value = "grafana" },
         { name = "GF_DATABASE_USER", value = "rajesh" },
         { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.db.secret_string },
         { name = "GF_DATABASE_SSL_MODE", value = "require" },
-
         { name = "GF_RENDERING_SERVER_URL", value = "http://${data.aws_lb.public_alb.dns_name}/render" },
         { name = "GF_RENDERING_CALLBACK_URL", value = "http://${data.aws_lb.public_alb.dns_name}/grafana" },
-
         { name = "REDIS_PATH", value = "${data.aws_lb.internal_nlb.dns_name}:6379" },
         { name = "REDIS_DB", value = "1" },
         { name = "REDIS_CACHETIME", value = "12000" },
         { name = "CACHING", value = "Y" },
-
         { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
         { name = "GF_LOG_FILTERS", value = "rendering:debug" }
       ]
@@ -180,7 +175,6 @@ resource "aws_ecs_task_definition" "grafana" {
     }
   ])
 }
-
 
 
 resource "aws_ecs_task_definition" "renderer" {
