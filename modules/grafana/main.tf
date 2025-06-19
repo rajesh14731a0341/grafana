@@ -43,7 +43,7 @@ resource "aws_lb_target_group" "renderer_tg" {
   health_check {
     path                = "/render/version"
     protocol            = "HTTP"
-    matcher             = "200-399"
+    matcher             = "200-499"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
