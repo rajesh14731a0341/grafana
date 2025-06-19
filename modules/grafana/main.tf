@@ -148,6 +148,8 @@ resource "aws_ecs_task_definition" "grafana" {
       image = "grafana/grafana-enterprise:latest"
       portMappings = [{ containerPort = 3000 }]
       environment = [
+        { name = "GF_SERVER_ROOT_URL", value = "http://${data.aws_lb.public_alb.dns_name}/grafana" },
+
         { name = "GF_DATABASE_TYPE", value = "postgres" },
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
         { name = "GF_DATABASE_NAME", value = "grafana" },
@@ -178,6 +180,7 @@ resource "aws_ecs_task_definition" "grafana" {
     }
   ])
 }
+
 
 
 resource "aws_ecs_task_definition" "renderer" {
