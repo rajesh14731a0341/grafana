@@ -31,6 +31,7 @@ resource "aws_lb_target_group" "grafana_tg" {
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+
   health_check {
     path     = "/login"
     protocol = "HTTP"
@@ -44,6 +45,7 @@ resource "aws_lb_target_group" "renderer_tg" {
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+
   health_check {
     path     = "/render"
     protocol = "HTTP"
@@ -125,7 +127,8 @@ resource "aws_ecs_task_definition" "grafana" {
   network_mode             = "awsvpc"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
-  container_definitions    = jsonencode([
+
+  container_definitions = jsonencode([
     {
       name  = "grafana"
       image = "grafana/grafana-enterprise:latest"
@@ -137,8 +140,19 @@ resource "aws_ecs_task_definition" "grafana" {
         { name = "GF_DATABASE_USER", value = "grafana" },
         { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.db.secret_string },
         { name = "GF_DATABASE_SSL_MODE", value = "require" },
-        { name = "GF_RENDERING_SERVER_URL", value = "http://localhost:8081/render" },
-        { name = "GF_RENDERING_CALLBACK_URL", value = "http://localhost:3000" }
+
+        # Renderer via public ALB /render path
+        { name = "GF_RENDERING_SERVER_URL", value = "http://${aws_lb.public_alb.dns_name}/render" },
+        { name = "GF_RENDERING_CALLBACK_URL", value = "http://${aws_lb.public_alb.dns_name}/grafana" },
+
+        # Redis via internal NLB DNS name and port
+        { name = "REDIS_PATH", value = "${aws_lb.internal_nlb.dns_name}:6379" },
+        { name = "REDIS_DB", value = "1" },
+        { name = "REDIS_CACHETIME", value = "12000" },
+        { name = "CACHING", value = "Y" },
+
+        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
+        { name = "GF_LOG_FILTERS", value = "rendering:debug" }
       ]
       logConfiguration = {
         logDriver = "awslogs",
@@ -161,7 +175,8 @@ resource "aws_ecs_task_definition" "renderer" {
   network_mode             = "awsvpc"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
-  container_definitions    = jsonencode([
+
+  container_definitions = jsonencode([
     {
       name  = "renderer"
       image = "grafana/grafana-image-renderer:latest"
@@ -187,7 +202,8 @@ resource "aws_ecs_task_definition" "redis" {
   network_mode             = "awsvpc"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
-  container_definitions    = jsonencode([
+
+  container_definitions = jsonencode([
     {
       name  = "redis"
       image = "redis:7"
@@ -215,17 +231,21 @@ resource "aws_ecs_service" "grafana" {
   launch_type     = "FARGATE"
   desired_count   = var.grafana_desired_count
   task_definition = aws_ecs_task_definition.grafana.arn
+
   network_configuration {
     subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
+
   load_balancer {
     target_group_arn = aws_lb_target_group.grafana_tg.arn
     container_name   = "grafana"
     container_port   = 3000
   }
+
   enable_execute_command = true
+  depends_on             = [aws_lb_listener_rule.grafana_rule]
 }
 
 resource "aws_ecs_service" "renderer" {
@@ -234,17 +254,21 @@ resource "aws_ecs_service" "renderer" {
   launch_type     = "FARGATE"
   desired_count   = var.renderer_desired_count
   task_definition = aws_ecs_task_definition.renderer.arn
+
   network_configuration {
     subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
+
   load_balancer {
     target_group_arn = aws_lb_target_group.renderer_tg.arn
     container_name   = "renderer"
     container_port   = 8081
   }
+
   enable_execute_command = true
+  depends_on             = [aws_lb_listener_rule.renderer_rule]
 }
 
 resource "aws_ecs_service" "redis" {
@@ -253,16 +277,19 @@ resource "aws_ecs_service" "redis" {
   launch_type     = "FARGATE"
   desired_count   = var.redis_desired_count
   task_definition = aws_ecs_task_definition.redis.arn
+
   network_configuration {
     subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
+
   load_balancer {
     target_group_arn = aws_lb_target_group.redis_tg.arn
     container_name   = "redis"
     container_port   = 6379
   }
+
   enable_execute_command = true
 }
 
@@ -290,6 +317,56 @@ resource "aws_appautoscaling_policy" "grafana_cpu" {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
     target_value       = var.grafana_autoscaling_cpu_target
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 60
+  }
+}
+
+resource "aws_appautoscaling_target" "renderer" {
+  service_namespace  = "ecs"
+  resource_id        = "service/${var.ecs_cluster_name}/renderer"
+  scalable_dimension = "ecs:service:DesiredCount"
+  min_capacity       = var.renderer_autoscaling_min
+  max_capacity       = var.renderer_autoscaling_max
+}
+
+resource "aws_appautoscaling_policy" "renderer_cpu" {
+  name               = "renderer-cpu-autoscaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.renderer.resource_id
+  scalable_dimension = aws_appautoscaling_target.renderer.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.renderer.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = var.renderer_autoscaling_cpu_target
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 60
+  }
+}
+
+resource "aws_appautoscaling_target" "redis" {
+  service_namespace  = "ecs"
+  resource_id        = "service/${var.ecs_cluster_name}/redis"
+  scalable_dimension = "ecs:service:DesiredCount"
+  min_capacity       = var.redis_autoscaling_min
+  max_capacity       = var.redis_autoscaling_max
+}
+
+resource "aws_appautoscaling_policy" "redis_cpu" {
+  name               = "redis-cpu-autoscaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.redis.resource_id
+  scalable_dimension = aws_appautoscaling_target.redis.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.redis.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = var.redis_autoscaling_cpu_target
     scale_in_cooldown  = 60
     scale_out_cooldown = 60
   }
