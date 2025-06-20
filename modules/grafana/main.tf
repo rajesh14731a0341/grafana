@@ -148,7 +148,10 @@ resource "aws_ecs_task_definition" "renderer" {
       protocol      = "tcp"
     }]
     environment = [
-      // No environment variables for now
+      {
+        name  = "RENDERING_SERVER_SECRET"
+        value = ""
+      }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -281,7 +284,10 @@ resource "aws_ecs_task_definition" "grafana" {
 
       # 🔌 Plugin Mode and Logs
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-      { name = "GF_LOG_FILTERS",             value = "rendering:debug" }
+      { name = "GF_LOG_FILTERS",             value = "rendering:debug" },
+
+      # 🔌 ✅ Install Redis plugin
+      { name = "GF_INSTALL_PLUGINS",         value = "redis-datasource" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
