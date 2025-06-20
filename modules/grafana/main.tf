@@ -61,13 +61,13 @@ resource "aws_ecs_task_definition" "grafana_cloudmap" {
       image     = "grafana/grafana-enterprise:11.6.1"
       portMappings = [{ containerPort = 3000 }]
       environment = [
-        { name = "REDIS_PATH", value = "redis-cloudmap:6379" },
+        { name = "REDIS_PATH", value = "redis-cloudmap.project:6379" },
         { name = "REDIS_DB", value = "1" },
         { name = "REDIS_CACHETIME", value = "12000" },
         { name = "CACHING", value = "Y" },
         { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-        { name = "GF_RENDERING_SERVER_URL", value = "http://renderer-cloudmap:8081/render" },
-        { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana-cloudmap:3000/" },
+        { name = "GF_RENDERING_SERVER_URL", value = "http://renderer-cloudmap.project:8081/render" },
+        { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana-cloudmap.project:3000/" },
         { name = "GF_LOG_FILTERS", value = "rendering: debug" },
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
         { name = "GF_DATABASE_NAME", value = var.db_name },
