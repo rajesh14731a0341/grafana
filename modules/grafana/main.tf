@@ -149,8 +149,16 @@ resource "aws_ecs_task_definition" "renderer" {
     }]
     environment = [
       {
-        name  = "RENDERING_SERVER_SECRET"
+        name  = "RENDERER_AUTH_TOKEN"
         value = ""
+      },
+      {
+        name  = "ENABLE_METRICS"
+        value = "false"
+      },
+      {
+        name  = "LOG_LEVEL"
+        value = "debug"
       }
     ]
     logConfiguration = {
