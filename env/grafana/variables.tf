@@ -1,10 +1,6 @@
 variable "vpc_id" {}
-variable "private_subnet_ids" {
-  type = list(string)
-}
-variable "public_subnet_ids" {
-  type = list(string)
-}
+variable "private_subnet_ids" { type = list(string) }
+variable "public_subnet_ids" { type = list(string) }
 variable "security_group_id" {}
 variable "ecs_cluster_id" {}
 variable "execution_role_arn" {}
