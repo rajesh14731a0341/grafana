@@ -2,7 +2,6 @@ module "grafana" {
   source = "../../modules/grafana"
 
   vpc_id                     = var.vpc_id
-  private_subnet_ids         = var.private_subnet_ids
   public_subnet_ids          = var.public_subnet_ids
   security_group_id          = var.security_group_id
   ecs_cluster_id             = var.ecs_cluster_id
