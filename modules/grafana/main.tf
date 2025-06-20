@@ -307,7 +307,10 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "CACHING", value = "Y" },
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
       { name = "GF_LOG_FILTERS", value = "rendering:debug" },
-      { name = "GF_INSTALL_PLUGINS", value = "redis-datasource" }
+      { name = "GF_INSTALL_PLUGINS", value = "redis-datasource" },
+      # ADD THESE TWO LINES FOR ANONYMOUS ACCESS
+      { name = "GF_AUTH_ANONYMOUS_ENABLED", value = "true" },
+      { name = "GF_AUTH_ANONYMOUS_ORG_ROLE", value = "Viewer" }
     ]
     secrets = [
       {
@@ -329,7 +332,6 @@ resource "aws_ecs_task_definition" "grafana" {
     }
   }])
 }
-
 resource "aws_service_discovery_service" "grafana" {
   name         = "grafana"
   namespace_id = var.cloudmap_namespace_id
