@@ -1,11 +1,11 @@
 output "grafana_service_name" {
-  value = "rajesh-grafana-svc"
+  value = module.grafana.grafana_service_name
 }
 
-output "renderer_service_name" {
-  value = "rajesh-renderer-svc"
+output "grafana_target_group_arn" {
+  value = module.grafana.grafana_target_group_arn
 }
 
-output "redis_service_name" {
-  value = "rajesh-redis-svc"
+output "grafana_task_definition_arn" {
+  value = module.grafana.grafana_task_definition_arn
 }
