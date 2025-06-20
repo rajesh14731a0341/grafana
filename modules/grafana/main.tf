@@ -8,7 +8,6 @@ locals {
 ###############################
 # CloudWatch Log Groups
 ###############################
-
 resource "aws_cloudwatch_log_group" "redis" {
   name              = "/ecs/redis-task"
   retention_in_days = 7
@@ -25,9 +24,8 @@ resource "aws_cloudwatch_log_group" "grafana" {
 }
 
 ###############################
-# Renderer Auth Token Secret (NEW)
+# Renderer Auth Token Secret
 ###############################
-
 resource "random_password" "renderer_auth_token_value" {
   length           = 32
   special          = true
@@ -53,7 +51,6 @@ resource "aws_secretsmanager_secret_version" "grafana_renderer_token_secret_vers
 ###############################
 # Redis ECS
 ###############################
-
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
   cpu                      = "256"
@@ -76,7 +73,7 @@ resource "aws_ecs_task_definition" "redis" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "/ecs/redis-task"
+        awslogs-group         = aws_cloudwatch_log_group.redis.name
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "redis"
       }
@@ -108,7 +105,6 @@ resource "aws_ecs_service" "redis" {
   task_definition = aws_ecs_task_definition.redis.arn
   desired_count   = var.redis_desired_count
   launch_type     = "FARGATE"
-
   enable_execute_command = true
   force_new_deployment   = true
 
@@ -155,7 +151,6 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
 ###############################
 # Renderer ECS
 ###############################
-
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
   cpu                      = "256"
@@ -165,45 +160,34 @@ resource "aws_ecs_task_definition" "renderer" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "renderer"
-      image     = "grafana/grafana-image-renderer:3.12.5"
-      cpu       = 256
-      memory    = 512
-      essential = true
-
-      portMappings = [
-        {
-          containerPort = 8081
-          protocol      = "tcp"
-        }
-      ]
-
-      environment = [
-        { name = "ENABLE_METRICS", value = "false" },
-        { name = "LOG_LEVEL", value = "debug" }
-      ]
-
-      secrets = [
-        {
-          name      = "RENDERER_AUTH_TOKEN"
-          valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.secret_id
-        }
-      ]
-
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = aws_cloudwatch_log_group.renderer.name
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "renderer"
-        }
+  container_definitions = jsonencode([{
+    name      = "renderer"
+    image     = "grafana/grafana-image-renderer:3.12.5"
+    cpu       = 256
+    memory    = 512
+    essential = true
+    portMappings = [{
+      containerPort = 8081
+      protocol      = "tcp"
+    }]
+    environment = [
+      { name = "ENABLE_METRICS", value = "false" },
+      { name = "LOG_LEVEL", value = "debug" }
+    ]
+    secrets = [{
+      name      = "RENDERER_AUTH_TOKEN"
+      valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.secret_id
+    }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.renderer.name
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "renderer"
       }
     }
-  ])
+  }])
 }
-
 
 resource "aws_service_discovery_service" "renderer" {
   name         = "renderer"
@@ -229,7 +213,6 @@ resource "aws_ecs_service" "renderer" {
   task_definition = aws_ecs_task_definition.renderer.arn
   desired_count   = var.renderer_desired_count
   launch_type     = "FARGATE"
-
   enable_execute_command = true
   force_new_deployment   = true
 
@@ -276,7 +259,6 @@ resource "aws_appautoscaling_policy" "renderer_cpu" {
 ###############################
 # Grafana ECS
 ###############################
-
 data "aws_secretsmanager_secret_version" "db_secret" {
   secret_id = var.db_secret_arn
 }
@@ -317,7 +299,6 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
       { name = "GF_LOG_FILTERS", value = "rendering:debug" },
       { name = "GF_INSTALL_PLUGINS", value = "redis-datasource" },
-      # ADD THESE TWO LINES FOR ANONYMOUS ACCESS
       { name = "GF_AUTH_ANONYMOUS_ENABLED", value = "true" },
       { name = "GF_AUTH_ANONYMOUS_ORG_ROLE", value = "Viewer" }
     ]
@@ -341,6 +322,7 @@ resource "aws_ecs_task_definition" "grafana" {
     }
   }])
 }
+
 resource "aws_service_discovery_service" "grafana" {
   name         = "grafana"
   namespace_id = var.cloudmap_namespace_id
@@ -365,7 +347,6 @@ resource "aws_ecs_service" "grafana" {
   task_definition = aws_ecs_task_definition.grafana.arn
   desired_count   = var.grafana_desired_count
   launch_type     = "FARGATE"
-
   enable_execute_command = true
   force_new_deployment   = true
 
