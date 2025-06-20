@@ -191,7 +191,7 @@ resource "aws_ecs_service" "grafana_cloudmap" {
   network_configuration {
     subnets         = var.public_subnet_ids
     security_groups = [var.security_group_id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
   service_registries {
     registry_arn = aws_service_discovery_service.grafana_cloudmap.arn
@@ -214,7 +214,7 @@ resource "aws_ecs_service" "renderer_cloudmap" {
   network_configuration {
     subnets         = var.public_subnet_ids
     security_groups = [var.security_group_id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
   service_registries {
     registry_arn = aws_service_discovery_service.renderer_cloudmap.arn
@@ -231,7 +231,7 @@ resource "aws_ecs_service" "redis_cloudmap" {
   network_configuration {
     subnets         = var.public_subnet_ids
     security_groups = [var.security_group_id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
   service_registries {
     registry_arn = aws_service_discovery_service.redis_cloudmap.arn
