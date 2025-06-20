@@ -1,4 +1,5 @@
 vpc_id                     = "vpc-0baac8b1f8f1ca391"
+private_subnet_ids         = ["subnet-0eddeac6a246b078f", "subnet-0fcef6c827cb2624e"]
 public_subnet_ids          = ["subnet-0eddeac6a246b078f", "subnet-0fcef6c827cb2624e"]
 security_group_id          = "sg-084b6f2c8b582a491"
 ecs_cluster_id             = "arn:aws:ecs:us-east-1:736747734611:cluster/rajesh-cluster"

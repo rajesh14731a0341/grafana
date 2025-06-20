@@ -189,7 +189,7 @@ resource "aws_ecs_service" "grafana_cloudmap" {
   desired_count   = var.grafana_desired_count
   enable_execute_command = true
   network_configuration {
-    subnets         = var.public_subnet_ids
+    subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -212,7 +212,7 @@ resource "aws_ecs_service" "renderer_cloudmap" {
   desired_count   = var.renderer_desired_count
   enable_execute_command = true
   network_configuration {
-    subnets         = var.public_subnet_ids
+    subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -229,7 +229,7 @@ resource "aws_ecs_service" "redis_cloudmap" {
   desired_count   = var.redis_desired_count
   enable_execute_command = true
   network_configuration {
-    subnets         = var.public_subnet_ids
+    subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
