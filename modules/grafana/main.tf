@@ -72,7 +72,8 @@ resource "aws_ecs_task_definition" "grafana_cloudmap" {
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
         { name = "GF_DATABASE_NAME", value = var.db_name },
         { name = "GF_DATABASE_USER", value = var.db_username },
-        { name = "GF_DATABASE_PASSWORD", valueFrom = var.db_secret_arn }
+        { name = "GF_DATABASE_PASSWORD", valueFrom = var.db_secret_arn },
+        { name = "GF_DATABASE_SSL_MODE", value = "require" }
       ]
       logConfiguration = {
         logDriver = "awslogs",
