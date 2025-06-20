@@ -165,36 +165,45 @@ resource "aws_ecs_task_definition" "renderer" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([{
-    name        = "renderer"
-    image       = "grafana/grafana-image-renderer:3.12.5"
-    cpu         = 256
-    memory      = 512
-    essential   = true
-    portMappings = [{
-      containerPort = 8081
-      protocol      = "tcp"
-    }]
-    environment = [
-      { name = "ENABLE_METRICS", value = "false" },
-      { name = "LOG_LEVEL", value = "debug" }
-    ]
-    secrets = [
-      {
-        name      = "RENDERER_AUTH_TOKEN"
-        valueFrom = "${aws_secretsmanager_secret.grafana_renderer_token_secret.arn}:RENDERER_AUTH_TOKEN::"
-      }
-    ]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.renderer.name
-        awslogs-region        = "us-east-1"
-        awslogs-stream-prefix = "renderer"
+  container_definitions = jsonencode([
+    {
+      name      = "renderer"
+      image     = "grafana/grafana-image-renderer:3.12.5"
+      cpu       = 256
+      memory    = 512
+      essential = true
+
+      portMappings = [
+        {
+          containerPort = 8081
+          protocol      = "tcp"
+        }
+      ]
+
+      environment = [
+        { name = "ENABLE_METRICS", value = "false" },
+        { name = "LOG_LEVEL", value = "debug" }
+      ]
+
+      secrets = [
+        {
+          name      = "RENDERER_AUTH_TOKEN"
+          valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.secret_id
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.renderer.name
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "renderer"
+        }
       }
     }
-  }])
+  ])
 }
+
 
 resource "aws_service_discovery_service" "renderer" {
   name         = "renderer"
