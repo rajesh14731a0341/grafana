@@ -1,6 +1,6 @@
 ###############################
 # Locals (for ECS cluster name)
-###############################
+##############################
 locals {
   ecs_cluster_name = element(split("/", var.ecs_cluster_id), length(split("/", var.ecs_cluster_id)) - 1)
 }
