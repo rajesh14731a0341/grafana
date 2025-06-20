@@ -31,7 +31,7 @@ resource "aws_lb_target_group" "grafana_cloudmap" {
 
 resource "aws_lb_listener_rule" "grafana_cloudmap" {
   listener_arn = data.aws_lb_listener.http.arn
-  priority     = 100
+  priority     = 101
   action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.grafana_cloudmap.arn
