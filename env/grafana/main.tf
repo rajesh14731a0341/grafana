@@ -1,6 +1,7 @@
 module "grafana" {
   source = "../../modules/grafana"
 
+  environment             = var.environment
   ecs_cluster_id          = var.ecs_cluster_id
   subnet_ids              = var.subnet_ids
   security_group_id       = var.security_group_id
