@@ -95,6 +95,7 @@ resource "aws_ecs_task_definition" "renderer_cloudmap" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn  # <--- Added here
 
   container_definitions = jsonencode([
     {
@@ -121,6 +122,7 @@ resource "aws_ecs_task_definition" "redis_cloudmap" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn  # <--- Added here
 
   container_definitions = jsonencode([
     {
