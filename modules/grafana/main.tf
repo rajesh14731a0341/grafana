@@ -174,7 +174,8 @@ resource "aws_ecs_task_definition" "renderer" {
 
     environment = [
       { name = "ENABLE_METRICS", value = "false" },
-      { name = "LOG_LEVEL", value = "debug" }
+      { name = "LOG_LEVEL", value = "debug" },
+      { name = "GF_RENDERING_SERVER_ENABLE", value = "true" } # ✅ ADD THIS
     ]
 
     secrets = [
@@ -194,11 +195,6 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   }])
 }
-
-
-
-
-
 resource "aws_service_discovery_service" "renderer" {
   name         = "renderer"
   namespace_id = var.cloudmap_namespace_id
