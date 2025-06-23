@@ -168,6 +168,10 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
       protocol      = "tcp"
     }]
+    
+    # ✅ ADD THIS
+    command = ["dumb-init", "--", "node", "build/app.js", "server"]
+
     environment = [
       { name = "ENABLE_METRICS", value = "false" },
       { name = "LOG_LEVEL", value = "debug" }
@@ -178,7 +182,7 @@ resource "aws_ecs_task_definition" "renderer" {
         valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
       },
       {
-        name      = "RENDERING_AUTH_TOKEN" # ✅ This one is required for validating incoming requests
+        name      = "RENDERING_AUTH_TOKEN"
         valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
       }
     ]
