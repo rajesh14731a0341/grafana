@@ -175,13 +175,13 @@ resource "aws_ecs_task_definition" "renderer" {
     environment = [
       { name = "ENABLE_METRICS", value = "false" },
       { name = "LOG_LEVEL", value = "debug" },
-      { name = "GF_RENDERING_SERVER_ENABLE", value = "true" } # ✅ ADD THIS
+      { name = "GF_RENDERING_SERVER_ENABLE", value = "true" }
     ]
 
     secrets = [
       {
         name      = "GF_RENDERING_SERVER_AUTH_TOKEN"
-        valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.arn
+        valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
       }
     ]
 
@@ -195,6 +195,7 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   }])
 }
+
 resource "aws_service_discovery_service" "renderer" {
   name         = "renderer"
   namespace_id = var.cloudmap_namespace_id
