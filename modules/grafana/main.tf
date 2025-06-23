@@ -301,7 +301,7 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.${var.cloudmap_namespace}:3000/" },
       { name = "GF_RENDERING_EXTERNAL_ENABLED", value = "true" },
       { name = "GF_RENDERING_MODE", value = "remote" },
-      { name = "GF_RENDERING_SERVER_HEADERS", value = "Authorization" }, # ✅ required for auth token to be sent
+      { name = "GF_RENDERING_SERVER_HEADERS", value = "X-Grafana-Rendering-Token" }, # ✅ required for auth token to be sent
       { name = "REDIS_PATH", value = "redis.${var.cloudmap_namespace}:6379" },
       { name = "REDIS_DB", value = "1" },
       { name = "REDIS_CACHETIME", value = "12000" },
