@@ -172,10 +172,16 @@ resource "aws_ecs_task_definition" "renderer" {
       { name = "ENABLE_METRICS", value = "false" },
       { name = "LOG_LEVEL", value = "debug" }
     ]
-    secrets = [{
-      name      = "RENDERER_AUTH_TOKEN"
-      valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
-    }]
+    secrets = [
+      {
+        name      = "RENDERER_AUTH_TOKEN"
+        valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
+      },
+      {
+        name      = "RENDERING_AUTH_TOKEN" # ✅ This one is required for validating incoming requests
+        valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
+      }
+    ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -186,6 +192,7 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   }])
 }
+
 
 resource "aws_service_discovery_service" "renderer" {
   name         = "renderer"
