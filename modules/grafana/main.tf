@@ -60,7 +60,7 @@ resource "aws_lb_target_group" "redis_tg" {
 
   health_check {
     protocol            = "TCP"
-    port                = "traffic-port"  # ✅ This matches port 6379
+    port                = "traffic-port" # ✅ This matches port 6379
     interval            = 30
     timeout             = 10
     healthy_threshold   = 3
@@ -93,13 +93,13 @@ resource "aws_lb_listener_rule" "grafana_rule" {
   priority     = 100
 
   action {
-    type             = "forward"
+    type           = "forward"
     target_group_arn = aws_lb_target_group.grafana_tg.arn
   }
 
   condition {
-    path_pattern {
-      values = ["/grafana", "/grafana/*"]
+    host_header {
+      values = ["grafana.mcd.com"] # Changed from path_pattern to host_header
     }
   }
 }
@@ -110,13 +110,13 @@ resource "aws_lb_listener_rule" "renderer_rule" {
   priority     = 200
 
   action {
-    type             = "forward"
+    type           = "forward"
     target_group_arn = aws_lb_target_group.renderer_tg.arn
   }
 
   condition {
-    path_pattern {
-      values = ["/render", "/render/*"]
+    host_header {
+      values = ["render.mcd.com"] # Changed from path_pattern to host_header
     }
   }
 }
@@ -128,7 +128,7 @@ resource "aws_lb_listener" "redis_tcp" {
   protocol          = "TCP"
 
   default_action {
-    type             = "forward"
+    type           = "forward"
     target_group_arn = aws_lb_target_group.redis_tg.arn
   }
 }
@@ -156,17 +156,17 @@ resource "aws_ecs_task_definition" "grafana" {
 
   container_definitions = jsonencode([
     {
-      name  = "grafana"
-      image = "grafana/grafana-enterprise:latest"
+      name        = "grafana"
+      image       = "grafana/grafana-enterprise:latest"
       portMappings = [{ containerPort = 3000 }]
       environment = [
         {
           name  = "GF_SERVER_ROOT_URL"
-          value = "http://${data.aws_lb.public_alb.dns_name}/grafana"
+          value = "http://grafana.mcd.com" # Updated for host-based routing
         },
         {
           name  = "GF_SERVER_SERVE_FROM_SUB_PATH"
-          value = "true"
+          value = "false" # Set to false as it's no longer a sub-path
         },
         { name = "GF_DATABASE_TYPE", value = "postgres" },
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
@@ -178,15 +178,15 @@ resource "aws_ecs_task_definition" "grafana" {
         },
         { name = "GF_DATABASE_SSL_MODE", value = "require" },
         {
-          name = "GF_RENDERING_SERVER_URL"
-          value = "http://${data.aws_lb.public_alb.dns_name}/render"
+          name  = "GF_RENDERING_SERVER_URL"
+          value = "http://render.mcd.com" # Updated for host-based routing
         },
         {
-          name = "GF_RENDERING_CALLBACK_URL"
-          value = "http://${data.aws_lb.public_alb.dns_name}/grafana"
+          name  = "GF_RENDERING_CALLBACK_URL"
+          value = "http://grafana.mcd.com" # Updated for host-based routing
         },
         {
-          name = "REDIS_PATH"
+          name  = "REDIS_PATH"
           value = "${data.aws_lb.internal_nlb.dns_name}:6379"
         },
         { name = "REDIS_DB", value = "1" },
@@ -221,8 +221,8 @@ resource "aws_ecs_task_definition" "renderer" {
 
   container_definitions = jsonencode([
     {
-      name  = "renderer"
-      image = "grafana/grafana-image-renderer:latest"
+      name        = "renderer"
+      image       = "grafana/grafana-image-renderer:latest"
       portMappings = [{ containerPort = 8081 }]
       logConfiguration = {
         logDriver = "awslogs"
@@ -247,8 +247,8 @@ resource "aws_ecs_task_definition" "redis" {
   task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([{
-    name  = "redis"
-    image = "redis:latest"
+    name        = "redis"
+    image       = "redis:latest"
     portMappings = [{
       containerPort = 6379
     }]
@@ -278,8 +278,8 @@ resource "aws_ecs_service" "grafana" {
   task_definition = aws_ecs_task_definition.grafana.arn
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -301,8 +301,8 @@ resource "aws_ecs_service" "renderer" {
   task_definition = aws_ecs_task_definition.renderer.arn
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -324,8 +324,8 @@ resource "aws_ecs_service" "redis" {
   task_definition = aws_ecs_task_definition.redis.arn
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
