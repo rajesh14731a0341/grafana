@@ -177,7 +177,7 @@ resource "aws_ecs_task_definition" "renderer" {
     secrets = [{
       name      = "RENDERER_AUTH_TOKEN"
       # CORRECTED LINE BELOW: Referencing the specific key from the secret ARN
-      valueFrom = "${aws_secretsmanager_secret.grafana_renderer_token_secret.arn}:RENDERER_AUTH_TOKEN::"
+      valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.arn
     }]
     logConfiguration = {
       logDriver = "awslogs"
@@ -313,7 +313,7 @@ resource "aws_ecs_task_definition" "grafana" {
       {
         name      = "GF_RENDERING_SERVER_AUTH_TOKEN"
         # This line was already correct in Grafana's definition
-        valueFrom = "${aws_secretsmanager_secret.grafana_renderer_token_secret.arn}:RENDERER_AUTH_TOKEN::"
+        valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.arn
       }
     ]
     logConfiguration = {
