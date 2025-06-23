@@ -168,24 +168,21 @@ resource "aws_ecs_task_definition" "renderer" {
       containerPort = 8081
       protocol      = "tcp"
     }]
-    
-    # ✅ ADD THIS
+
     command = ["dumb-init", "--", "node", "build/app.js", "server"]
 
     environment = [
       { name = "ENABLE_METRICS", value = "false" },
       { name = "LOG_LEVEL", value = "debug" }
     ]
+
     secrets = [
-      {
-        name      = "RENDERER_AUTH_TOKEN"
-        valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
-      },
       {
         name      = "RENDERING_AUTH_TOKEN"
         valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
       }
     ]
+
     logConfiguration = {
       logDriver = "awslogs"
       options = {
