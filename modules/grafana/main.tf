@@ -170,7 +170,6 @@ resource "aws_ecs_task_definition" "renderer" {
       protocol      = "tcp"
     }]
 
-    # ✅ Now we run just the server — no shell wrapper, no CLI token
     command = ["node", "build/app.js", "server"]
 
     environment = [
@@ -181,7 +180,7 @@ resource "aws_ecs_task_definition" "renderer" {
     secrets = [
       {
         name      = "GF_RENDERING_SERVER_AUTH_TOKEN"
-        valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
+        valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.arn
       }
     ]
 
@@ -195,6 +194,7 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   }])
 }
+
 
 
 
@@ -288,31 +288,40 @@ resource "aws_ecs_task_definition" "grafana" {
     cpu         = 512
     memory      = 1024
     essential   = true
+
     portMappings = [{
       containerPort = 3000
       protocol      = "tcp"
     }]
+
     environment = [
       { name = "GF_DATABASE_TYPE", value = "postgres" },
       { name = "GF_DATABASE_HOST", value = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com" },
       { name = "GF_DATABASE_NAME", value = "grafana" },
       { name = "GF_DATABASE_USER", value = "rajesh" },
       { name = "GF_DATABASE_SSL_MODE", value = "require" },
+
+      # ✅ Remote rendering configuration
       { name = "GF_RENDERING_SERVER_URL", value = "http://renderer.${var.cloudmap_namespace}:8081/render" },
       { name = "GF_RENDERING_CALLBACK_URL", value = "http://grafana.${var.cloudmap_namespace}:3000/" },
       { name = "GF_RENDERING_EXTERNAL_ENABLED", value = "true" },
       { name = "GF_RENDERING_MODE", value = "remote" },
-      { name = "GF_RENDERING_SERVER_HEADERS", value = "X-Grafana-Rendering-Token" }, # ✅ required for auth token to be sent
+      { name = "GF_RENDERING_SERVER_HEADERS", value = "X-Grafana-Rendering-Token" },
+
+      # ✅ Redis cache
       { name = "REDIS_PATH", value = "redis.${var.cloudmap_namespace}:6379" },
       { name = "REDIS_DB", value = "1" },
       { name = "REDIS_CACHETIME", value = "12000" },
       { name = "CACHING", value = "Y" },
+
+      # ✅ Other
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
       { name = "GF_INSTALL_PLUGINS", value = "redis-datasource" },
       { name = "GF_AUTH_ANONYMOUS_ENABLED", value = "true" },
       { name = "GF_AUTH_ANONYMOUS_ORG_ROLE", value = "Viewer" },
       { name = "GF_LOG_LEVEL", value = "debug" }
     ]
+
     secrets = [
       {
         name      = "GF_DATABASE_PASSWORD"
@@ -320,13 +329,10 @@ resource "aws_ecs_task_definition" "grafana" {
       },
       {
         name      = "GF_RENDERING_SERVER_AUTH_TOKEN"
-        valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
-      },
-      {
-        name      = "GF_RENDERING_SERVER_ACCESS_TOKEN"
-        valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
+        valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.arn
       }
     ]
+
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -337,6 +343,7 @@ resource "aws_ecs_task_definition" "grafana" {
     }
   }])
 }
+
 
 
 resource "aws_service_discovery_service" "grafana" {
