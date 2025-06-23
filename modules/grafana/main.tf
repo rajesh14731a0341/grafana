@@ -174,8 +174,7 @@ resource "aws_ecs_task_definition" "renderer" {
     ]
     secrets = [{
       name      = "RENDERER_AUTH_TOKEN"
-      # CORRECTED LINE BELOW: Referencing the specific key from the secret ARN
-      valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.arn
+      valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
     }]
     logConfiguration = {
       logDriver = "awslogs"
@@ -297,21 +296,18 @@ resource "aws_ecs_task_definition" "grafana" {
       { name = "CACHING", value = "Y" },
       { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
       { name = "GF_INSTALL_PLUGINS", value = "redis-datasource" },
-      # ADDED/MODIFIED FOR ANONYMOUS ACCESS AND DEBUG LOGGING
       { name = "GF_AUTH_ANONYMOUS_ENABLED", value = "true" },
       { name = "GF_AUTH_ANONYMOUS_ORG_ROLE", value = "Viewer" },
-      { name = "GF_LOG_LEVEL", value = "debug" } # Set overall log level to debug
-      # REMOVED: { name = "GF_LOG_FILTERS", value = "rendering:debug" }, # This line is removed for broader debug logging
+      { name = "GF_LOG_LEVEL", value = "debug" }
     ]
     secrets = [
       {
         name      = "GF_DATABASE_PASSWORD"
-        valueFrom = data.aws_secretsmanager_secret_version.db_secret.arn
+        valueFrom = data.aws_secretsmanager_secret_version.db_secret.secret_id
       },
       {
         name      = "GF_RENDERING_SERVER_AUTH_TOKEN"
-        # This line was already correct in Grafana's definition
-        valueFrom = aws_secretsmanager_secret_version.grafana_renderer_token_secret_version.arn
+        valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
       }
     ]
     logConfiguration = {
