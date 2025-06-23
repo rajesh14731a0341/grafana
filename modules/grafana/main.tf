@@ -43,9 +43,7 @@ resource "aws_secretsmanager_secret" "grafana_renderer_token_secret" {
 
 resource "aws_secretsmanager_secret_version" "grafana_renderer_token_secret_version" {
   secret_id     = aws_secretsmanager_secret.grafana_renderer_token_secret.id
-  secret_string = jsonencode({
-    RENDERER_AUTH_TOKEN = random_password.renderer_auth_token_value.result
-  })
+  secret_string = random_password.renderer_auth_token_value.result
 }
 
 ###############################
