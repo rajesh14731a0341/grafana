@@ -164,12 +164,17 @@ resource "aws_ecs_task_definition" "renderer" {
     cpu         = 256
     memory      = 512
     essential   = true
+
     portMappings = [{
       containerPort = 8081
       protocol      = "tcp"
     }]
 
-    command = ["dumb-init", "--", "node", "build/app.js", "server"]
+    # ✅ Fix: Use a shell to inject secret env variable into command
+    command = [
+      "/bin/sh", "-c",
+      "node build/app.js server --auth-token \"$RENDERING_AUTH_TOKEN\""
+    ]
 
     environment = [
       { name = "ENABLE_METRICS", value = "false" },
@@ -193,6 +198,7 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   }])
 }
+
 
 
 resource "aws_service_discovery_service" "renderer" {
