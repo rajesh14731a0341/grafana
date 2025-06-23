@@ -315,6 +315,10 @@ resource "aws_ecs_task_definition" "grafana" {
       {
         name      = "GF_RENDERING_SERVER_AUTH_TOKEN"
         valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
+      },
+      {
+        name      = "GF_RENDERING_SERVER_ACCESS_TOKEN"
+        valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
       }
     ]
     logConfiguration = {
