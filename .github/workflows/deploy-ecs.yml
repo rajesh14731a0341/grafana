@@ -19,7 +19,7 @@ jobs:
           terraform_version: 1.5.7
 
       - name: Terraform Init
-        working-directory: env/marquez
+        working-directory: env/grafana
         run: terraform init
 
       - name: Terraform Validate
