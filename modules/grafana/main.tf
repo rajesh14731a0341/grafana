@@ -170,11 +170,8 @@ resource "aws_ecs_task_definition" "renderer" {
       protocol      = "tcp"
     }]
 
-    # ✅ Fix: Use a shell to inject secret env variable into command
-    command = [
-      "/bin/sh", "-c",
-      "node build/app.js server --auth-token \"$RENDERING_AUTH_TOKEN\""
-    ]
+    # ✅ Now we run just the server — no shell wrapper, no CLI token
+    command = ["node", "build/app.js", "server"]
 
     environment = [
       { name = "ENABLE_METRICS", value = "false" },
@@ -183,7 +180,7 @@ resource "aws_ecs_task_definition" "renderer" {
 
     secrets = [
       {
-        name      = "RENDERING_AUTH_TOKEN"
+        name      = "GF_RENDERING_SERVER_AUTH_TOKEN"
         valueFrom = aws_secretsmanager_secret.grafana_renderer_token_secret.arn
       }
     ]
@@ -198,6 +195,7 @@ resource "aws_ecs_task_definition" "renderer" {
     }
   }])
 }
+
 
 
 
