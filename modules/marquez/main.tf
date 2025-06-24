@@ -1,7 +1,8 @@
 locals {
-  log_prefix     = "/ecs/marquez"
-  postgres_host  = "marquez-db.marquez.local"
+  log_prefix    = "/ecs/marquez"
+  postgres_host = data.aws_lb.internal_nlb.dns_name
 }
+
 
 ##############################
 # Data Sources
@@ -13,6 +14,11 @@ data "aws_lb" "public_alb" {
 
 data "aws_lb" "internal_nlb" {
   name = var.nlb_name
+}
+
+data "aws_lb_listener" "http" {
+  load_balancer_arn = data.aws_lb.public_alb.arn
+  port              = 80
 }
 
 ##############################
@@ -71,7 +77,7 @@ resource "aws_lb_target_group" "db_tg" {
 ##############################
 
 resource "aws_lb_listener_rule" "api_rule" {
-  listener_arn = data.aws_lb.public_alb.listeners[0].listener_arn
+  listener_arn = data.aws_lb_listener.http.arn
   priority     = 30
 
   action {
@@ -81,13 +87,13 @@ resource "aws_lb_listener_rule" "api_rule" {
 
   condition {
     path_pattern {
-      values = ["/marquez/api*", "/marquez/api/*"]
+      values = ["/marquez/api", "/marquez/api/*"]
     }
   }
 }
 
 resource "aws_lb_listener_rule" "web_rule" {
-  listener_arn = data.aws_lb.public_alb.listeners[0].listener_arn
+  listener_arn = data.aws_lb_listener.http.arn
   priority     = 40
 
   action {
@@ -97,7 +103,7 @@ resource "aws_lb_listener_rule" "web_rule" {
 
   condition {
     path_pattern {
-      values = ["/marquez*", "/marquez/*"]
+      values = ["/marquez", "/marquez/*"]
     }
   }
 }
