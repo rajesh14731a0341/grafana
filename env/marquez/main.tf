@@ -25,7 +25,4 @@ module "marquez" {
   marquez_web_autoscaling_max        = var.marquez_web_autoscaling_max
   marquez_web_autoscaling_cpu_target = var.marquez_web_autoscaling_cpu_target
 
-  # Docker Hub Credentials (to be passed via environment variables or Secrets Manager)
-  dockerhub_username = var.dockerhub_username
-  dockerhub_password = var.dockerhub_password
 }

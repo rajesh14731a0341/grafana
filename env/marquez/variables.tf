@@ -95,15 +95,3 @@ variable "marquez_web_autoscaling_cpu_target" {
   type        = number
   default     = 70
 }
-
-variable "dockerhub_username" {
-  description = "Username for Docker Hub to pull Marquez images."
-  type        = string
-  sensitive   = true
-}
-
-variable "dockerhub_password" {
-  description = "Password for Docker Hub to pull Marquez images."
-  type        = string
-  sensitive   = true
-}
