@@ -154,16 +154,18 @@ resource "aws_ecs_task_definition" "api" {
   execution_role_arn      = var.execution_role_arn
   task_role_arn           = var.task_role_arn
 
-  image_pull_credentials_type = "SERVICE_ROLE"
-
-  repository_credentials {
-    credentials_parameter = aws_secretsmanager_secret.dockerhub.arn
-  }
+  # The 'image_pull_credentials_type' argument and 'repository_credentials' block
+  # are deprecated/removed. Image pull credentials are now specified within
+  # the 'container_definitions' JSON.
 
   container_definitions = jsonencode([{
     name        = "marquez-api"
     image       = "marquezproject/marquez:latest"
     portMappings = [{ containerPort = 5000 }]
+    # Correct placement of repositoryCredentials inside container_definitions
+    repositoryCredentials = {
+      credentialsParameter = aws_secretsmanager_secret.dockerhub.arn
+    }
     environment = [
       { name = "POSTGRES_HOST", value = local.postgres_host },
       { name = "POSTGRES_PORT", value = "5432" },
@@ -191,16 +193,18 @@ resource "aws_ecs_task_definition" "web" {
   execution_role_arn      = var.execution_role_arn
   task_role_arn           = var.task_role_arn
 
-  image_pull_credentials_type = "SERVICE_ROLE"
-
-  repository_credentials {
-    credentials_parameter = aws_secretsmanager_secret.dockerhub.arn
-  }
+  # The 'image_pull_credentials_type' argument and 'repository_credentials' block
+  # are deprecated/removed. Image pull credentials are now specified within
+  # the 'container_definitions' JSON.
 
   container_definitions = jsonencode([{
     name        = "marquez-web"
     image       = "marquezproject/marquez-web:latest"
     portMappings = [{ containerPort = 8080 }]
+    # Correct placement of repositoryCredentials inside container_definitions
+    repositoryCredentials = {
+      credentialsParameter = aws_secretsmanager_secret.dockerhub.arn
+    }
     environment = [
       { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name },
       { name = "MARQUEZ_PORT", value = "80" },
@@ -227,16 +231,18 @@ resource "aws_ecs_task_definition" "db" {
   execution_role_arn      = var.execution_role_arn
   task_role_arn           = var.task_role_arn
 
-  image_pull_credentials_type = "SERVICE_ROLE"
-
-  repository_credentials {
-    credentials_parameter = aws_secretsmanager_secret.dockerhub.arn
-  }
+  # The 'image_pull_credentials_type' argument and 'repository_credentials' block
+  # are deprecated/removed. Image pull credentials are now specified within
+  # the 'container_definitions' JSON.
 
   container_definitions = jsonencode([{
     name        = "marquez-db"
     image       = "postgres:13"
     portMappings = [{ containerPort = 5432 }]
+    # Correct placement of repositoryCredentials inside container_definitions
+    repositoryCredentials = {
+      credentialsParameter = aws_secretsmanager_secret.dockerhub.arn
+    }
     environment = [
       { name = "POSTGRES_USER", value = "marquez" },
       { name = "POSTGRES_PASSWORD", value = "marquez" },
