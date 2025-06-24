@@ -2,8 +2,15 @@ ecs_cluster_id     = "arn:aws:ecs:us-east-1:736747734611:cluster/rajesh-cluster"
 ecs_cluster_name   = "rajesh-cluster"
 vpc_id             = "vpc-0baac8b1f8f1ca391"
 
-public_subnet_ids  = ["subnet-0eddeac6a246b078f", "subnet-0fcef6c827cb2624e"]
-private_subnet_ids = ["subnet-0c6757b8248f8ba4b", "subnet-07635da9f67f83442"]
+public_subnet_ids = [
+  "subnet-0eddeac6a246b078f",
+  "subnet-0fcef6c827cb2624e"
+]
+
+private_subnet_ids = [
+  "subnet-0c6757b8248f8ba4b",
+  "subnet-07635da9f67f83442"
+]
 
 security_group_id  = "sg-084b6f2c8b582a491"
 execution_role_arn = "arn:aws:iam::736747734611:role/rajesh-ecs-task-execution-role"
@@ -15,17 +22,27 @@ db_endpoint   = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com"
 alb_name = "ALB"
 nlb_name = "nlb"
 
-grafana_desired_count          = 0
-grafana_autoscaling_min        = 0
+# Route 53 zone details
+route53_zone_name = "rajesh.com"
+route53_zone_id   = "Z0686732266WVJGIULJ0U"
+
+# Only Grafana gets a dedicated hostname
+grafana_domain_name = "grafana.rajesh.com"
+
+# Grafana service config
+grafana_desired_count          = 1
+grafana_autoscaling_min        = 1
 grafana_autoscaling_max        = 5
 grafana_autoscaling_cpu_target = 70
 
-renderer_desired_count          = 0
-renderer_autoscaling_min        = 0
+# Renderer service config (path-based routing only)
+renderer_desired_count          = 1
+renderer_autoscaling_min        = 1
 renderer_autoscaling_max        = 5
 renderer_autoscaling_cpu_target = 70
 
-redis_desired_count          = 0
-redis_autoscaling_min        = 0
+# Redis service config
+redis_desired_count          = 1
+redis_autoscaling_min        = 1
 redis_autoscaling_max        = 5
 redis_autoscaling_cpu_target = 70

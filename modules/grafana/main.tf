@@ -5,7 +5,6 @@ locals {
 ##############################
 # Data Sources for Load Balancers
 ##############################
-
 data "aws_lb" "public_alb" {
   name = var.alb_name
 }
@@ -17,7 +16,6 @@ data "aws_lb" "internal_nlb" {
 ##############################
 # Target Groups
 ##############################
-
 resource "aws_lb_target_group" "grafana_tg" {
   name        = "grafana-tg"
   port        = 3000
@@ -26,12 +24,11 @@ resource "aws_lb_target_group" "grafana_tg" {
   target_type = "ip"
 
   health_check {
-    path     = "/grafana/login"
+    path     = "/login"
     protocol = "HTTP"
     matcher  = "200-399"
   }
 }
-
 
 resource "aws_lb_target_group" "renderer_tg" {
   name        = "renderer-tg"
@@ -60,7 +57,7 @@ resource "aws_lb_target_group" "redis_tg" {
 
   health_check {
     protocol            = "TCP"
-    port                = "traffic-port" # ✅ This matches port 6379
+    port                = "traffic-port"
     interval            = 30
     timeout             = 10
     healthy_threshold   = 3
@@ -68,11 +65,9 @@ resource "aws_lb_target_group" "redis_tg" {
   }
 }
 
-
 ##############################
 # Load Balancer Listeners
 ##############################
-
 resource "aws_lb_listener" "public_listener" {
   load_balancer_arn = data.aws_lb.public_alb.arn
   port              = 80
@@ -93,34 +88,32 @@ resource "aws_lb_listener_rule" "grafana_rule" {
   priority     = 100
 
   action {
-    type           = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.grafana_tg.arn
   }
 
   condition {
     host_header {
-      values = ["grafana.mcd.com"] # Changed from path_pattern to host_header
+      values = [var.grafana_domain_name]  # e.g. "grafana.rajesh.com"
     }
   }
 }
-
 
 resource "aws_lb_listener_rule" "renderer_rule" {
   listener_arn = aws_lb_listener.public_listener.arn
   priority     = 200
 
   action {
-    type           = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.renderer_tg.arn
   }
 
   condition {
-    host_header {
-      values = ["render.mcd.com"] # Changed from path_pattern to host_header
+    path_pattern {
+      values = ["/render", "/render/*"]
     }
   }
 }
-
 
 resource "aws_lb_listener" "redis_tcp" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
@@ -128,15 +121,29 @@ resource "aws_lb_listener" "redis_tcp" {
   protocol          = "TCP"
 
   default_action {
-    type           = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.redis_tg.arn
+  }
+}
+
+##############################
+# Route 53 Record for Grafana
+##############################
+resource "aws_route53_record" "grafana" {
+  zone_id = var.route53_zone_id
+  name    = var.grafana_domain_name
+  type    = "A"
+
+  alias {
+    name                   = data.aws_lb.public_alb.dns_name
+    zone_id                = data.aws_lb.public_alb.zone_id
+    evaluate_target_health = true
   }
 }
 
 ##############################
 # Secrets Manager
 ##############################
-
 data "aws_secretsmanager_secret_version" "db" {
   secret_id = var.db_secret_arn
 }
@@ -144,7 +151,6 @@ data "aws_secretsmanager_secret_version" "db" {
 ##############################
 # ECS Task Definitions
 ##############################
-
 resource "aws_ecs_task_definition" "grafana" {
   family                   = "grafana-task"
   requires_compatibilities = ["FARGATE"]
@@ -154,61 +160,39 @@ resource "aws_ecs_task_definition" "grafana" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name        = "grafana"
-      image       = "grafana/grafana-enterprise:latest"
-      portMappings = [{ containerPort = 3000 }]
-      environment = [
-        {
-          name  = "GF_SERVER_ROOT_URL"
-          value = "http://grafana.mcd.com" # Updated for host-based routing
-        },
-        {
-          name  = "GF_SERVER_SERVE_FROM_SUB_PATH"
-          value = "false" # Set to false as it's no longer a sub-path
-        },
-        { name = "GF_DATABASE_TYPE", value = "postgres" },
-        { name = "GF_DATABASE_HOST", value = var.db_endpoint },
-        { name = "GF_DATABASE_NAME", value = "grafana" },
-        { name = "GF_DATABASE_USER", value = "rajesh" },
-        {
-          name  = "GF_DATABASE_PASSWORD"
-          value = data.aws_secretsmanager_secret_version.db.secret_string
-        },
-        { name = "GF_DATABASE_SSL_MODE", value = "require" },
-        {
-          name  = "GF_RENDERING_SERVER_URL"
-          value = "http://render.mcd.com" # Updated for host-based routing
-        },
-        {
-          name  = "GF_RENDERING_CALLBACK_URL"
-          value = "http://grafana.mcd.com" # Updated for host-based routing
-        },
-        {
-          name  = "REDIS_PATH"
-          value = "${data.aws_lb.internal_nlb.dns_name}:6379"
-        },
-        { name = "REDIS_DB", value = "1" },
-        { name = "REDIS_CACHETIME", value = "12000" },
-        { name = "CACHING", value = "Y" },
-        { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-        { name = "GF_LOG_FILTERS", value = "rendering:debug" }
-      ],
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "${local.log_prefix}-grafana"
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "grafana"
-          awslogs-create-group  = "true"
-        }
+  container_definitions = jsonencode([{
+    name  = "grafana"
+    image = "grafana/grafana-enterprise:latest"
+    portMappings = [{ containerPort = 3000 }]
+    environment = [
+      { name = "GF_SERVER_ROOT_URL",        value = "http://${var.grafana_domain_name}" },
+      { name = "GF_SERVER_SERVE_FROM_SUB_PATH", value = "false" },
+      { name = "GF_DATABASE_TYPE",          value = "postgres" },
+      { name = "GF_DATABASE_HOST",          value = var.db_endpoint },
+      { name = "GF_DATABASE_NAME",          value = "grafana" },
+      { name = "GF_DATABASE_USER",          value = "rajesh" },
+      { name = "GF_DATABASE_PASSWORD",      value = data.aws_secretsmanager_secret_version.db.secret_string },
+      { name = "GF_DATABASE_SSL_MODE",      value = "require" },
+      { name = "GF_RENDERING_SERVER_URL",   value = "http://${data.aws_lb.public_alb.dns_name}/render" },
+      { name = "GF_RENDERING_CALLBACK_URL", value = "http://${var.grafana_domain_name}" },
+      { name = "REDIS_PATH",                value = "${data.aws_lb.internal_nlb.dns_name}:6379" },
+      { name = "REDIS_DB",                  value = "1" },
+      { name = "REDIS_CACHETIME",          value = "12000" },
+      { name = "CACHING",                   value = "Y" },
+      { name = "GF_PLUGIN_ALLOW_LOCAL_MODE",value = "true" },
+      { name = "GF_LOG_FILTERS",            value = "rendering:debug" }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = "${local.log_prefix}-grafana"
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "grafana"
+        awslogs-create-group  = "true"
       }
     }
-  ])
+  }])
 }
-
-
 
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
@@ -219,40 +203,36 @@ resource "aws_ecs_task_definition" "renderer" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name        = "renderer"
-      image       = "grafana/grafana-image-renderer:latest"
-      portMappings = [{ containerPort = 8081 }]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "${local.log_prefix}-renderer"
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "renderer"
-          awslogs-create-group  = "true"
-        }
+  container_definitions = jsonencode([{
+    name              = "renderer"
+    image             = "grafana/grafana-image-renderer:latest"
+    portMappings      = [{ containerPort = 8081 }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = "${local.log_prefix}-renderer"
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "renderer"
+        awslogs-create-group  = "true"
       }
     }
-  ])
+  }])
 }
 
 resource "aws_ecs_task_definition" "redis" {
   family                   = "redis-task"
-  cpu                      = 512
-  memory                   = 1024
-  network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
+  cpu                      = "512"
+  memory                   = "1024"
+  network_mode             = "awsvpc"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([{
-    name        = "redis"
-    image       = "redis:latest"
-    portMappings = [{
-      containerPort = 6379
-    }]
-    command = ["redis-server", "--bind", "0.0.0.0"]
+    name         = "redis"
+    image        = "redis:latest"
+    portMappings = [{ containerPort = 6379 }]
+    command      = ["redis-server", "--bind", "0.0.0.0"]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -265,21 +245,20 @@ resource "aws_ecs_task_definition" "redis" {
   }])
 }
 
-
 ##############################
-# ECS Services
+# ECS Services & Auto Scaling
 ##############################
-
 resource "aws_ecs_service" "grafana" {
-  name            = "grafana"
-  cluster         = var.ecs_cluster_id
-  launch_type     = "FARGATE"
-  desired_count   = var.grafana_desired_count
-  task_definition = aws_ecs_task_definition.grafana.arn
+  name                   = "grafana"
+  cluster                = var.ecs_cluster_id
+  launch_type            = "FARGATE"
+  desired_count          = var.grafana_desired_count
+  task_definition        = aws_ecs_task_definition.grafana.arn
+  enable_execute_command = true
 
   network_configuration {
-    subnets          = var.private_subnet_ids
-    security_groups  = [var.security_group_id]
+    subnets         = var.private_subnet_ids
+    security_groups = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -288,21 +267,20 @@ resource "aws_ecs_service" "grafana" {
     container_name   = "grafana"
     container_port   = 3000
   }
-
-  enable_execute_command = true
-  depends_on             = [aws_lb_listener_rule.grafana_rule]
+  depends_on = [aws_lb_listener_rule.grafana_rule]
 }
 
 resource "aws_ecs_service" "renderer" {
-  name            = "renderer"
-  cluster         = var.ecs_cluster_id
-  launch_type     = "FARGATE"
-  desired_count   = var.renderer_desired_count
-  task_definition = aws_ecs_task_definition.renderer.arn
+  name                   = "renderer"
+  cluster                = var.ecs_cluster_id
+  launch_type            = "FARGATE"
+  desired_count          = var.renderer_desired_count
+  task_definition        = aws_ecs_task_definition.renderer.arn
+  enable_execute_command = true
 
   network_configuration {
-    subnets          = var.private_subnet_ids
-    security_groups  = [var.security_group_id]
+    subnets         = var.private_subnet_ids
+    security_groups = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -311,21 +289,20 @@ resource "aws_ecs_service" "renderer" {
     container_name   = "renderer"
     container_port   = 8081
   }
-
-  enable_execute_command = true
-  depends_on             = [aws_lb_listener_rule.renderer_rule]
+  depends_on = [aws_lb_listener_rule.renderer_rule]
 }
 
 resource "aws_ecs_service" "redis" {
-  name            = "redis"
-  cluster         = var.ecs_cluster_id
-  launch_type     = "FARGATE"
-  desired_count   = var.redis_desired_count
-  task_definition = aws_ecs_task_definition.redis.arn
+  name                   = "redis"
+  cluster                = var.ecs_cluster_id
+  launch_type            = "FARGATE"
+  desired_count          = var.redis_desired_count
+  task_definition        = aws_ecs_task_definition.redis.arn
+  enable_execute_command = true
 
   network_configuration {
-    subnets          = var.private_subnet_ids
-    security_groups  = [var.security_group_id]
+    subnets         = var.private_subnet_ids
+    security_groups = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -334,14 +311,8 @@ resource "aws_ecs_service" "redis" {
     container_name   = "redis"
     container_port   = 6379
   }
-
-  enable_execute_command = true
-  depends_on             = [aws_lb_listener.redis_tcp]
+  depends_on = [aws_lb_listener.redis_tcp]
 }
-
-##############################
-# Auto Scaling
-##############################
 
 resource "aws_appautoscaling_target" "grafana" {
   service_namespace  = "ecs"
@@ -360,12 +331,10 @@ resource "aws_appautoscaling_policy" "grafana_cpu" {
   service_namespace  = aws_appautoscaling_target.grafana.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
-    target_value       = var.grafana_autoscaling_cpu_target
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
+    predefined_metric_specification { predefined_metric_type = "ECSServiceAverageCPUUtilization" }
+    target_value                 = var.grafana_autoscaling_cpu_target
+    scale_in_cooldown            = 60
+    scale_out_cooldown           = 60
   }
 }
 
@@ -386,12 +355,10 @@ resource "aws_appautoscaling_policy" "renderer_cpu" {
   service_namespace  = aws_appautoscaling_target.renderer.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
-    target_value       = var.renderer_autoscaling_cpu_target
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
+    predefined_metric_specification { predefined_metric_type = "ECSServiceAverageCPUUtilization" }
+    target_value                 = var.renderer_autoscaling_cpu_target
+    scale_in_cooldown            = 60
+    scale_out_cooldown           = 60
   }
 }
 
@@ -412,11 +379,9 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
   service_namespace  = aws_appautoscaling_target.redis.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
-    target_value       = var.redis_autoscaling_cpu_target
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
+    predefined_metric_specification { predefined_metric_type = "ECSServiceAverageCPUUtilization" }
+    target_value                 = var.redis_autoscaling_cpu_target
+    scale_in_cooldown            = 60
+    scale_out_cooldown           = 60
   }
 }
