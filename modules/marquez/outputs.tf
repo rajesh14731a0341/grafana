@@ -1,3 +1,7 @@
-output "lb_dns_name" {
-  value = aws_lb.public_alb.dns_name
+output "marquez_api_service_name" {
+  value = aws_ecs_service.marquez_api.name
+}
+
+output "marquez_web_service_name" {
+  value = aws_ecs_service.marquez_web.name
 }
