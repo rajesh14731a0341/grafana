@@ -13,3 +13,11 @@ output "marquez_api_service_name" {
 output "marquez_web_service_name" {
   value = module.marquez.marquez_web_service_name
 }
+
+output "marquez_api_autoscaling_target_arn" {
+  value = aws_appautoscaling_target.marquez_api.resource_id
+}
+
+output "marquez_web_autoscaling_target_arn" {
+  value = aws_appautoscaling_target.marquez_web.resource_id
+}
