@@ -3,7 +3,6 @@ locals {
   postgres_host = data.aws_lb.internal_nlb.dns_name
 }
 
-
 ##############################
 # Data Sources
 ##############################
@@ -31,6 +30,7 @@ resource "aws_lb_target_group" "api_tg" {
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = var.vpc_id
+
   health_check {
     path                = "/actuator/health"
     matcher             = "200"
@@ -47,6 +47,7 @@ resource "aws_lb_target_group" "web_tg" {
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = var.vpc_id
+
   health_check {
     path                = "/"
     matcher             = "200"
@@ -63,6 +64,7 @@ resource "aws_lb_target_group" "db_tg" {
   protocol    = "TCP"
   target_type = "ip"
   vpc_id      = var.vpc_id
+
   health_check {
     protocol            = "TCP"
     interval            = 30
@@ -109,6 +111,21 @@ resource "aws_lb_listener_rule" "web_rule" {
 }
 
 ##############################
+# TCP Listener for DB on NLB
+##############################
+
+resource "aws_lb_listener" "db_tcp" {
+  load_balancer_arn = data.aws_lb.internal_nlb.arn
+  port              = 5432
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.db_tg.arn
+  }
+}
+
+##############################
 # Task Definitions
 ##############################
 
@@ -121,28 +138,26 @@ resource "aws_ecs_task_definition" "api" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "marquez-api"
-      image     = "marquezproject/marquez:latest"
-      portMappings = [{ containerPort = 5000 }]
-      environment = [
-        { name = "POSTGRES_HOST", value = local.postgres_host },
-        { name = "POSTGRES_PORT", value = "5432" },
-        { name = "POSTGRES_USER", value = "marquez" },
-        { name = "POSTGRES_PASSWORD", value = "marquez" },
-        { name = "POSTGRES_DB", value = "marquez" }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "${local.log_prefix}-api"
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "ecs"
-        }
+  container_definitions = jsonencode([{
+    name      = "marquez-api"
+    image     = "marquezproject/marquez:latest"
+    portMappings = [{ containerPort = 5000 }]
+    environment = [
+      { name = "POSTGRES_HOST", value = local.postgres_host },
+      { name = "POSTGRES_PORT", value = "5432" },
+      { name = "POSTGRES_USER", value = "marquez" },
+      { name = "POSTGRES_PASSWORD", value = "marquez" },
+      { name = "POSTGRES_DB", value = "marquez" }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = "${local.log_prefix}-api"
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "ecs"
       }
     }
-  ])
+  }])
 }
 
 resource "aws_ecs_task_definition" "web" {
@@ -154,26 +169,24 @@ resource "aws_ecs_task_definition" "web" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "marquez-web"
-      image     = "marquezproject/marquez-web:latest"
-      portMappings = [{ containerPort = 8080 }]
-      environment = [
-        { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name },
-        { name = "MARQUEZ_PORT", value = "80" },
-        { name = "BASE_PATH", value = "/marquez" }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          awslogs-group         = "${local.log_prefix}-web"
-          awslogs-region        = "us-east-1"
-          awslogs-stream-prefix = "ecs"
-        }
+  container_definitions = jsonencode([{
+    name      = "marquez-web"
+    image     = "marquezproject/marquez-web:latest"
+    portMappings = [{ containerPort = 8080 }]
+    environment = [
+      { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name },
+      { name = "MARQUEZ_PORT", value = "80" },
+      { name = "BASE_PATH", value = "/marquez" }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = "${local.log_prefix}-web"
+        awslogs-region        = "us-east-1"
+        awslogs-stream-prefix = "ecs"
       }
     }
-  ])
+  }])
 }
 
 resource "aws_ecs_task_definition" "db" {
@@ -215,6 +228,7 @@ resource "aws_ecs_service" "api" {
   task_definition = aws_ecs_task_definition.api.arn
   desired_count   = var.marquez_api_desired_count
   launch_type     = "FARGATE"
+  enable_execute_command = true
 
   network_configuration {
     subnets         = var.private_subnet_ids
@@ -239,6 +253,7 @@ resource "aws_ecs_service" "web" {
   task_definition = aws_ecs_task_definition.web.arn
   desired_count   = var.marquez_web_desired_count
   launch_type     = "FARGATE"
+  enable_execute_command = true
 
   network_configuration {
     subnets         = var.private_subnet_ids
@@ -263,6 +278,7 @@ resource "aws_ecs_service" "db" {
   task_definition = aws_ecs_task_definition.db.arn
   desired_count   = 1
   launch_type     = "FARGATE"
+  enable_execute_command = true
 
   network_configuration {
     subnets         = var.private_subnet_ids
