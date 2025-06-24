@@ -146,13 +146,13 @@ resource "aws_lb_listener" "db_tcp" {
 ##############################
 
 resource "aws_ecs_task_definition" "api" {
-  family                   = "marquez-api"
+  family                  = "marquez-api"
   requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "512"
-  memory                   = "1024"
-  execution_role_arn       = var.execution_role_arn
-  task_role_arn            = var.task_role_arn
+  network_mode            = "awsvpc"
+  cpu                     = "512"
+  memory                  = "1024"
+  execution_role_arn      = var.execution_role_arn
+  task_role_arn           = var.task_role_arn
 
   image_pull_credentials_type = "SERVICE_ROLE"
 
@@ -161,8 +161,8 @@ resource "aws_ecs_task_definition" "api" {
   }
 
   container_definitions = jsonencode([{
-    name      = "marquez-api"
-    image     = "marquezproject/marquez:latest"
+    name        = "marquez-api"
+    image       = "marquezproject/marquez:latest"
     portMappings = [{ containerPort = 5000 }]
     environment = [
       { name = "POSTGRES_HOST", value = local.postgres_host },
@@ -183,13 +183,13 @@ resource "aws_ecs_task_definition" "api" {
 }
 
 resource "aws_ecs_task_definition" "web" {
-  family                   = "marquez-web"
+  family                  = "marquez-web"
   requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = var.execution_role_arn
-  task_role_arn            = var.task_role_arn
+  network_mode            = "awsvpc"
+  cpu                     = "256"
+  memory                  = "512"
+  execution_role_arn      = var.execution_role_arn
+  task_role_arn           = var.task_role_arn
 
   image_pull_credentials_type = "SERVICE_ROLE"
 
@@ -198,8 +198,8 @@ resource "aws_ecs_task_definition" "web" {
   }
 
   container_definitions = jsonencode([{
-    name      = "marquez-web"
-    image     = "marquezproject/marquez-web:latest"
+    name        = "marquez-web"
+    image       = "marquezproject/marquez-web:latest"
     portMappings = [{ containerPort = 8080 }]
     environment = [
       { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name },
@@ -219,13 +219,13 @@ resource "aws_ecs_task_definition" "web" {
 }
 
 resource "aws_ecs_task_definition" "db" {
-  family                   = "marquez-db"
+  family                  = "marquez-db"
   requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "512"
-  memory                   = "1024"
-  execution_role_arn       = var.execution_role_arn
-  task_role_arn            = var.task_role_arn
+  network_mode            = "awsvpc"
+  cpu                     = "512"
+  memory                  = "1024"
+  execution_role_arn      = var.execution_role_arn
+  task_role_arn           = var.task_role_arn
 
   image_pull_credentials_type = "SERVICE_ROLE"
 
@@ -234,8 +234,8 @@ resource "aws_ecs_task_definition" "db" {
   }
 
   container_definitions = jsonencode([{
-    name      = "marquez-db"
-    image     = "postgres:13"
+    name        = "marquez-db"
+    image       = "postgres:13"
     portMappings = [{ containerPort = 5432 }]
     environment = [
       { name = "POSTGRES_USER", value = "marquez" },
@@ -258,15 +258,15 @@ resource "aws_ecs_task_definition" "db" {
 ##############################
 
 resource "aws_ecs_service" "api" {
-  name            = "marquez-api"
-  cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.api.arn
-  desired_count   = var.marquez_api_desired_count
-  launch_type     = "FARGATE"
+  name                   = "marquez-api"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.api.arn
+  desired_count          = var.marquez_api_desired_count
+  launch_type            = "FARGATE"
   enable_execute_command = true
 
   network_configuration {
-    subnets         = var.private_subnet_ids
+    subnets          = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -283,15 +283,15 @@ resource "aws_ecs_service" "api" {
 }
 
 resource "aws_ecs_service" "web" {
-  name            = "marquez-web"
-  cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.web.arn
-  desired_count   = var.marquez_web_desired_count
-  launch_type     = "FARGATE"
+  name                   = "marquez-web"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.web.arn
+  desired_count          = var.marquez_web_desired_count
+  launch_type            = "FARGATE"
   enable_execute_command = true
 
   network_configuration {
-    subnets         = var.private_subnet_ids
+    subnets          = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -308,15 +308,15 @@ resource "aws_ecs_service" "web" {
 }
 
 resource "aws_ecs_service" "db" {
-  name            = "marquez-db"
-  cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.db.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                   = "marquez-db"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.db.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
   enable_execute_command = true
 
   network_configuration {
-    subnets         = var.private_subnet_ids
+    subnets          = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -352,7 +352,7 @@ resource "aws_appautoscaling_policy" "api_cpu" {
   service_namespace  = aws_appautoscaling_target.api.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value       = var.marquez_api_autoscaling_cpu_target
+    target_value           = var.marquez_api_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
@@ -377,7 +377,7 @@ resource "aws_appautoscaling_policy" "web_cpu" {
   service_namespace  = aws_appautoscaling_target.web.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value       = var.marquez_web_autoscaling_cpu_target
+    target_value           = var.marquez_web_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
