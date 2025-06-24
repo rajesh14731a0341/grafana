@@ -1,9 +1,9 @@
 locals {
-  log_prefix = "/ecs/marquez"
+  log_prefix     = "/ecs/marquez"
+  postgres_host  = data.aws_lb.internal_nlb.dns_name
 }
-
 ##############################
-# Data Sources
+# Load Balancers & Listener
 ##############################
 data "aws_lb" "public_alb" {
   name = var.alb_name
@@ -71,7 +71,7 @@ resource "aws_lb_listener_rule" "marquez_api_rule" {
 
   condition {
     path_pattern {
-      values = ["/marquez/api", "/marquez/api/*"]
+      values = ["/marquez/api*", "/marquez/api"]
     }
   }
 }
@@ -87,13 +87,24 @@ resource "aws_lb_listener_rule" "marquez_web_rule" {
 
   condition {
     path_pattern {
-      values = ["/marquez", "/marquez/*"]
+      values = ["/marquez*", "/marquez"]
     }
   }
 }
 
+resource "aws_lb_listener" "internal_db_listener" {
+  load_balancer_arn = data.aws_lb.internal_nlb.arn
+  port              = 5432
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.marquez_db_tg.arn
+  }
+}
+
 ##############################
-# Task Definitions
+# ECS Task Definitions
 ##############################
 resource "aws_ecs_task_definition" "marquez_api" {
   family                   = "marquez-api-task"
@@ -112,7 +123,7 @@ resource "aws_ecs_task_definition" "marquez_api" {
       { containerPort = 5001 }
     ]
     environment = [
-      { name = "POSTGRES_HOST", value = "marquez-db.internal" },
+      { name = "POSTGRES_HOST", value = "local.postgres_host" },
       { name = "POSTGRES_USER", value = "marquez" },
       { name = "POSTGRES_PASSWORD", value = "marquez" },
       { name = "POSTGRES_DB", value = "marquez" }
@@ -143,6 +154,7 @@ resource "aws_ecs_task_definition" "marquez_web" {
     image = "marquezproject/marquez-web:0.47.0"
     portMappings = [{ containerPort = 3000 }]
     environment = [
+      # NOTE: Using full internal ALB path (when domain comes later)
       { name = "MARQUEZ_HOST", value = "localhost" },
       { name = "MARQUEZ_PORT", value = "5000" }
     ]
@@ -259,7 +271,7 @@ resource "aws_ecs_service" "marquez_db" {
 }
 
 ##############################
-# Application Auto Scaling: marquez-api
+# Auto Scaling
 ##############################
 resource "aws_appautoscaling_target" "marquez_api" {
   max_capacity       = var.marquez_api_autoscaling_max
@@ -286,9 +298,6 @@ resource "aws_appautoscaling_policy" "marquez_api_cpu" {
   }
 }
 
-##############################
-# Application Auto Scaling: marquez-web
-##############################
 resource "aws_appautoscaling_target" "marquez_web" {
   max_capacity       = var.marquez_web_autoscaling_max
   min_capacity       = var.marquez_web_autoscaling_min
