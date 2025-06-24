@@ -1,25 +1,3 @@
-output "marquez_api_url" {
-  description = "Public URL for Marquez API"
-  value       = "http://${data.aws_lb.public_alb.dns_name}/marquez"
-}
-
-output "marquez_web_url" {
-  description = "Public URL for Marquez Web"
-  value       = "http://${data.aws_lb.public_alb.dns_name}/marquez-web"
-}
-
-output "marquez_api_service_name" {
-  value = aws_ecs_service.marquez_api.name
-}
-
-output "marquez_web_service_name" {
-  value = aws_ecs_service.marquez_web.name
-}
-
-output "marquez_api_autoscaling_target_arn" {
-  value = aws_appautoscaling_target.marquez_api.resource_id
-}
-
-output "marquez_web_autoscaling_target_arn" {
-  value = aws_appautoscaling_target.marquez_web.resource_id
+output "public_alb_dns" {
+  value = data.aws_lb.public_alb.dns_name
 }
