@@ -18,3 +18,6 @@ marquez_web_desired_count          = 1
 marquez_web_autoscaling_min        = 1
 marquez_web_autoscaling_max        = 5
 marquez_web_autoscaling_cpu_target = 70
+
+dockerhub_username = "puchakayalarajesh341@gmail.com"
+dockerhub_password = "Rajesh@341"

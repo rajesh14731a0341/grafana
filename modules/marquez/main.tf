@@ -21,6 +21,22 @@ data "aws_lb_listener" "http" {
 }
 
 ##############################
+# Secrets Manager
+##############################
+
+resource "aws_secretsmanager_secret" "dockerhub" {
+  name = "dockerhub-credentials"
+}
+
+resource "aws_secretsmanager_secret_version" "dockerhub" {
+  secret_id     = aws_secretsmanager_secret.dockerhub.id
+  secret_string = jsonencode({
+    username = var.dockerhub_username
+    password = var.dockerhub_password
+  })
+}
+
+##############################
 # Target Groups
 ##############################
 
@@ -138,6 +154,12 @@ resource "aws_ecs_task_definition" "api" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
+  image_pull_credentials_type = "SERVICE_ROLE"
+
+  repository_credentials {
+    credentials_parameter = aws_secretsmanager_secret.dockerhub.arn
+  }
+
   container_definitions = jsonencode([{
     name      = "marquez-api"
     image     = "marquezproject/marquez:latest"
@@ -169,6 +191,12 @@ resource "aws_ecs_task_definition" "web" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
+  image_pull_credentials_type = "SERVICE_ROLE"
+
+  repository_credentials {
+    credentials_parameter = aws_secretsmanager_secret.dockerhub.arn
+  }
+
   container_definitions = jsonencode([{
     name      = "marquez-web"
     image     = "marquezproject/marquez-web:latest"
@@ -176,7 +204,8 @@ resource "aws_ecs_task_definition" "web" {
     environment = [
       { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name },
       { name = "MARQUEZ_PORT", value = "80" },
-      { name = "BASE_PATH", value = "/marquez" }
+      { name = "BASE_PATH", value = "/marquez" },
+      { name = "WEB_PORT", value = "8080" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -197,6 +226,12 @@ resource "aws_ecs_task_definition" "db" {
   memory                   = "1024"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
+
+  image_pull_credentials_type = "SERVICE_ROLE"
+
+  repository_credentials {
+    credentials_parameter = aws_secretsmanager_secret.dockerhub.arn
+  }
 
   container_definitions = jsonencode([{
     name      = "marquez-db"

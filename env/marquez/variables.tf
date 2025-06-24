@@ -1,20 +1,50 @@
 variable "ecs_cluster_id" {}
 variable "ecs_cluster_name" {}
 variable "vpc_id" {}
-variable "public_subnet_ids" { type = list(string) }
-variable "private_subnet_ids" { type = list(string) }
+variable "public_subnet_ids" {
+  type = list(string)
+}
+variable "private_subnet_ids" {
+  type = list(string)
+}
 variable "security_group_id" {}
 variable "execution_role_arn" {}
 variable "task_role_arn" {}
 variable "alb_name" {}
 variable "nlb_name" {}
 
-variable "marquez_api_desired_count" {}
-variable "marquez_api_autoscaling_min" {}
-variable "marquez_api_autoscaling_max" {}
-variable "marquez_api_autoscaling_cpu_target" {}
+variable "dockerhub_username" {}
+variable "dockerhub_password" {}
 
-variable "marquez_web_desired_count" {}
-variable "marquez_web_autoscaling_min" {}
-variable "marquez_web_autoscaling_max" {}
-variable "marquez_web_autoscaling_cpu_target" {}
+variable "marquez_api_desired_count" {
+  type    = number
+  default = 1
+}
+variable "marquez_api_autoscaling_min" {
+  type    = number
+  default = 1
+}
+variable "marquez_api_autoscaling_max" {
+  type    = number
+  default = 3
+}
+variable "marquez_api_autoscaling_cpu_target" {
+  type    = number
+  default = 60
+}
+variable "marquez_web_desired_count" {
+  type    = number
+  default = 1
+}
+variable "marquez_web_autoscaling_min" {
+  type    = number
+  default = 1
+}
+variable "marquez_web_autoscaling_max" {
+  type    = number
+  default = 3
+}
+variable "marquez_web_autoscaling_cpu_target" {
+  type    = number
+  default = 60
+}
