@@ -20,21 +20,9 @@ data "aws_lb_listener" "http" {
   port              = 80
 }
 
-##############################
-# Secrets Manager
-##############################
-
-resource "aws_secretsmanager_secret" "dockerhub" {
-  name = "dockerhub-credentials"
-}
-
-resource "aws_secretsmanager_secret_version" "dockerhub" {
-  secret_id     = aws_secretsmanager_secret.dockerhub.id
-  secret_string = jsonencode({
-    username = var.dockerhub_username
-    password = var.dockerhub_password
-  })
-}
+# Secrets Manager resources for Docker Hub credentials have been removed.
+# This assumes public images are being used, or credentials are handled
+# outside of this Terraform module (e.g., via ECR authentication).
 
 ##############################
 # Target Groups
@@ -154,18 +142,14 @@ resource "aws_ecs_task_definition" "api" {
   execution_role_arn      = var.execution_role_arn
   task_role_arn           = var.task_role_arn
 
-  # The 'image_pull_credentials_type' argument and 'repository_credentials' block
-  # are deprecated/removed. Image pull credentials are now specified within
-  # the 'container_definitions' JSON.
+  # 'image_pull_credentials_type' and 'repository_credentials' blocks are removed.
+  # 'repositoryCredentials' within container_definitions has also been removed.
 
   container_definitions = jsonencode([{
     name        = "marquez-api"
     image       = "marquezproject/marquez:latest"
     portMappings = [{ containerPort = 5000 }]
-    # Correct placement of repositoryCredentials inside container_definitions
-    repositoryCredentials = {
-      credentialsParameter = aws_secretsmanager_secret.dockerhub.arn
-    }
+    # repositoryCredentials block removed
     environment = [
       { name = "POSTGRES_HOST", value = local.postgres_host },
       { name = "POSTGRES_PORT", value = "5432" },
@@ -193,18 +177,14 @@ resource "aws_ecs_task_definition" "web" {
   execution_role_arn      = var.execution_role_arn
   task_role_arn           = var.task_role_arn
 
-  # The 'image_pull_credentials_type' argument and 'repository_credentials' block
-  # are deprecated/removed. Image pull credentials are now specified within
-  # the 'container_definitions' JSON.
+  # 'image_pull_credentials_type' and 'repository_credentials' blocks are removed.
+  # 'repositoryCredentials' within container_definitions has also been removed.
 
   container_definitions = jsonencode([{
     name        = "marquez-web"
     image       = "marquezproject/marquez-web:latest"
     portMappings = [{ containerPort = 8080 }]
-    # Correct placement of repositoryCredentials inside container_definitions
-    repositoryCredentials = {
-      credentialsParameter = aws_secretsmanager_secret.dockerhub.arn
-    }
+    # repositoryCredentials block removed
     environment = [
       { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name },
       { name = "MARQUEZ_PORT", value = "80" },
@@ -231,18 +211,14 @@ resource "aws_ecs_task_definition" "db" {
   execution_role_arn      = var.execution_role_arn
   task_role_arn           = var.task_role_arn
 
-  # The 'image_pull_credentials_type' argument and 'repository_credentials' block
-  # are deprecated/removed. Image pull credentials are now specified within
-  # the 'container_definitions' JSON.
+  # 'image_pull_credentials_type' and 'repository_credentials' blocks are removed.
+  # 'repositoryCredentials' within container_definitions has also been removed.
 
   container_definitions = jsonencode([{
     name        = "marquez-db"
     image       = "postgres:13"
     portMappings = [{ containerPort = 5432 }]
-    # Correct placement of repositoryCredentials inside container_definitions
-    repositoryCredentials = {
-      credentialsParameter = aws_secretsmanager_secret.dockerhub.arn
-    }
+    # repositoryCredentials block removed
     environment = [
       { name = "POSTGRES_USER", value = "marquez" },
       { name = "POSTGRES_PASSWORD", value = "marquez" },
