@@ -45,22 +45,11 @@ data "aws_lb_listener" "redis_tcp" {
 }
 
 # IMPORTANT: Since you do not have management access to the listeners or their rules,
-# the `resource "aws_lb_listener_rule"` blocks that were present in earlier iterations
-# have been completely removed. Terraform will not attempt to create, modify, or delete
-# any listener rules. It assumes these rules are already configured correctly in AWS.
+# no `resource "aws_lb_listener_rule"` blocks are present here.
+# Terraform will not attempt to create, modify, or delete any listener rules.
+# It assumes these rules are already configured correctly in AWS.
 
-##############################
-# Data Source for Existing Route 53 Record for Grafana
-# This data block references your pre-existing Route 53 A record.
-# Terraform will only read its configuration, not attempt to create or modify it.
-##############################
-data "aws_route53_record" "grafana" {
-  zone_id = var.route53_zone_id
-  name    = var.grafana_domain_name
-  type    = "A"
-  # No 'alias' block here because this is a data source.
-  # Terraform reads the existing record, including its alias configuration, implicitly.
-}
+
 
 ##############################
 # Secrets Manager (assuming you have access to read secrets)
