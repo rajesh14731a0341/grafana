@@ -14,11 +14,11 @@ output "marquez_db_ecs_service_arn" {
 }
 
 output "marquez_web_ui_url" {
-  description = "URL for the Marquez Web UI via ALB."
+  description = "URL for the Marquez Web UI."
   value       = module.marquez.marquez_web_ui_url
 }
 
 output "marquez_api_endpoint_url" {
-  description = "URL for the Marquez API via ALB."
+  description = "URL for the Marquez API."
   value       = module.marquez.marquez_api_endpoint_url
 }

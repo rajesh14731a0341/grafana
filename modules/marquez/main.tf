@@ -1,5 +1,5 @@
 locals {
-  log_prefix    = "/ecs/marquez"
+  log_prefix           = "/ecs/marquez"
   # postgres_host will resolve to the NLB's DNS name for the internal DB connection
   postgres_host = data.aws_lb.internal_nlb.dns_name
   # The ALB's DNS name is used for the Marquez Web UI to communicate with the Marquez API
@@ -26,7 +26,8 @@ data "aws_lb" "internal_nlb" {
 data "aws_lb_listener" "public_http" {
   load_balancer_arn = data.aws_lb.public_alb.arn
   port              = 80
-  protocol          = "HTTP"
+  # CORRECTED: Removed 'protocol = "HTTP"' as it's not a configurable
+  # attribute for a data source, which is used to read existing resources.
 }
 
 ##############################
@@ -329,8 +330,8 @@ resource "aws_ecs_service" "api" {
   enable_execute_command = true
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -363,8 +364,8 @@ resource "aws_ecs_service" "web" {
   enable_execute_command = true
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -397,8 +398,8 @@ resource "aws_ecs_service" "db" {
   enable_execute_command = true
 
   network_configuration {
-    subnets         = var.private_subnet_ids
-    security_groups = [var.security_group_id]
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
@@ -444,7 +445,7 @@ resource "aws_appautoscaling_policy" "api_cpu" {
   service_namespace  = aws_appautoscaling_target.api.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value               = var.marquez_api_autoscaling_cpu_target
+    target_value = var.marquez_api_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
@@ -469,7 +470,7 @@ resource "aws_appautoscaling_policy" "web_cpu" {
   service_namespace  = aws_appautoscaling_target.web.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value               = var.marquez_web_autoscaling_cpu_target
+    target_value = var.marquez_web_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
