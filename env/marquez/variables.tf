@@ -14,17 +14,17 @@ variable "vpc_id" {
 }
 
 variable "public_subnet_ids" {
-  description = "List of public subnet IDs for the ALB."
+  description = "List of public subnet IDs."
   type        = list(string)
 }
 
 variable "private_subnet_ids" {
-  description = "List of private subnet IDs for ECS services."
+  description = "List of private subnet IDs."
   type        = list(string)
 }
 
 variable "security_group_id" {
-  description = "ID of the existing security group to attach to ECS tasks."
+  description = "ID of the existing Security Group."
   type        = string
 }
 
@@ -34,64 +34,58 @@ variable "execution_role_arn" {
 }
 
 variable "task_role_arn" {
-  description = "ARN of the ECS task role for Marquez applications."
+  description = "ARN of the ECS task role for Marquez services."
   type        = string
 }
 
 variable "alb_name" {
-  description = "Name of the existing Application Load Balancer."
+  description = "Name of the existing Application Load Balancer (ALB)."
   type        = string
 }
 
 variable "nlb_name" {
-  description = "Name of the existing Network Load Balancer (for internal DB access)."
+  description = "Name of the existing Network Load Balancer (NLB)."
   type        = string
 }
 
+# Marquez API Service Configuration
 variable "marquez_api_desired_count" {
-  description = "Desired count for Marquez API ECS service."
+  description = "Desired count of Marquez API tasks."
   type        = number
-  default     = 1
 }
 
 variable "marquez_api_autoscaling_min" {
-  description = "Minimum instances for Marquez API autoscaling."
+  description = "Minimum number of Marquez API tasks for autoscaling."
   type        = number
-  default     = 1
 }
 
 variable "marquez_api_autoscaling_max" {
-  description = "Maximum instances for Marquez API autoscaling."
+  description = "Maximum number of Marquez API tasks for autoscaling."
   type        = number
-  default     = 5
 }
 
 variable "marquez_api_autoscaling_cpu_target" {
-  description = "CPU utilization target for Marquez API autoscaling."
+  description = "Target CPU utilization for Marquez API autoscaling."
   type        = number
-  default     = 70
 }
 
+# Marquez Web Service Configuration
 variable "marquez_web_desired_count" {
-  description = "Desired count for Marquez Web ECS service."
+  description = "Desired count of Marquez Web tasks."
   type        = number
-  default     = 1
 }
 
 variable "marquez_web_autoscaling_min" {
-  description = "Minimum instances for Marquez Web autoscaling."
+  description = "Minimum number of Marquez Web tasks for autoscaling."
   type        = number
-  default     = 1
 }
 
 variable "marquez_web_autoscaling_max" {
-  description = "Maximum instances for Marquez Web autoscaling."
+  description = "Maximum number of Marquez Web tasks for autoscaling."
   type        = number
-  default     = 5
 }
 
 variable "marquez_web_autoscaling_cpu_target" {
-  description = "CPU utilization target for Marquez Web autoscaling."
+  description = "Target CPU utilization for Marquez Web autoscaling."
   type        = number
-  default     = 70
 }

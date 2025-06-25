@@ -1,10 +1,15 @@
 locals {
   log_prefix    = "/ecs/marquez"
+  # postgres_host will resolve to the NLB's DNS name for the internal DB connection
   postgres_host = data.aws_lb.internal_nlb.dns_name
+  # The ALB's DNS name is used for the Marquez Web UI to communicate with the Marquez API
+  marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}/marquez/api"
 }
 
 ##############################
 # Data Sources
+# These data blocks reference *existing* top-level AWS resources
+# that are not managed by this Terraform configuration (e.g., the ALB and NLB themselves).
 ##############################
 
 data "aws_lb" "public_alb" {
@@ -15,107 +20,173 @@ data "aws_lb" "internal_nlb" {
   name = var.nlb_name
 }
 
-data "aws_lb_listener" "http" {
+# Data source for the existing HTTP listener on the public ALB.
+# This assumes the HTTP listener on port 80 already exists on 'var.alb_name'.
+# If this listener also needs to be created by Terraform, it would be a 'resource' block instead.
+data "aws_lb_listener" "public_http" {
   load_balancer_arn = data.aws_lb.public_alb.arn
   port              = 80
+  protocol          = "HTTP"
 }
 
-# Secrets Manager resources for Docker Hub credentials have been removed.
-# This assumes public images are being used, or credentials are handled
-# outside of this Terraform module (e.g., via ECR authentication).
+##############################
+# CloudWatch Log Groups
+# These resources will be CREATED by Terraform for your ECS task logs.
+##############################
+resource "aws_cloudwatch_log_group" "api_logs" {
+  name              = "${local.log_prefix}-api"
+  retention_in_days = 30 # Data retention for logs
+  tags = {
+    Environment = "production"
+    Project     = "Marquez"
+    Service     = "MarquezAPI"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "web_logs" {
+  name              = "${local.log_prefix}-web"
+  retention_in_days = 30 # Data retention for logs
+  tags = {
+    Environment = "production"
+    Project     = "Marquez"
+    Service     = "MarquezWeb"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "db_logs" {
+  name              = "${local.log_prefix}-db"
+  retention_in_days = 30 # Data retention for logs
+  tags = {
+    Environment = "production"
+    Project     = "Marquez"
+    Service     = "MarquezDB"
+  }
+}
 
 ##############################
 # Target Groups
+# These resources will be CREATED by Terraform for Marquez services.
 ##############################
 
 resource "aws_lb_target_group" "api_tg" {
   name        = "marquez-api-tg"
-  port        = 5000
+  port        = 5000 # Default port for Marquez API
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = var.vpc_id
 
   health_check {
-    path                = "/actuator/health"
+    path                = "/actuator/health" # Marquez API health check endpoint
     matcher             = "200"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
+  }
+  tags = {
+    Environment = "production"
+    Service     = "MarquezAPI"
   }
 }
 
 resource "aws_lb_target_group" "web_tg" {
   name        = "marquez-web-tg"
-  port        = 8080
+  port        = 8080 # Default port for Marquez Web
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = var.vpc_id
 
   health_check {
-    path                = "/"
+    path                = "/" # Marquez Web UI health check endpoint
     matcher             = "200"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 2
   }
+  tags = {
+    Environment = "production"
+    Service     = "MarquezWeb"
+  }
 }
 
 resource "aws_lb_target_group" "db_tg" {
   name        = "marquez-db-tg"
-  port        = 5432
+  port        = 5432 # Default port for PostgreSQL
   protocol    = "TCP"
   target_type = "ip"
   vpc_id      = var.vpc_id
 
   health_check {
-    protocol            = "TCP"
+    protocol            = "TCP" # TCP health check for database
     interval            = 30
     timeout             = 10
     healthy_threshold   = 2
     unhealthy_threshold = 2
   }
+  tags = {
+    Environment = "production"
+    Service     = "MarquezDB"
+  }
 }
 
 ##############################
-# Listener Rules
+# Listener Rules on Public ALB's HTTP Listener for Path-Based Routing
+# These resources will be CREATED by Terraform to route traffic to Marquez services.
 ##############################
 
 resource "aws_lb_listener_rule" "api_rule" {
-  listener_arn = data.aws_lb_listener.http.arn
-  priority     = 30
+  listener_arn = data.aws_lb_listener.public_http.arn
+  priority     = 30 # Ensure this is a unique priority, lower number is higher priority
 
   action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.api_tg.arn
   }
 
+  # Path-based routing for Marquez API
   condition {
     path_pattern {
-      values = ["/marquez/api", "/marquez/api/*"]
+      values = ["/marquez/api/*", "/marquez/api"] # Routes /marquez/api and sub-paths to API
     }
+  }
+  tags = {
+    Environment = "production"
+    Service     = "MarquezAPI"
   }
 }
 
 resource "aws_lb_listener_rule" "web_rule" {
-  listener_arn = data.aws_lb_listener.http.arn
-  priority     = 40
+  listener_arn = data.aws_lb_listener.public_http.arn
+  priority     = 40 # Ensure this is a unique priority, lower number is higher priority
 
   action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.web_tg.arn
   }
 
+  # Path-based routing for Marquez Web UI
   condition {
     path_pattern {
-      values = ["/marquez", "/marquez/*"]
+      values = ["/marquez/*", "/marquez"] # Routes /marquez and sub-paths to Web UI
     }
+  }
+  tags = {
+    Environment = "production"
+    Service     = "MarquezWeb"
   }
 }
 
+# It's good practice to have a default action for your listener
+# if no other rules match, for example, a fixed response or a default target group.
+# For simplicity, this example assumes `web_rule` might act as a general
+# catch-all for /marquez paths. If you need a completely general default,
+# you'd add `default_action` to `data.aws_lb_listener.public_http` if you manage the listener,
+# or create a rule with a very high priority (e.g., 50000) that forwards to a general TG.
+
 ##############################
-# TCP Listener for DB on NLB
+# TCP Listener for DB on Internal NLB
+# This resource will be CREATED by Terraform for the Marquez DB.
 ##############################
 
 resource "aws_lb_listener" "db_tcp" {
@@ -127,116 +198,126 @@ resource "aws_lb_listener" "db_tcp" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.db_tg.arn
   }
+  tags = {
+    Environment = "production"
+    Service     = "MarquezDB"
+  }
 }
 
 ##############################
-# Task Definitions
+# ECS Task Definitions
+# These resources will be CREATED by Terraform for Marquez services.
 ##############################
 
 resource "aws_ecs_task_definition" "api" {
-  family                  = "marquez-api"
+  family                   = "marquez-api"
   requires_compatibilities = ["FARGATE"]
-  network_mode            = "awsvpc"
-  cpu                     = "512"
-  memory                  = "1024"
-  execution_role_arn      = var.execution_role_arn
-  task_role_arn           = var.task_role_arn
-
-  # 'image_pull_credentials_type' and 'repository_credentials' blocks are removed.
-  # 'repositoryCredentials' within container_definitions has also been removed.
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn # Role for ECS tasks
 
   container_definitions = jsonencode([{
     name        = "marquez-api"
     image       = "marquezproject/marquez:latest"
     portMappings = [{ containerPort = 5000 }]
-    # repositoryCredentials block removed
     environment = [
+      # API speaking to PSQL DB: Uses NLB DNS name for internal communication
       { name = "POSTGRES_HOST", value = local.postgres_host },
       { name = "POSTGRES_PORT", value = "5432" },
       { name = "POSTGRES_USER", value = "marquez" },
-      { name = "POSTGRES_PASSWORD", value = "marquez" },
+      { name = "POSTGRES_PASSWORD", value = "marquez" }, # Hardcoded. HIGHLY recommend AWS Secrets Manager for production.
       { name = "POSTGRES_DB", value = "marquez" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "${local.log_prefix}-api"
+        awslogs-group         = aws_cloudwatch_log_group.api_logs.name
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "ecs"
       }
     }
   }])
+  tags = {
+    Environment = "production"
+    Service     = "MarquezAPI"
+  }
 }
 
 resource "aws_ecs_task_definition" "web" {
-  family                  = "marquez-web"
+  family                   = "marquez-web"
   requires_compatibilities = ["FARGATE"]
-  network_mode            = "awsvpc"
-  cpu                     = "256"
-  memory                  = "512"
-  execution_role_arn      = var.execution_role_arn
-  task_role_arn           = var.task_role_arn
-
-  # 'image_pull_credentials_type' and 'repository_credentials' blocks are removed.
-  # 'repositoryCredentials' within container_definitions has also been removed.
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn # Role for ECS tasks
 
   container_definitions = jsonencode([{
     name        = "marquez-web"
     image       = "marquezproject/marquez-web:latest"
     portMappings = [{ containerPort = 8080 }]
-    # repositoryCredentials block removed
     environment = [
-      { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name },
-      { name = "MARQUEZ_PORT", value = "80" },
-      { name = "BASE_PATH", value = "/marquez" },
-      { name = "WEB_PORT", value = "8080" }
+      # Web speaking to API: Uses ALB's DNS name and path for API endpoint
+      { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name }, # ALB DNS name
+      { name = "MARQUEZ_PORT", value = "80" }, # Port on ALB for API endpoint
+      { name = "BASE_PATH", value = "/marquez" }, # Base path for Marquez Web UI behind ALB
+      { name = "WEB_PORT", value = "8080" }, # Internal port of the web container
+      { name = "MARQUEZ_URI", value = local.marquez_api_url_base } # Full URL for API from Web UI perspective
     ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "${local.log_prefix}-web"
+        awslogs-group         = aws_cloudwatch_log_group.web_logs.name
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "ecs"
       }
     }
   }])
+  tags = {
+    Environment = "production"
+    Service     = "MarquezWeb"
+  }
 }
 
 resource "aws_ecs_task_definition" "db" {
-  family                  = "marquez-db"
+  family                   = "marquez-db"
   requires_compatibilities = ["FARGATE"]
-  network_mode            = "awsvpc"
-  cpu                     = "512"
-  memory                  = "1024"
-  execution_role_arn      = var.execution_role_arn
-  task_role_arn           = var.task_role_arn
-
-  # 'image_pull_credentials_type' and 'repository_credentials' blocks are removed.
-  # 'repositoryCredentials' within container_definitions has also been removed.
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn # Role for ECS tasks
 
   container_definitions = jsonencode([{
     name        = "marquez-db"
     image       = "postgres:13"
     portMappings = [{ containerPort = 5432 }]
-    # repositoryCredentials block removed
+    # Postgres image handles its own entrypoint; no custom command needed for basic setup.
     environment = [
       { name = "POSTGRES_USER", value = "marquez" },
-      { name = "POSTGRES_PASSWORD", value = "marquez" },
+      { name = "POSTGRES_PASSWORD", value = "marquez" }, # Hardcoded. HIGHLY recommend AWS Secrets Manager for production.
       { name = "POSTGRES_DB", value = "marquez" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "${local.log_prefix}-db"
+        awslogs-group         = aws_cloudwatch_log_group.db_logs.name
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "ecs"
       }
     }
   }])
+  tags = {
+    Environment = "production"
+    Service     = "MarquezDB"
+  }
 }
 
 ##############################
 # ECS Services
+# These resources will be CREATED by Terraform.
 ##############################
 
 resource "aws_ecs_service" "api" {
@@ -248,7 +329,7 @@ resource "aws_ecs_service" "api" {
   enable_execute_command = true
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -259,8 +340,17 @@ resource "aws_ecs_service" "api" {
     container_port   = 5000
   }
 
+  depends_on = [
+    aws_lb_listener_rule.api_rule, # Ensure listener rule is in place before service is registered
+    aws_cloudwatch_log_group.api_logs # Ensure log group exists before task starts logging
+  ]
+
   lifecycle {
     ignore_changes = [desired_count]
+  }
+  tags = {
+    Environment = "production"
+    Service     = "MarquezAPI"
   }
 }
 
@@ -273,7 +363,7 @@ resource "aws_ecs_service" "web" {
   enable_execute_command = true
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -284,8 +374,17 @@ resource "aws_ecs_service" "web" {
     container_port   = 8080
   }
 
+  depends_on = [
+    aws_lb_listener_rule.web_rule, # Ensure listener rule is in place before service is registered
+    aws_cloudwatch_log_group.web_logs # Ensure log group exists before task starts logging
+  ]
+
   lifecycle {
     ignore_changes = [desired_count]
+  }
+  tags = {
+    Environment = "production"
+    Service     = "MarquezWeb"
   }
 }
 
@@ -293,12 +392,12 @@ resource "aws_ecs_service" "db" {
   name                   = "marquez-db"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.db.arn
-  desired_count          = 1
+  desired_count          = 1 # Fixed to 1 as no autoscaling variables were provided for DB in .tfvars
   launch_type            = "FARGATE"
   enable_execute_command = true
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -309,13 +408,24 @@ resource "aws_ecs_service" "db" {
     container_port   = 5432
   }
 
+  depends_on = [
+    aws_lb_listener.db_tcp, # Ensure listener is in place before service is registered
+    aws_cloudwatch_log_group.db_logs # Ensure log group exists before task starts logging
+  ]
+
   lifecycle {
     ignore_changes = [desired_count]
+  }
+  tags = {
+    Environment = "production"
+    Service     = "MarquezDB"
   }
 }
 
 ##############################
 # Auto Scaling
+# These resources will be CREATED by Terraform for API and Web services.
+# The DB service will not have auto-scaling configured by this module.
 ##############################
 
 resource "aws_appautoscaling_target" "api" {
@@ -334,7 +444,7 @@ resource "aws_appautoscaling_policy" "api_cpu" {
   service_namespace  = aws_appautoscaling_target.api.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value           = var.marquez_api_autoscaling_cpu_target
+    target_value               = var.marquez_api_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
@@ -359,7 +469,7 @@ resource "aws_appautoscaling_policy" "web_cpu" {
   service_namespace  = aws_appautoscaling_target.web.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value           = var.marquez_web_autoscaling_cpu_target
+    target_value               = var.marquez_web_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }

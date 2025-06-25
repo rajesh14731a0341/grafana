@@ -1,39 +1,24 @@
-output "api_service_name" {
-  description = "Name of the Marquez API ECS service."
-  value       = aws_ecs_service.api.name
+output "marquez_api_ecs_service_arn" {
+  description = "ARN of the Marquez API ECS Service."
+  value       = aws_ecs_service.api.id
 }
 
-output "web_service_name" {
-  description = "Name of the Marquez Web ECS service."
-  value       = aws_ecs_service.web.name
+output "marquez_web_ecs_service_arn" {
+  description = "ARN of the Marquez Web ECS Service."
+  value       = aws_ecs_service.web.id
 }
 
-output "db_service_name" {
-  description = "Name of the Marquez DB ECS service."
-  value       = aws_ecs_service.db.name
+output "marquez_db_ecs_service_arn" {
+  description = "ARN of the Marquez DB ECS Service."
+  value       = aws_ecs_service.db.id
 }
 
-output "public_alb_dns_name" {
-  description = "DNS name of the public ALB."
-  value       = data.aws_lb.public_alb.dns_name
+output "marquez_web_ui_url" {
+  description = "URL for the Marquez Web UI via ALB. (No custom domain specified in tfvars)."
+  value       = "http://${data.aws_lb.public_alb.dns_name}/marquez"
 }
 
-output "internal_nlb_dns_name" {
-  description = "DNS name of the internal NLB."
-  value       = data.aws_lb.internal_nlb.dns_name
-}
-
-output "api_target_group_arn" {
-  description = "ARN of the Marquez API target group."
-  value       = aws_lb_target_group.api_tg.arn
-}
-
-output "web_target_group_arn" {
-  description = "ARN of the Marquez Web target group."
-  value       = aws_lb_target_group.web_tg.arn
-}
-
-output "db_target_group_arn" {
-  description = "ARN of the Marquez DB target group."
-  value       = aws_lb_target_group.db_tg.arn
+output "marquez_api_endpoint_url" {
+  description = "URL for the Marquez API via ALB. (No custom domain specified in tfvars)."
+  value       = "http://${data.aws_lb.public_alb.dns_name}/marquez/api"
 }
