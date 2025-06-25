@@ -78,7 +78,7 @@ resource "aws_lb_target_group" "db_tg" {
 
 resource "aws_lb_listener_rule" "api_rule" {
   listener_arn = data.aws_lb_listener.public_http.arn
-  priority     = 100
+  priority     = 1020
 
   action {
     type             = "forward"
@@ -94,7 +94,7 @@ resource "aws_lb_listener_rule" "api_rule" {
 
 resource "aws_lb_listener_rule" "web_rule" {
   listener_arn = data.aws_lb_listener.public_http.arn
-  priority     = 101
+  priority     = 1001
 
   action {
     type             = "forward"
