@@ -7,7 +7,6 @@ locals {
 #####################
 # Load Balancers
 #####################
-
 data "aws_lb" "public_alb" {
   name = var.alb_name
 }
@@ -24,13 +23,13 @@ data "aws_lb_listener" "public_http" {
 #####################
 # Target Groups
 #####################
-
 resource "aws_lb_target_group" "api_tg" {
   name        = "marquez-api-tg"
   port        = 5000
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+
   health_check {
     path                = "/api/v1/namespaces"
     matcher             = "200"
@@ -47,6 +46,7 @@ resource "aws_lb_target_group" "web_tg" {
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+
   health_check {
     path                = "/"
     matcher             = "200"
@@ -63,6 +63,7 @@ resource "aws_lb_target_group" "db_tg" {
   protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+
   health_check {
     protocol            = "TCP"
     interval            = 30
@@ -75,7 +76,6 @@ resource "aws_lb_target_group" "db_tg" {
 #####################
 # Listener Rules
 #####################
-
 resource "aws_lb_listener_rule" "api_rule" {
   listener_arn = data.aws_lb_listener.public_http.arn
   priority     = 1002
@@ -112,6 +112,7 @@ resource "aws_lb_listener" "db_tcp" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
   port              = 5432
   protocol          = "TCP"
+
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.db_tg.arn
@@ -121,7 +122,6 @@ resource "aws_lb_listener" "db_tcp" {
 #####################
 # Log Groups
 #####################
-
 resource "aws_cloudwatch_log_group" "api_logs" {
   name              = "${local.log_prefix}/api"
   retention_in_days = 7
@@ -140,7 +140,6 @@ resource "aws_cloudwatch_log_group" "db_logs" {
 #####################
 # ECS Task Definitions
 #####################
-
 resource "aws_ecs_task_definition" "api" {
   family                   = "marquez-api"
   requires_compatibilities = ["FARGATE"]
@@ -154,6 +153,7 @@ resource "aws_ecs_task_definition" "api" {
     name        = "marquez-api"
     image       = "marquezproject/marquez:0.42.0"
     portMappings = [{ containerPort = 5000 }]
+    command     = ["/bin/sh", "-c", "sleep 3600"]  # <-- keeps container alive
     environment = [
       { name = "POSTGRES_HOST", value = local.postgres_host },
       { name = "POSTGRES_PORT", value = "5432" },
@@ -171,6 +171,7 @@ resource "aws_ecs_task_definition" "api" {
     }
   }])
 }
+
 
 resource "aws_ecs_task_definition" "web" {
   family                   = "marquez-web"
@@ -231,7 +232,6 @@ resource "aws_ecs_task_definition" "db" {
 #####################
 # ECS Services
 #####################
-
 resource "aws_ecs_service" "api" {
   name            = "marquez-api"
   cluster         = var.ecs_cluster_id
@@ -256,6 +256,8 @@ resource "aws_ecs_service" "api" {
     aws_lb_listener_rule.api_rule,
     aws_cloudwatch_log_group.api_logs
   ]
+
+  health_check_grace_period_seconds = 60
 }
 
 resource "aws_ecs_service" "web" {
@@ -282,6 +284,8 @@ resource "aws_ecs_service" "web" {
     aws_lb_listener_rule.web_rule,
     aws_cloudwatch_log_group.web_logs
   ]
+
+  health_check_grace_period_seconds = 60
 }
 
 resource "aws_ecs_service" "db" {
@@ -308,12 +312,13 @@ resource "aws_ecs_service" "db" {
     aws_lb_listener.db_tcp,
     aws_cloudwatch_log_group.db_logs
   ]
+
+  health_check_grace_period_seconds = 60
 }
 
 #####################
 # Auto Scaling
 #####################
-
 resource "aws_appautoscaling_target" "api" {
   max_capacity       = var.marquez_api_autoscaling_max
   min_capacity       = var.marquez_api_autoscaling_min
