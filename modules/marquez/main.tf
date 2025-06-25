@@ -1,12 +1,12 @@
 locals {
-  log_prefix            = "/ecs/marquez"
-  postgres_host         = data.aws_lb.internal_nlb.dns_name
-  marquez_api_url_base  = "http://${data.aws_lb.public_alb.dns_name}/marquez/api"
+  log_prefix           = "/ecs/marquez"
+  postgres_host        = data.aws_lb.internal_nlb.dns_name
+  marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}/marquez/api"
 }
 
-####################
+#####################
 # Load Balancers
-####################
+#####################
 
 data "aws_lb" "public_alb" {
   name = var.alb_name
@@ -21,9 +21,9 @@ data "aws_lb_listener" "public_http" {
   port              = 80
 }
 
-####################
+#####################
 # Target Groups
-####################
+#####################
 
 resource "aws_lb_target_group" "api_tg" {
   name        = "marquez-api-tg"
@@ -72,13 +72,13 @@ resource "aws_lb_target_group" "db_tg" {
   }
 }
 
-####################
+#####################
 # Listener Rules
-####################
+#####################
 
 resource "aws_lb_listener_rule" "api_rule" {
   listener_arn = data.aws_lb_listener.public_http.arn
-  priority     = 1020
+  priority     = 1002
 
   action {
     type             = "forward"
@@ -118,9 +118,9 @@ resource "aws_lb_listener" "db_tcp" {
   }
 }
 
-####################
+#####################
 # Log Groups
-####################
+#####################
 
 resource "aws_cloudwatch_log_group" "api_logs" {
   name              = "${local.log_prefix}/api"
@@ -137,9 +137,9 @@ resource "aws_cloudwatch_log_group" "db_logs" {
   retention_in_days = 7
 }
 
-####################
+#####################
 # ECS Task Definitions
-####################
+#####################
 
 resource "aws_ecs_task_definition" "api" {
   family                   = "marquez-api"
@@ -152,7 +152,7 @@ resource "aws_ecs_task_definition" "api" {
 
   container_definitions = jsonencode([{
     name        = "marquez-api"
-    image       = var.marquez_api_image
+    image       = "marquezproject/marquez:0.42.0"
     portMappings = [{ containerPort = 5000 }]
     environment = [
       { name = "POSTGRES_HOST", value = local.postgres_host },
@@ -183,7 +183,7 @@ resource "aws_ecs_task_definition" "web" {
 
   container_definitions = jsonencode([{
     name        = "marquez-web"
-    image       = var.marquez_web_image
+    image       = "marquezproject/marquez-web:0.42.0"
     portMappings = [{ containerPort = 8080 }]
     environment = [
       { name = "MARQUEZ_API_BASE", value = local.marquez_api_url_base }
@@ -228,9 +228,9 @@ resource "aws_ecs_task_definition" "db" {
   }])
 }
 
-####################
+#####################
 # ECS Services
-####################
+#####################
 
 resource "aws_ecs_service" "api" {
   name            = "marquez-api"
@@ -310,9 +310,9 @@ resource "aws_ecs_service" "db" {
   ]
 }
 
-####################
+#####################
 # Auto Scaling
-####################
+#####################
 
 resource "aws_appautoscaling_target" "api" {
   max_capacity       = var.marquez_api_autoscaling_max
