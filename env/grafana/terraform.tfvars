@@ -1,6 +1,6 @@
-ecs_cluster_id     = "arn:aws:ecs:us-east-1:736747734611:cluster/rajesh-cluster"
-ecs_cluster_name   = "rajesh-cluster"
-vpc_id             = "vpc-0baac8b1f8f1ca391"
+ecs_cluster_id          = "arn:aws:ecs:us-east-1:736747734611:cluster/rajesh-cluster"
+ecs_cluster_name        = "rajesh-cluster"
+vpc_id                  = "vpc-0baac8b1f8f1ca391"
 
 public_subnet_ids = [
   "subnet-0eddeac6a246b078f",
@@ -23,26 +23,32 @@ alb_name = "ALB"
 nlb_name = "nlb"
 
 # Route 53 zone details
-route53_zone_name = "rajesh.com"
 route53_zone_id   = "Z0686732266WVJGIULJ0U"
 
 # Only Grafana gets a dedicated hostname
 grafana_domain_name = "grafana.rajesh.com"
 
 # Grafana service config
-grafana_desired_count          = 0
-grafana_autoscaling_min        = 0
-grafana_autoscaling_max        = 5
+grafana_desired_count        = 1
+grafana_autoscaling_min      = 1
+grafana_autoscaling_max      = 5
 grafana_autoscaling_cpu_target = 70
 
 # Renderer service config (path-based routing only)
-renderer_desired_count          = 0
-renderer_autoscaling_min        = 0
-renderer_autoscaling_max        = 5
+renderer_desired_count        = 1
+renderer_autoscaling_min      = 1
+renderer_autoscaling_max      = 5
 renderer_autoscaling_cpu_target = 70
 
 # Redis service config
-redis_desired_count          = 0
-redis_autoscaling_min        = 0
-redis_autoscaling_max        = 5
+redis_desired_count        = 1
+redis_autoscaling_min      = 1
+redis_autoscaling_max      = 5
 redis_autoscaling_cpu_target = 70
+
+grafana_tg_arn  = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/grafana-tg/898669d1b5877da8"
+renderer_tg_arn = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/renderer-tg/6890a229aa7ef5a1"
+redis_tg_arn    = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/redis-tg/dd89cf705f1baefc"
+
+grafana_listener_arn      = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener/app/ALB/d10dc6d0cabf2e47/c74f8876c2583c63"
+redis_tcp_listener_arn    = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener/net/nlb/964ca5505bf59dd0/09489ca39012f7fc"

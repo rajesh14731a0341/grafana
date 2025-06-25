@@ -3,7 +3,8 @@ locals {
 }
 
 ##############################
-# Data Sources for Load Balancers
+# Data Sources for Load Balancers (ALB and NLB)
+# These data blocks reference existing load balancers.
 ##############################
 data "aws_lb" "public_alb" {
   name = var.alb_name
@@ -14,142 +15,62 @@ data "aws_lb" "internal_nlb" {
 }
 
 ##############################
-# Target Groups
+# Data Sources for Existing Target Groups
+# These data blocks simply reference your pre-existing target groups by their ARNs.
+# Terraform will only read their configuration, not attempt to create or modify them.
 ##############################
-resource "aws_lb_target_group" "grafana_tg" {
-  name        = "grafana-tg"
-  port        = 3000
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path     = "/login"
-    protocol = "HTTP"
-    matcher  = "200-399"
-  }
+data "aws_lb_target_group" "grafana_tg" {
+  arn = var.grafana_tg_arn
 }
 
-resource "aws_lb_target_group" "renderer_tg" {
-  name        = "renderer-tg"
-  port        = 8081
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = "/render/version"
-    protocol            = "HTTP"
-    matcher             = "200-499"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
+data "aws_lb_target_group" "renderer_tg" {
+  arn = var.renderer_tg_arn
 }
 
-resource "aws_lb_target_group" "redis_tg" {
-  name        = "redis-tg"
-  port        = 6379
-  protocol    = "TCP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    protocol            = "TCP"
-    port                = "traffic-port"
-    interval            = 30
-    timeout             = 10
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-  }
+data "aws_lb_target_group" "redis_tg" {
+  arn = var.redis_tg_arn
 }
 
 ##############################
-# Load Balancer Listeners
+# Data Sources for Existing Load Balancer Listeners
+# These data blocks simply reference your pre-existing listeners by their ARNs.
+# Terraform will only read their configuration, not attempt to create or modify them.
 ##############################
-resource "aws_lb_listener" "public_listener" {
-  load_balancer_arn = data.aws_lb.public_alb.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type = "fixed-response"
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "Not Found"
-      status_code  = "404"
-    }
-  }
+data "aws_lb_listener" "public_listener" {
+  arn = var.grafana_listener_arn # This is your public ALB listener's ARN
 }
 
-resource "aws_lb_listener_rule" "grafana_rule" {
-  listener_arn = aws_lb_listener.public_listener.arn
-  priority     = 100
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.grafana_tg.arn
-  }
-
-  condition {
-    host_header {
-      values = [var.grafana_domain_name]  # e.g. "grafana.rajesh.com"
-    }
-  }
+data "aws_lb_listener" "redis_tcp" {
+  arn = var.redis_tcp_listener_arn # This is your NLB Redis listener's ARN
 }
 
-resource "aws_lb_listener_rule" "renderer_rule" {
-  listener_arn = aws_lb_listener.public_listener.arn
-  priority     = 200
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.renderer_tg.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/render", "/render/*"]
-    }
-  }
-}
-
-resource "aws_lb_listener" "redis_tcp" {
-  load_balancer_arn = data.aws_lb.internal_nlb.arn
-  port              = 6379
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.redis_tg.arn
-  }
-}
+# IMPORTANT: Since you do not have management access to the listeners or their rules,
+# the `resource "aws_lb_listener_rule"` blocks that were present in earlier iterations
+# have been completely removed. Terraform will not attempt to create, modify, or delete
+# any listener rules. It assumes these rules are already configured correctly in AWS.
 
 ##############################
-# Route 53 Record for Grafana
+# Data Source for Existing Route 53 Record for Grafana
+# This data block references your pre-existing Route 53 A record.
+# Terraform will only read its configuration, not attempt to create or modify it.
 ##############################
-resource "aws_route53_record" "grafana" {
+data "aws_route53_record" "grafana" {
   zone_id = var.route53_zone_id
   name    = var.grafana_domain_name
   type    = "A"
-
-  alias {
-    name                   = data.aws_lb.public_alb.dns_name
-    zone_id                = data.aws_lb.public_alb.zone_id
-    evaluate_target_health = true
-  }
+  # No 'alias' block here because this is a data source.
+  # Terraform reads the existing record, including its alias configuration, implicitly.
 }
 
 ##############################
-# Secrets Manager
+# Secrets Manager (assuming you have access to read secrets)
 ##############################
 data "aws_secretsmanager_secret_version" "db" {
   secret_id = var.db_secret_arn
 }
 
 ##############################
-# ECS Task Definitions
+# ECS Task Definitions (these are managed by your Terraform config)
 ##############################
 resource "aws_ecs_task_definition" "grafana" {
   family                   = "grafana-task"
@@ -161,26 +82,26 @@ resource "aws_ecs_task_definition" "grafana" {
   task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([{
-    name  = "grafana"
-    image = "grafana/grafana-enterprise:latest"
+    name        = "grafana"
+    image       = "grafana/grafana-enterprise:latest"
     portMappings = [{ containerPort = 3000 }]
     environment = [
-      { name = "GF_SERVER_ROOT_URL",        value = "http://${var.grafana_domain_name}" },
+      { name = "GF_SERVER_ROOT_URL",            value = "http://${var.grafana_domain_name}" },
       { name = "GF_SERVER_SERVE_FROM_SUB_PATH", value = "false" },
-      { name = "GF_DATABASE_TYPE",          value = "postgres" },
-      { name = "GF_DATABASE_HOST",          value = var.db_endpoint },
-      { name = "GF_DATABASE_NAME",          value = "grafana" },
-      { name = "GF_DATABASE_USER",          value = "rajesh" },
-      { name = "GF_DATABASE_PASSWORD",      value = data.aws_secretsmanager_secret_version.db.secret_string },
-      { name = "GF_DATABASE_SSL_MODE",      value = "require" },
-      { name = "GF_RENDERING_SERVER_URL",   value = "http://${data.aws_lb.public_alb.dns_name}/render" },
-      { name = "GF_RENDERING_CALLBACK_URL", value = "http://${var.grafana_domain_name}" },
-      { name = "REDIS_PATH",                value = "${data.aws_lb.internal_nlb.dns_name}:6379" },
-      { name = "REDIS_DB",                  value = "1" },
-      { name = "REDIS_CACHETIME",          value = "12000" },
-      { name = "CACHING",                   value = "Y" },
-      { name = "GF_PLUGIN_ALLOW_LOCAL_MODE",value = "true" },
-      { name = "GF_LOG_FILTERS",            value = "rendering:debug" }
+      { name = "GF_DATABASE_TYPE",              value = "postgres" },
+      { name = "GF_DATABASE_HOST",              value = var.db_endpoint },
+      { name = "GF_DATABASE_NAME",              value = "grafana" },
+      { name = "GF_DATABASE_USER",              value = "rajesh" },
+      { name = "GF_DATABASE_PASSWORD",          value = data.aws_secretsmanager_secret_version.db.secret_string },
+      { name = "GF_DATABASE_SSL_MODE",          value = "require" },
+      { name = "GF_RENDERING_SERVER_URL",       value = "http://${data.aws_lb.public_alb.dns_name}/render" },
+      { name = "GF_RENDERING_CALLBACK_URL",     value = "http://${var.grafana_domain_name}" },
+      { name = "REDIS_PATH",                    value = "${data.aws_lb.internal_nlb.dns_name}:6379" },
+      { name = "REDIS_DB",                      value = "1" },
+      { name = "REDIS_CACHETIME",               value = "12000" },
+      { name = "CACHING",                       value = "Y" },
+      { name = "GF_PLUGIN_ALLOW_LOCAL_MODE",    value = "true" },
+      { name = "GF_LOG_FILTERS",                value = "rendering:debug" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -204,9 +125,9 @@ resource "aws_ecs_task_definition" "renderer" {
   task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([{
-    name              = "renderer"
-    image             = "grafana/grafana-image-renderer:latest"
-    portMappings      = [{ containerPort = 8081 }]
+    name        = "renderer"
+    image       = "grafana/grafana-image-renderer:latest"
+    portMappings = [{ containerPort = 8081 }]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -229,10 +150,10 @@ resource "aws_ecs_task_definition" "redis" {
   task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([{
-    name         = "redis"
-    image        = "redis:latest"
+    name        = "redis"
+    image       = "redis:latest"
     portMappings = [{ containerPort = 6379 }]
-    command      = ["redis-server", "--bind", "0.0.0.0"]
+    command     = ["redis-server", "--bind", "0.0.0.0"]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -246,14 +167,14 @@ resource "aws_ecs_task_definition" "redis" {
 }
 
 ##############################
-# ECS Services & Auto Scaling
+# ECS Services & Auto Scaling (these are managed by your Terraform config)
 ##############################
 resource "aws_ecs_service" "grafana" {
-  name                   = "grafana"
-  cluster                = var.ecs_cluster_id
-  launch_type            = "FARGATE"
-  desired_count          = var.grafana_desired_count
-  task_definition        = aws_ecs_task_definition.grafana.arn
+  name             = "grafana"
+  cluster          = var.ecs_cluster_id
+  launch_type      = "FARGATE"
+  desired_count    = var.grafana_desired_count
+  task_definition  = aws_ecs_task_definition.grafana.arn
   enable_execute_command = true
 
   network_configuration {
@@ -263,19 +184,19 @@ resource "aws_ecs_service" "grafana" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.grafana_tg.arn
+    target_group_arn = data.aws_lb_target_group.grafana_tg.arn # Referencing the data source for Grafana TG
     container_name   = "grafana"
     container_port   = 3000
   }
-  depends_on = [aws_lb_listener_rule.grafana_rule]
+  # No depends_on on listener rules as they are not managed by Terraform
 }
 
 resource "aws_ecs_service" "renderer" {
-  name                   = "renderer"
-  cluster                = var.ecs_cluster_id
-  launch_type            = "FARGATE"
-  desired_count          = var.renderer_desired_count
-  task_definition        = aws_ecs_task_definition.renderer.arn
+  name             = "renderer"
+  cluster          = var.ecs_cluster_id
+  launch_type      = "FARGATE"
+  desired_count    = var.renderer_desired_count
+  task_definition  = aws_ecs_task_definition.renderer.arn
   enable_execute_command = true
 
   network_configuration {
@@ -285,19 +206,19 @@ resource "aws_ecs_service" "renderer" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.renderer_tg.arn
+    target_group_arn = data.aws_lb_target_group.renderer_tg.arn # Referencing the data source for Renderer TG
     container_name   = "renderer"
     container_port   = 8081
   }
-  depends_on = [aws_lb_listener_rule.renderer_rule]
+  # No depends_on on listener rules as they are not managed by Terraform
 }
 
 resource "aws_ecs_service" "redis" {
-  name                   = "redis"
-  cluster                = var.ecs_cluster_id
-  launch_type            = "FARGATE"
-  desired_count          = var.redis_desired_count
-  task_definition        = aws_ecs_task_definition.redis.arn
+  name             = "redis"
+  cluster          = var.ecs_cluster_id
+  launch_type      = "FARGATE"
+  desired_count    = var.redis_desired_count
+  task_definition  = aws_ecs_task_definition.redis.arn
   enable_execute_command = true
 
   network_configuration {
@@ -307,11 +228,11 @@ resource "aws_ecs_service" "redis" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.redis_tg.arn
+    target_group_arn = data.aws_lb_target_group.redis_tg.arn # Referencing the data source for Redis TG
     container_name   = "redis"
     container_port   = 6379
   }
-  depends_on = [aws_lb_listener.redis_tcp]
+  # No depends_on on redis_tcp listener as it's not managed by Terraform
 }
 
 resource "aws_appautoscaling_target" "grafana" {
@@ -332,9 +253,9 @@ resource "aws_appautoscaling_policy" "grafana_cpu" {
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification { predefined_metric_type = "ECSServiceAverageCPUUtilization" }
-    target_value                 = var.grafana_autoscaling_cpu_target
-    scale_in_cooldown            = 60
-    scale_out_cooldown           = 60
+    target_value                   = var.grafana_autoscaling_cpu_target
+    scale_in_cooldown              = 60
+    scale_out_cooldown             = 60
   }
 }
 
@@ -356,9 +277,9 @@ resource "aws_appautoscaling_policy" "renderer_cpu" {
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification { predefined_metric_type = "ECSServiceAverageCPUUtilization" }
-    target_value                 = var.renderer_autoscaling_cpu_target
-    scale_in_cooldown            = 60
-    scale_out_cooldown           = 60
+    target_value                   = var.renderer_autoscaling_cpu_target
+    scale_in_cooldown              = 60
+    scale_out_cooldown             = 60
   }
 }
 
@@ -380,8 +301,8 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification { predefined_metric_type = "ECSServiceAverageCPUUtilization" }
-    target_value                 = var.redis_autoscaling_cpu_target
-    scale_in_cooldown            = 60
-    scale_out_cooldown           = 60
+    target_value                   = var.redis_autoscaling_cpu_target
+    scale_in_cooldown              = 60
+    scale_out_cooldown             = 60
   }
 }

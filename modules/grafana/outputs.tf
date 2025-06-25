@@ -1,11 +1,14 @@
-output "grafana_target_group_arn" {
-  value = aws_lb_target_group.grafana_tg.arn
+output "grafana_ecs_service_arn" {
+  description = "ARN of the Grafana ECS Service."
+  value       = aws_ecs_service.grafana.id
 }
 
-output "renderer_target_group_arn" {
-  value = aws_lb_target_group.renderer_tg.arn
+output "renderer_ecs_service_arn" {
+  description = "ARN of the Renderer ECS Service."
+  value       = aws_ecs_service.renderer.id
 }
 
-output "redis_target_group_arn" {
-  value = aws_lb_target_group.redis_tg.arn
+output "redis_ecs_service_arn" {
+  description = "ARN of the Redis ECS Service."
+  value       = aws_ecs_service.redis.id
 }
