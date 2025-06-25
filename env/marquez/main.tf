@@ -1,8 +1,8 @@
 # Call the Marquez ECS module
 module "marquez" {
-  source = "../../modules/grafana" # Path to your module.
+  source = "../../modules/marquez" # Path to your module.
 
-  # Pass all variables from env/grafana/terraform.tfvars to the module
+  # Pass all variables from env/marquez/terraform.tfvars to the module
   ecs_cluster_id          = var.ecs_cluster_id
   ecs_cluster_name        = var.ecs_cluster_name
   vpc_id                    = var.vpc_id
