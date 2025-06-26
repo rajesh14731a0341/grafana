@@ -174,7 +174,7 @@ resource "aws_ecs_task_definition" "api" {
 }
 
 resource "aws_ecs_task_definition" "web" {
-  family                   = "marquez-web"
+  family                   = "marquez-web-prv-ip"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -201,7 +201,7 @@ resource "aws_ecs_task_definition" "web" {
 }
 
 resource "aws_ecs_task_definition" "db" {
-  family                   = "marquez-db"
+  family                   = "marquez-db-prv-ip"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -289,7 +289,7 @@ resource "aws_ecs_service" "web" {
 }
 
 resource "aws_ecs_service" "db" {
-  name                   = "marquez-db"
+  name                   = "marquez-db-prv-ip"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.db.arn
   desired_count          = 1
