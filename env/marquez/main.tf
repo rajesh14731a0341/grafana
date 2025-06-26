@@ -11,6 +11,7 @@ module "marquez" {
   task_role_arn                      = var.task_role_arn
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
+  region = var.region
 
   marquez_api_desired_count          = var.marquez_api_desired_count
   marquez_api_autoscaling_min        = var.marquez_api_autoscaling_min

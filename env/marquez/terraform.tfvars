@@ -8,6 +8,7 @@ execution_role_arn            = "arn:aws:iam::736747734611:role/rajesh-ecs-task-
 task_role_arn                 = "arn:aws:iam::736747734611:role/rajesh-grafana-task-role"
 alb_name                      = "ALB"
 nlb_name                      = "nlb"
+region = "us-east-1"
 
 marquez_api_desired_count     = 1
 marquez_api_autoscaling_min   = 1

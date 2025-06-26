@@ -18,3 +18,4 @@ variable "marquez_web_desired_count" {}
 variable "marquez_web_autoscaling_min" {}
 variable "marquez_web_autoscaling_max" {}
 variable "marquez_web_autoscaling_cpu_target" {}
+variable "region" {}
