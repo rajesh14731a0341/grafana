@@ -4,9 +4,6 @@ locals {
   marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}/marquez/api"
 }
 
-#####################
-# Load Balancers
-#####################
 data "aws_lb" "public_alb" {
   name = var.alb_name
 }
@@ -20,9 +17,6 @@ data "aws_lb_listener" "public_http" {
   port              = 80
 }
 
-#####################
-# Target Groups
-#####################
 resource "aws_lb_target_group" "api_tg" {
   name        = "marquez-api-tg"
   port        = 5000
@@ -73,9 +67,6 @@ resource "aws_lb_target_group" "db_tg" {
   }
 }
 
-#####################
-# Listener Rules
-#####################
 resource "aws_lb_listener_rule" "api_rule" {
   listener_arn = data.aws_lb_listener.public_http.arn
   priority     = 1002
@@ -119,9 +110,6 @@ resource "aws_lb_listener" "db_tcp" {
   }
 }
 
-#####################
-# Log Groups
-#####################
 resource "aws_cloudwatch_log_group" "api_logs" {
   name              = "${local.log_prefix}/api"
   retention_in_days = 7
@@ -137,9 +125,6 @@ resource "aws_cloudwatch_log_group" "db_logs" {
   retention_in_days = 7
 }
 
-#####################
-# ECS Task Definitions
-#####################
 resource "aws_ecs_task_definition" "api" {
   family                   = "marquez-api"
   requires_compatibilities = ["FARGATE"]
@@ -153,7 +138,6 @@ resource "aws_ecs_task_definition" "api" {
     name        = "marquez-api"
     image       = "marquezproject/marquez:0.42.0"
     portMappings = [{ containerPort = 5000 }]
-    command     = ["/bin/sh", "-c", "sleep 3600"]  # <-- keeps container alive
     environment = [
       { name = "POSTGRES_HOST", value = local.postgres_host },
       { name = "POSTGRES_PORT", value = "5432" },
@@ -171,7 +155,6 @@ resource "aws_ecs_task_definition" "api" {
     }
   }])
 }
-
 
 resource "aws_ecs_task_definition" "web" {
   family                   = "marquez-web"
@@ -229,9 +212,6 @@ resource "aws_ecs_task_definition" "db" {
   }])
 }
 
-#####################
-# ECS Services
-#####################
 resource "aws_ecs_service" "api" {
   name            = "marquez-api"
   cluster         = var.ecs_cluster_id
@@ -316,9 +296,6 @@ resource "aws_ecs_service" "db" {
   health_check_grace_period_seconds = 60
 }
 
-#####################
-# Auto Scaling
-#####################
 resource "aws_appautoscaling_target" "api" {
   max_capacity       = var.marquez_api_autoscaling_max
   min_capacity       = var.marquez_api_autoscaling_min
