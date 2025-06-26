@@ -1,7 +1,7 @@
-output "public_alb_dns" {
-  value = module.marquez.public_alb_dns
+output "marquez_api_url" {
+  value = "http://${module.marquez.alb_dns}/marquez/api"
 }
 
-output "internal_nlb_dns" {
-  value = module.marquez.internal_nlb_dns
+output "marquez_web_url" {
+  value = "http://${module.marquez.alb_dns}/marquez/web"
 }
