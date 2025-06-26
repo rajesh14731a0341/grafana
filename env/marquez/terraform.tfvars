@@ -10,12 +10,12 @@ alb_name                      = "ALB"
 nlb_name                      = "nlb"
 region = "us-east-1"
 
-marquez_api_desired_count     = 0
-marquez_api_autoscaling_min   = 0
+marquez_api_desired_count     = 1
+marquez_api_autoscaling_min   = 1
 marquez_api_autoscaling_max   = 5
 marquez_api_autoscaling_cpu_target = 70
 
-marquez_web_desired_count     = 0
-marquez_web_autoscaling_min   = 0
+marquez_web_desired_count     = 1
+marquez_web_autoscaling_min   = 1
 marquez_web_autoscaling_max   = 5
 marquez_web_autoscaling_cpu_target = 70
