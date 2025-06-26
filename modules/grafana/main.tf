@@ -278,7 +278,7 @@ resource "aws_ecs_service" "grafana" {
   task_definition = aws_ecs_task_definition.grafana.arn
 
   network_configuration {
-    subnets         = var.private_subnet_ids
+    subnets         = var.public_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -301,7 +301,7 @@ resource "aws_ecs_service" "renderer" {
   task_definition = aws_ecs_task_definition.renderer.arn
 
   network_configuration {
-    subnets         = var.private_subnet_ids
+    subnets         = var.public_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -324,7 +324,7 @@ resource "aws_ecs_service" "redis" {
   task_definition = aws_ecs_task_definition.redis.arn
 
   network_configuration {
-    subnets         = var.private_subnet_ids
+    subnets         = var.public_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
