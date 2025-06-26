@@ -201,6 +201,11 @@ resource "aws_ecs_task_definition" "db" {
       { name = "POSTGRES_PASSWORD", value = "marquez" },
       { name = "POSTGRES_DB", value = "marquez" }
     ]
+    mountPoints = [{
+      containerPath = "/var/lib/postgresql/data"
+      sourceVolume  = "db-storage"
+      readOnly      = false
+    }]
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -210,6 +215,13 @@ resource "aws_ecs_task_definition" "db" {
       }
     }
   }])
+
+  volume {
+    name = "db-storage"
+    host_path {
+      path = "/ecs/volumes/marquez-db"
+    }
+  }
 }
 
 resource "aws_ecs_service" "api" {
