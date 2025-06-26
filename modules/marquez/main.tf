@@ -1,5 +1,5 @@
 locals {
-  log_prefix           = "/ecs/marquez"
+  log_prefix           = "/ecs/marquez/test"
   marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}/marquez/api"
 }
 
@@ -91,7 +91,7 @@ resource "aws_lb_target_group" "db_tg_prv_ip" {
 ######################
 resource "aws_lb_listener_rule" "api_rule_prv_ip" {
   listener_arn = data.aws_lb_listener.public_http.arn
-  priority     = 1002
+  priority     = 1006
 
   action {
     type             = "forward"
@@ -107,7 +107,7 @@ resource "aws_lb_listener_rule" "api_rule_prv_ip" {
 
 resource "aws_lb_listener_rule" "web_rule_prv_ip" {
   listener_arn = data.aws_lb_listener.public_http.arn
-  priority     = 1001
+  priority     = 1007
 
   action {
     type             = "forward"
