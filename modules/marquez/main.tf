@@ -22,22 +22,22 @@ data "aws_lb_listener" "public_http" {
   port              = 80
 }
 
-resource "aws_lb_listener" "internal_tcp_5432" {
+resource "aws_lb_listener" "internal_tcp_5432_prv_ip" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
   port              = 5432
   protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.db_tg.arn
+    target_group_arn = aws_lb_target_group.db_tg_prv_ip.arn
   }
 }
 
 ######################
 # Target Groups
 ######################
-resource "aws_lb_target_group" "api_tg" {
-  name        = "marquez-api-tg"
+resource "aws_lb_target_group" "api_tg_prv_ip" {
+  name        = "marquez-api-prv-ip-tg"
   port        = 5000
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -53,8 +53,8 @@ resource "aws_lb_target_group" "api_tg" {
   }
 }
 
-resource "aws_lb_target_group" "web_tg" {
-  name        = "marquez-web-tg"
+resource "aws_lb_target_group" "web_tg_prv_ip" {
+  name        = "marquez-web-prv-ip-tg"
   port        = 8080
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -70,8 +70,8 @@ resource "aws_lb_target_group" "web_tg" {
   }
 }
 
-resource "aws_lb_target_group" "db_tg" {
-  name        = "marquez-db-tg"
+resource "aws_lb_target_group" "db_tg_prv_ip" {
+  name        = "marquez-db-prv-ip-tg"
   port        = 5432
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -89,13 +89,13 @@ resource "aws_lb_target_group" "db_tg" {
 ######################
 # Listener Rules
 ######################
-resource "aws_lb_listener_rule" "api_rule" {
+resource "aws_lb_listener_rule" "api_rule_prv_ip" {
   listener_arn = data.aws_lb_listener.public_http.arn
   priority     = 1002
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.api_tg.arn
+    target_group_arn = aws_lb_target_group.api_tg_prv_ip.arn
   }
 
   condition {
@@ -105,13 +105,13 @@ resource "aws_lb_listener_rule" "api_rule" {
   }
 }
 
-resource "aws_lb_listener_rule" "web_rule" {
+resource "aws_lb_listener_rule" "web_rule_prv_ip" {
   listener_arn = data.aws_lb_listener.public_http.arn
   priority     = 1001
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.web_tg.arn
+    target_group_arn = aws_lb_target_group.web_tg_prv_ip.arn
   }
 
   condition {
@@ -143,7 +143,7 @@ resource "aws_cloudwatch_log_group" "db_logs" {
 # Task Definitions
 ######################
 resource "aws_ecs_task_definition" "api" {
-  family                   = "marquez-api"
+  family                   = "marquez-api-prv-ip"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -233,7 +233,7 @@ resource "aws_ecs_task_definition" "db" {
 # ECS Services
 ######################
 resource "aws_ecs_service" "api" {
-  name                   = "marquez-api"
+  name                   = "marquez-api-prv-ip"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.api.arn
   desired_count          = var.marquez_api_desired_count
@@ -241,19 +241,19 @@ resource "aws_ecs_service" "api" {
   enable_execute_command = true
 
   network_configuration {
-    subnets          = var.public_subnet_ids
+    subnets          = var.private_subnet_ids
     security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.api_tg.arn
+    target_group_arn = aws_lb_target_group.api_tg_prv_ip.arn
     container_name   = "marquez-api"
     container_port   = 5000
   }
 
   depends_on = [
-    aws_lb_listener_rule.api_rule,
+    aws_lb_listener_rule.api_rule_prv_ip,
     aws_cloudwatch_log_group.api_logs
   ]
 
@@ -261,7 +261,7 @@ resource "aws_ecs_service" "api" {
 }
 
 resource "aws_ecs_service" "web" {
-  name                   = "marquez-web"
+  name                   = "marquez-web-prv-ip"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.web.arn
   desired_count          = var.marquez_web_desired_count
@@ -269,19 +269,19 @@ resource "aws_ecs_service" "web" {
   enable_execute_command = true
 
   network_configuration {
-    subnets          = var.public_subnet_ids
+    subnets          = var.private_subnet_ids
     security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.web_tg.arn
+    target_group_arn = aws_lb_target_group.web_tg_prv_ip.arn
     container_name   = "marquez-web"
     container_port   = 8080
   }
 
   depends_on = [
-    aws_lb_listener_rule.web_rule,
+    aws_lb_listener_rule.web_rule_prv_ip,
     aws_cloudwatch_log_group.web_logs
   ]
 
@@ -297,19 +297,19 @@ resource "aws_ecs_service" "db" {
   enable_execute_command = true
 
   network_configuration {
-    subnets          = var.public_subnet_ids
+    subnets          = var.private_subnet_ids
     security_groups  = [var.security_group_id]
     assign_public_ip = false
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.db_tg.arn
+    target_group_arn = aws_lb_target_group.db_tg_prv_ip.arn
     container_name   = "marquez-db"
     container_port   = 5432
   }
 
   depends_on = [
-    aws_lb_listener.internal_tcp_5432,
+    aws_lb_listener.internal_tcp_5432_prv_ip,
     aws_cloudwatch_log_group.db_logs
   ]
 
@@ -319,20 +319,20 @@ resource "aws_ecs_service" "db" {
 ######################
 # Auto Scaling
 ######################
-resource "aws_appautoscaling_target" "api" {
+resource "aws_appautoscaling_target" "api_prv_ip" {
   max_capacity       = var.marquez_api_autoscaling_max
   min_capacity       = var.marquez_api_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.api.name}"
+  resource_id        = "service/${var.ecs_cluster_name}/marquez-api-prv-ip"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
 
-resource "aws_appautoscaling_policy" "api_cpu" {
-  name                = "api-cpu-scaling"
+resource "aws_appautoscaling_policy" "api_cpu_prv_ip" {
+  name                = "api-prv-ip-cpu-scaling"
   policy_type         = "TargetTrackingScaling"
-  resource_id         = aws_appautoscaling_target.api.resource_id
-  scalable_dimension  = aws_appautoscaling_target.api.scalable_dimension
-  service_namespace   = aws_appautoscaling_target.api.service_namespace
+  resource_id         = aws_appautoscaling_target.api_prv_ip.resource_id
+  scalable_dimension  = aws_appautoscaling_target.api_prv_ip.scalable_dimension
+  service_namespace   = aws_appautoscaling_target.api_prv_ip.service_namespace
 
   target_tracking_scaling_policy_configuration {
     target_value = var.marquez_api_autoscaling_cpu_target
@@ -344,20 +344,20 @@ resource "aws_appautoscaling_policy" "api_cpu" {
   }
 }
 
-resource "aws_appautoscaling_target" "web" {
+resource "aws_appautoscaling_target" "web_prv_ip" {
   max_capacity       = var.marquez_web_autoscaling_max
   min_capacity       = var.marquez_web_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.web.name}"
+  resource_id        = "service/${var.ecs_cluster_name}/marquez-web-prv-ip"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
 
-resource "aws_appautoscaling_policy" "web_cpu" {
-  name                = "web-cpu-scaling"
+resource "aws_appautoscaling_policy" "web_cpu_prv_ip" {
+  name                = "web-prv-ip-cpu-scaling"
   policy_type         = "TargetTrackingScaling"
-  resource_id         = aws_appautoscaling_target.web.resource_id
-  scalable_dimension  = aws_appautoscaling_target.web.scalable_dimension
-  service_namespace   = aws_appautoscaling_target.web.service_namespace
+  resource_id         = aws_appautoscaling_target.web_prv_ip.resource_id
+  scalable_dimension  = aws_appautoscaling_target.web_prv_ip.scalable_dimension
+  service_namespace   = aws_appautoscaling_target.web_prv_ip.service_namespace
 
   target_tracking_scaling_policy_configuration {
     target_value = var.marquez_web_autoscaling_cpu_target
