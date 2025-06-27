@@ -153,7 +153,7 @@ resource "aws_ecs_task_definition" "api" {
 
   container_definitions = jsonencode([{
     name  = "marquez-api"
-    image = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:marquez-api-prv-ip"
+    image = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:marquez-api-prv-ip-v2"
     portMappings = [{ containerPort = 5000 }]
 
     environment = [
