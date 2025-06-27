@@ -333,6 +333,7 @@ resource "aws_appautoscaling_target" "api_prv_ip" {
   resource_id        = "service/${var.ecs_cluster_name}/marquez-api-prv-ip"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
+  depends_on = [aws_ecs_service.api] 
 }
 
 resource "aws_appautoscaling_policy" "api_cpu_prv_ip" {
@@ -358,6 +359,7 @@ resource "aws_appautoscaling_target" "web_prv_ip" {
   resource_id        = "service/${var.ecs_cluster_name}/marquez-web-prv-ip"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
+  depends_on = [aws_ecs_service.web] 
 }
 
 resource "aws_appautoscaling_policy" "web_cpu_prv_ip" {
