@@ -3,7 +3,7 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - marquez_alb_prv_ip  # Change this to your branch if different
+      - marquez_alb_prv_ip   # Change this to your branch if different
 
 jobs:
   deploy:
@@ -26,10 +26,14 @@ jobs:
         working-directory: env/marquez
         run: terraform validate
 
-      - name: Terraform Plan
+      - name: Terraform Plan Destroy
         working-directory: env/marquez
-        run: terraform plan -out=tfplan
+        run: terraform plan -destroy -out=tfplan
 
-      - name: Terraform Apply
+      - name: Terraform Apply Destroy
         working-directory: env/marquez
         run: terraform apply -auto-approve tfplan
+
+
+
+
