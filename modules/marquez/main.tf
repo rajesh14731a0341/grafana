@@ -154,7 +154,9 @@ resource "aws_ecs_task_definition" "api" {
   container_definitions = jsonencode([{
     name  = "marquez-api"
     image = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:marquez-api-prv-ip-v2"
-    portMappings = [{ containerPort = 5000 }]
+    portMappings = [{
+      containerPort = 5000
+    }]
 
     environment = [
       { name = "MARQUEZ_POSTGRES_HOST", value = data.aws_lb.internal_nlb.dns_name },
@@ -162,7 +164,7 @@ resource "aws_ecs_task_definition" "api" {
       { name = "MARQUEZ_POSTGRES_USER", value = "marquez" },
       { name = "MARQUEZ_POSTGRES_PASSWORD", value = "marquez" },
       { name = "MARQUEZ_POSTGRES_DB", value = "marquez" },
-      { name = "MARQUEZ_CONFIG", value = "" } # optional
+      { name = "MARQUEZ_CONFIG", value = "/usr/src/app/marquez.dev.yml" }
     ]
 
     logConfiguration = {
@@ -175,6 +177,7 @@ resource "aws_ecs_task_definition" "api" {
     }
   }])
 }
+
 
 
 
