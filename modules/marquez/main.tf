@@ -155,9 +155,12 @@ resource "aws_ecs_task_definition" "api" {
     {
       name  = "marquez-api"
       image = "marquezproject/marquez:0.42.0"
-      portMappings = [{
-        containerPort = 5000
-      }]
+
+      portMappings = [
+        {
+          containerPort = 5000
+        }
+      ]
 
       entryPoint = ["/bin/sh", "-c"]
 
@@ -173,7 +176,7 @@ resource "aws_ecs_task_definition" "api" {
                 port: 5001
           marquez:
             jdbc:
-              url: jdbc:postgresql://${DB_HOST}:5432/marquez
+              url: jdbc:postgresql://$$DB_HOST:5432/marquez
               user: marquez
               password: marquez
             api:
