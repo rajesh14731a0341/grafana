@@ -156,6 +156,7 @@ resource "aws_ecs_task_definition" "api" {
     image       = "marquezproject/marquez:0.42.0"
     portMappings = [{ containerPort = 5000 }]
     environment = [
+      { name = "MARQUEZ_CONFIG", value = "" },
       { name = "MARQUEZ_POSTGRES_HOST", value = data.aws_lb.internal_nlb.dns_name },
       { name = "MARQUEZ_POSTGRES_PORT", value = "5432" },
       { name = "MARQUEZ_POSTGRES_USER", value = "marquez" },
