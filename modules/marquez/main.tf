@@ -158,7 +158,7 @@ resource "aws_ecs_task_definition" "api" {
     environment = [
       { name = "MARQUEZ_POSTGRES_HOST", value = data.aws_lb.internal_nlb.dns_name },
       { name = "MARQUEZ_POSTGRES_PORT", value = "5432" },
-      { name = "MARQUEZ_POSTGRES_USER", value = "marquez" },
+      { name = "MARQUEZ_POSTGRES_USER", value = "postgres" },
       { name = "MARQUEZ_POSTGRES_PASSWORD", value = "marquez" },
       { name = "MARQUEZ_POSTGRES_DB", value = "marquez" }
     ]
