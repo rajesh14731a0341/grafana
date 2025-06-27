@@ -214,7 +214,7 @@ resource "aws_ecs_task_definition" "db" {
     image       = "postgres:13"
     portMappings = [{ containerPort = 5432 }]
     environment = [
-      { name = "POSTGRES_USER", value = "marquez" },
+      { name = "POSTGRES_USER", value = "postgres" },
       { name = "POSTGRES_PASSWORD", value = "marquez" },
       { name = "POSTGRES_DB", value = "marquez" }
     ]
