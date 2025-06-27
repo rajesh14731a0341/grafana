@@ -1,6 +1,6 @@
 locals {
   log_prefix           = "/ecs/marquez/test"
-  marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}/marquez/api"
+  marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}/api"
 }
 
 ######################
@@ -100,7 +100,7 @@ resource "aws_lb_listener_rule" "api_rule_prv_ip" {
 
   condition {
     path_pattern {
-      values = ["/marquez/api/*", "/marquez/api"]
+      values = ["/api*", "/api/*"]
     }
   }
 }
@@ -116,7 +116,7 @@ resource "aws_lb_listener_rule" "web_rule_prv_ip" {
 
   condition {
     path_pattern {
-      values = ["/marquez/web/*", "/marquez/web"]
+      values = ["/*"]
     }
   }
 }
