@@ -151,27 +151,54 @@ resource "aws_ecs_task_definition" "api" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([{
-    name        = "marquez-api"
-    image       = "marquezproject/marquez:0.42.0"
-    portMappings = [{ containerPort = 5000 }]
-    environment = [
-      { name = "MARQUEZ_CONFIG", value = "" },
-      { name = "MARQUEZ_POSTGRES_HOST", value = data.aws_lb.internal_nlb.dns_name },
-      { name = "MARQUEZ_POSTGRES_PORT", value = "5432" },
-      { name = "MARQUEZ_POSTGRES_USER", value = "marquez" },
-      { name = "MARQUEZ_POSTGRES_PASSWORD", value = "marquez" },
-      { name = "MARQUEZ_POSTGRES_DB", value = "marquez" }
-    ]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.api_logs.name
-        awslogs-region        = var.region
-        awslogs-stream-prefix = "ecs"
+  container_definitions = jsonencode([
+    {
+      name  = "marquez-api"
+      image = "marquezproject/marquez:0.42.0"
+      portMappings = [{
+        containerPort = 5000
+      }]
+
+      entryPoint = ["/bin/sh", "-c"]
+
+      command = [
+        <<-EOC
+          echo '
+          server:
+            applicationConnectors:
+              - type: http
+                port: 5000
+            adminConnectors:
+              - type: http
+                port: 5001
+          marquez:
+            jdbc:
+              url: jdbc:postgresql://${DB_HOST}:5432/marquez
+              user: marquez
+              password: marquez
+            api:
+              base-url: http://localhost:5000/api/v1
+          ' > /tmp/config.yml && java -jar marquez.jar server /tmp/config.yml
+        EOC
+      ]
+
+      environment = [
+        {
+          name  = "DB_HOST"
+          value = data.aws_lb.internal_nlb.dns_name
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.api_logs.name
+          awslogs-region        = var.region
+          awslogs-stream-prefix = "ecs"
+        }
       }
     }
-  }])
+  ])
 }
 
 resource "aws_ecs_task_definition" "web" {
