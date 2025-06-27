@@ -158,7 +158,7 @@ resource "aws_ecs_task_definition" "api" {
     environment = [
       { name = "MARQUEZ_POSTGRES_HOST", value = data.aws_lb.internal_nlb.dns_name },
       { name = "MARQUEZ_POSTGRES_PORT", value = "5432" },
-      { name = "MARQUEZ_POSTGRES_USER", value = "postgres" },
+      { name = "MARQUEZ_POSTGRES_USER", value = "marquez" },
       { name = "MARQUEZ_POSTGRES_PASSWORD", value = "marquez" },
       { name = "MARQUEZ_POSTGRES_DB", value = "marquez" }
     ]
@@ -214,7 +214,7 @@ resource "aws_ecs_task_definition" "db" {
     image       = "postgres:13"
     portMappings = [{ containerPort = 5432 }]
     environment = [
-      { name = "POSTGRES_USER", value = "postgres" },
+      { name = "POSTGRES_USER", value = "marquez" },
       { name = "POSTGRES_PASSWORD", value = "marquez" },
       { name = "POSTGRES_DB", value = "marquez" }
     ]
@@ -292,7 +292,7 @@ resource "aws_ecs_service" "db" {
   name                   = "marquez-db-prv-ip"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.db.arn
-  desired_count          = 1
+  desired_count          = 0
   launch_type            = "FARGATE"
   enable_execute_command = true
 
