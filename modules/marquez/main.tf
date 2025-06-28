@@ -153,7 +153,7 @@ resource "aws_ecs_task_definition" "api" {
 
   container_definitions = jsonencode([{
     name  = "marquez-api"
-    marquez_api_image  = var.marquez_api_image
+    image = var.marquez_api_image                        # ✅ FIXED: correct key
     portMappings = [
       { containerPort = 5000 },
       { containerPort = 5001 }
@@ -176,6 +176,7 @@ resource "aws_ecs_task_definition" "api" {
     }
   }])
 }
+
 
 
 resource "aws_ecs_task_definition" "web" {
