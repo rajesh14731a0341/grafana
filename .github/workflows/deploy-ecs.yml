@@ -10,8 +10,10 @@ jobs:
     runs-on: self-hosted  # Your EC2 self-hosted runner
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (force clean workspace)
         uses: actions/checkout@v3
+        with:
+          clean: true  # Ensures old repo files like grafana/ are cleared
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -24,7 +26,7 @@ jobs:
         run: |
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 736747734611.dkr.ecr.us-east-1.amazonaws.com
 
-      - name: Build Docker image from docker/ directory
+      - name: Build Docker image from `docker/` directory
         run: |
           docker build -t 736747734611.dkr.ecr.us-east-1.amazonaws.com/project:0.47.0-custom -f docker/Dockerfile docker
 
