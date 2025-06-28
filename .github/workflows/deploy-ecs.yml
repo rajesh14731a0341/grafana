@@ -3,88 +3,33 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - marquez_alb_prv_ip  # Your working branch
+      - marquez_alb_prv_ip   # Change this to your branch if different
 
 jobs:
   deploy:
-    runs-on: self-hosted  # EC2 self-hosted runner
+    runs-on: self-hosted   # Your EC2 self-hosted runner
 
     steps:
-      - name: ✅ Checkout repository (force clean)
+      - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          clean: true  # Ensures old directories like grafana/ are cleared
 
-      - name: 📌 Git Debug Info
-        run: |
-          echo "📍 Current Branch: $(git rev-parse --abbrev-ref HEAD)"
-          echo "📦 Commit Hash: $(git rev-parse HEAD)"
-
-      - name: 🔍 Debug - Print current working directory and contents
-        run: |
-          echo "📁 Working Directory: $PWD"
-          echo "📂 Listing root workspace:"
-          ls -al
-          echo "📂 Listing docker directory:"
-          ls -al docker || echo "⚠️ docker directory not found"
-
-      - name: 🧹 Advanced Cleanup (Optional - Clean up stale folders manually)
-        run: |
-          echo "🧼 Cleaning stale folders manually if any..."
-          rm -rf /home/ubuntu/actions-runner/_work/grafana || true
-          echo "✅ Cleanup done (if existed)."
-
-      - name: 🔍 Check Dockerfile existence
-        run: |
-          if [ ! -f docker/Dockerfile ]; then
-            echo "❌ Dockerfile not found at docker/Dockerfile!"
-            exit 1
-          else
-            echo "✅ Dockerfile exists."
-          fi
-
-      - name: ⚙️ Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: 🔐 Login to Amazon ECR
-        run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 736747734611.dkr.ecr.us-east-1.amazonaws.com
-
-      - name: 🐳 Build Docker image from `docker/` directory
-        run: |
-          echo "🏗️ Building Docker image..."
-          docker build -t 736747734611.dkr.ecr.us-east-1.amazonaws.com/project:0.47.0-custom -f docker/Dockerfile docker
-
-      - name: ✅ Docker Image Info
-        run: |
-          echo "📦 Built Image:"
-          docker images | grep project
-
-      - name:  Push Docker image to ECR
-        run: |
-          docker push 736747734611.dkr.ecr.us-east-1.amazonaws.com/project:0.47.0-custom
-
-      - name: 🛠 Setup Terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
 
-      - name:  Terraform Init
+      - name: Terraform Init
         working-directory: env/marquez
         run: terraform init
 
-      - name: ✅ Terraform Validate
+      - name: Terraform Validate
         working-directory: env/marquez
         run: terraform validate
 
-      - name: 🔍 Terraform Plan
+      - name: Terraform Plan
         working-directory: env/marquez
         run: terraform plan -out=tfplan
 
-      - name: 🚀 Terraform Apply
+      - name: Terraform Apply
         working-directory: env/marquez
         run: terraform apply -auto-approve tfplan
