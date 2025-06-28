@@ -73,7 +73,7 @@ jobs:
         with:
           terraform_version: 1.5.7
 
-      - name: 🔧 Terraform Init
+      - name:  Terraform Init
         working-directory: env/marquez
         run: terraform init
 
