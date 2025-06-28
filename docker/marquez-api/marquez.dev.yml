@@ -1,0 +1,5 @@
+db:
+  driverClass: org.postgresql.Driver
+  url: jdbc:postgresql://${MARQUEZ_POSTGRES_HOST}:${MARQUEZ_POSTGRES_PORT}/${MARQUEZ_POSTGRES_DB}
+  user: ${MARQUEZ_POSTGRES_USER}
+  password: ${MARQUEZ_POSTGRES_PASSWORD}

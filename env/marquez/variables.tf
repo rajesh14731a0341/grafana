@@ -19,3 +19,8 @@ variable "marquez_web_autoscaling_min" {}
 variable "marquez_web_autoscaling_max" {}
 variable "marquez_web_autoscaling_cpu_target" {}
 variable "region" {}
+variable "marquez_api_image" {
+  description = "Custom Marquez API Docker image URI"
+  type        = string
+}
+

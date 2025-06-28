@@ -55,7 +55,7 @@ resource "aws_lb_target_group" "api_tg_prv_ip" {
 
 resource "aws_lb_target_group" "web_tg_prv_ip" {
   name        = "marquez-web-prv-ip-tg"
-  port        = 8080
+  port        = 3000
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -116,7 +116,7 @@ resource "aws_lb_listener_rule" "web_rule_prv_ip" {
 
   condition {
     path_pattern {
-      values = ["/*"]
+      values = ["/"]
     }
   }
 }
@@ -139,7 +139,7 @@ resource "aws_cloudwatch_log_group" "db_logs" {
   retention_in_days = 7
 }
 
-####################
+######################
 # Task Definitions
 ######################
 resource "aws_ecs_task_definition" "api" {
@@ -153,11 +153,11 @@ resource "aws_ecs_task_definition" "api" {
 
   container_definitions = jsonencode([{
     name  = "marquez-api"
-    image = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:marquez-api-prv-ip-v3"
-    portMappings = [{
-      containerPort = 5000
-    }]
-
+    image = var.marquez_api_image
+    portMappings = [
+      { containerPort = 5000 },
+      { containerPort = 5001 }
+    ]
     environment = [
       { name = "MARQUEZ_POSTGRES_HOST", value = data.aws_lb.internal_nlb.dns_name },
       { name = "MARQUEZ_POSTGRES_PORT", value = "5432" },
@@ -166,7 +166,6 @@ resource "aws_ecs_task_definition" "api" {
       { name = "MARQUEZ_POSTGRES_DB", value = "marquez" },
       { name = "MARQUEZ_CONFIG", value = "/usr/src/app/marquez.dev.yml" }
     ]
-
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -177,8 +176,6 @@ resource "aws_ecs_task_definition" "api" {
     }
   }])
 }
-
-
 
 
 resource "aws_ecs_task_definition" "web" {
@@ -192,10 +189,11 @@ resource "aws_ecs_task_definition" "web" {
 
   container_definitions = jsonencode([{
     name        = "marquez-web"
-    image       = "marquezproject/marquez-web:0.42.0"
-    portMappings = [{ containerPort = 8080 }]
+    image       = "marquezproject/marquez-web:0.47.0"
+    portMappings = [{ containerPort = 3000 }]
     environment = [
-      { name = "MARQUEZ_API_BASE", value = local.marquez_api_url_base }
+      { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name },
+      { name = "MARQUEZ_PORT", value = "5000" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -219,7 +217,7 @@ resource "aws_ecs_task_definition" "db" {
 
   container_definitions = jsonencode([{
     name        = "marquez-db"
-    image       = "postgres:13"
+    image       = "postgres:14"
     portMappings = [{ containerPort = 5432 }]
     environment = [
       { name = "POSTGRES_USER", value = "marquez" },
@@ -285,7 +283,7 @@ resource "aws_ecs_service" "web" {
   load_balancer {
     target_group_arn = aws_lb_target_group.web_tg_prv_ip.arn
     container_name   = "marquez-web"
-    container_port   = 8080
+    container_port   = 3000
   }
 
   depends_on = [
@@ -333,7 +331,7 @@ resource "aws_appautoscaling_target" "api_prv_ip" {
   resource_id        = "service/${var.ecs_cluster_name}/marquez-api-prv-ip"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
-  depends_on = [aws_ecs_service.api] 
+  depends_on         = [aws_ecs_service.api]
 }
 
 resource "aws_appautoscaling_policy" "api_cpu_prv_ip" {
@@ -359,7 +357,7 @@ resource "aws_appautoscaling_target" "web_prv_ip" {
   resource_id        = "service/${var.ecs_cluster_name}/marquez-web-prv-ip"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
-  depends_on = [aws_ecs_service.web] 
+  depends_on         = [aws_ecs_service.web]
 }
 
 resource "aws_appautoscaling_policy" "web_cpu_prv_ip" {
