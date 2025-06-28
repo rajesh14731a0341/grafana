@@ -15,19 +15,33 @@ jobs:
         with:
           clean: true  # Ensures old directories like grafana/ are cleared
 
+      - name: 📌 Git Debug Info
+        run: |
+          echo "📍 Current Branch: $(git rev-parse --abbrev-ref HEAD)"
+          echo "📦 Commit Hash: $(git rev-parse HEAD)"
+
       - name: 🔍 Debug - Print current working directory and contents
         run: |
           echo "📁 Working Directory: $PWD"
-          echo "📂 Listing workspace:"
+          echo "📂 Listing root workspace:"
           ls -al
-          echo "📂 Listing docker directory contents:"
-          ls -al docker
+          echo "📂 Listing docker directory:"
+          ls -al docker || echo "⚠️ docker directory not found"
 
       - name: 🧹 Advanced Cleanup (Optional - Clean up stale folders manually)
         run: |
           echo "🧼 Cleaning stale folders manually if any..."
           rm -rf /home/ubuntu/actions-runner/_work/grafana || true
           echo "✅ Cleanup done (if existed)."
+
+      - name: 🔍 Check Dockerfile existence
+        run: |
+          if [ ! -f docker/Dockerfile ]; then
+            echo "❌ Dockerfile not found at docker/Dockerfile!"
+            exit 1
+          else
+            echo "✅ Dockerfile exists."
+          fi
 
       - name: ⚙️ Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -44,6 +58,11 @@ jobs:
         run: |
           echo "🏗️ Building Docker image..."
           docker build -t 736747734611.dkr.ecr.us-east-1.amazonaws.com/project:0.47.0-custom -f docker/Dockerfile docker
+
+      - name: ✅ Docker Image Info
+        run: |
+          echo "📦 Built Image:"
+          docker images | grep project
 
       - name: 🚀 Push Docker image to ECR
         run: |
