@@ -1,6 +1,6 @@
 locals {
   log_prefix           = "/ecs/marquez/test"
-  marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}/api"
+  marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}"
 }
 
 ######################
