@@ -64,7 +64,7 @@ jobs:
           echo "📦 Built Image:"
           docker images | grep project
 
-      - name: 🚀 Push Docker image to ECR
+      - name:  Push Docker image to ECR
         run: |
           docker push 736747734611.dkr.ecr.us-east-1.amazonaws.com/project:0.47.0-custom
 
