@@ -12,7 +12,6 @@ logging:
     marquez: DEBUG
 
 db:
-  type: postgres
   host: ${MARQUEZ_POSTGRES_HOST}
   port: ${MARQUEZ_POSTGRES_PORT}
   user: ${MARQUEZ_POSTGRES_USER}
