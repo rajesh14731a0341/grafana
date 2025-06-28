@@ -10,4 +10,5 @@ done
 
 echo "✅ PostgreSQL is up. Starting Marquez..."
 
-exec java -jar /usr/src/app/marquez.jar server /usr/src/app/marquez.dev.yml
+# Use the official Marquez entrypoint (respects $MARQUEZ_CONFIG)
+exec /usr/src/app/docker-entrypoint.sh
