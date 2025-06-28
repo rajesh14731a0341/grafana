@@ -193,8 +193,8 @@ resource "aws_ecs_task_definition" "web" {
     image       = "marquezproject/marquez-web:0.47.0"
     portMappings = [{ containerPort = 3000 }]
     environment = [
-      { name = "MARQUEZ_HOST", value = data.aws_lb.public_alb.dns_name },
-      { name = "MARQUEZ_PORT", value = "5000" }
+      { name = "MARQUEZ_HOST", value = local.marquez_api_url_base },
+      { name = "MARQUEZ_PORT", value = "80" }
     ]
     logConfiguration = {
       logDriver = "awslogs"
