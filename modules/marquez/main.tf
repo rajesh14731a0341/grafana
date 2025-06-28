@@ -299,7 +299,7 @@ resource "aws_ecs_service" "db" {
   name                   = "marquez-db-prv-ip"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.db.arn
-  desired_count          = 1
+  desired_count          = 0
   launch_type            = "FARGATE"
   enable_execute_command = true
 
