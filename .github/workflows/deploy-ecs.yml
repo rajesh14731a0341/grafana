@@ -26,10 +26,10 @@ jobs:
         working-directory: env/marquez
         run: terraform validate
 
-      - name: Terraform Plan Destroy
+      - name: Terraform Plan
         working-directory: env/marquez
-        run: terraform plan -destroy -out=tfplan
+        run: terraform plan -out=tfplan
 
-      - name: Terraform Apply Destroy
+      - name: Terraform Apply
         working-directory: env/marquez
         run: terraform apply -auto-approve tfplan
