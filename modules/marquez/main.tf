@@ -116,7 +116,7 @@ resource "aws_lb_listener_rule" "web_rule_prv_ip" {
 
   condition {
     path_pattern {
-      values = ["/"]
+      values = ["/*"]
     }
   }
 }
