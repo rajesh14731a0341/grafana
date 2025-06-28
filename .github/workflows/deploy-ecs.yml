@@ -3,11 +3,11 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - marquez_alb_prv_ip   # Change this to your branch if different
+      - marquez_alb_prv_ip  # Your working branch
 
 jobs:
   deploy:
-    runs-on: self-hosted   # Your EC2 self-hosted runner
+    runs-on: self-hosted  # Your EC2 self-hosted runner
 
     steps:
       - name: Checkout repository
@@ -24,9 +24,9 @@ jobs:
         run: |
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 736747734611.dkr.ecr.us-east-1.amazonaws.com
 
-      - name: Build Docker image
+      - name: Build Docker image from docker/ directory
         run: |
-          docker build -t 736747734611.dkr.ecr.us-east-1.amazonaws.com/project:0.47.0-custom .
+          docker build -t 736747734611.dkr.ecr.us-east-1.amazonaws.com/project:0.47.0-custom -f docker/Dockerfile docker
 
       - name: Push Docker image to ECR
         run: |
