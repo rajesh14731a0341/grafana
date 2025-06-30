@@ -19,18 +19,18 @@ jobs:
           terraform_version: 1.5.7
 
       - name: Terraform Init
-        working-directory: env/marquez
+        working-directory: env/grafana
         run: terraform init
 
       - name: Terraform Validate
-        working-directory: env/marquez
+        working-directory: env/grafana
         run: terraform validate
 
       - name: Terraform Plan Destroy
-        working-directory: env/marquez
+        working-directory: env/grafana
         run: terraform plan -destroy -out=tfplan
 
       - name: Terraform Apply Destroy
-        working-directory: env/marquez
+        working-directory: env/grafana
         run: terraform apply -auto-approve tfplan
 
