@@ -153,7 +153,7 @@ resource "aws_ecs_task_definition" "api" {
 
   container_definitions = jsonencode([{
     name  = "marquez-api"
-    image = var.marquez_api_image                        # ✅ FIXED: correct key
+    image = var.marquez_api_image                        
     portMappings = [
       { containerPort = 5000 },
       { containerPort = 5001 }
@@ -299,7 +299,7 @@ resource "aws_ecs_service" "db" {
   name                   = "marquez-db-prv-ip"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.db.arn
-  desired_count          = 0
+  desired_count          = 1
   launch_type            = "FARGATE"
   enable_execute_command = true
 
