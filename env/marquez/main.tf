@@ -2,7 +2,7 @@ module "marquez" {
   source = "../../modules/marquez"
 
   ecs_cluster_id                     = var.ecs_cluster_id
-  ecs_cluster_name                  = var.ecs_cluster_name
+  ecs_cluster_name                   = var.ecs_cluster_name
   vpc_id                             = var.vpc_id
   public_subnet_ids                  = var.public_subnet_ids
   private_subnet_ids                 = var.private_subnet_ids
@@ -11,10 +11,9 @@ module "marquez" {
   task_role_arn                      = var.task_role_arn
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
-  region = var.region
-  marquez_api_image  = var.marquez_api_image
-  grafana_domain_name       = var.grafana_domain_name
-
+  region                             = var.region
+  marquez_api_image                  = var.marquez_api_image
+  marquez_domain_name               = var.marquez_domain_name  # ✅ Add this line
 
   marquez_api_desired_count          = var.marquez_api_desired_count
   marquez_api_autoscaling_min        = var.marquez_api_autoscaling_min
