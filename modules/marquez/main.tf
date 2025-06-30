@@ -1,10 +1,12 @@
+
 locals {
   log_prefix           = "/ecs/marquez/test"
   marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}"
 }
 
 ######################
-# Load Balancers
+# Load Balancers (Data Sources - Always reference existing by name)
+# These blocks retrieve information about existing ALBs and NLBs.
 ######################
 data "aws_lb" "public_alb" {
   name = var.alb_name
@@ -15,115 +17,54 @@ data "aws_lb" "internal_nlb" {
 }
 
 ######################
-# Listeners
+# Target Groups (Data Sources - Reference existing by ARN)
+# These blocks retrieve information about pre-existing target groups.
+# Terraform will NOT create or modify these.
+######################
+data "aws_lb_target_group" "api_tg_prv_ip" {
+  arn = var.marquez_api_tg_arn
+}
+
+data "aws_lb_target_group" "web_tg_prv_ip" {
+  arn = var.marquez_web_tg_arn
+}
+
+data "aws_lb_target_group" "db_tg_prv_ip" {
+  arn = var.marquez_db_tg_arn
+}
+
+
+######################
+# Listeners (Data Sources - Reference existing by ARN)
+# These blocks retrieve information about pre-existing listeners.
+# Terraform will NOT create or modify these.
 ######################
 data "aws_lb_listener" "public_http" {
-  load_balancer_arn = data.aws_lb.public_alb.arn
-  port              = 80
+  arn = var.marquez_http_listener_arn
 }
 
-resource "aws_lb_listener" "internal_tcp_5432_prv_ip" {
-  load_balancer_arn = data.aws_lb.internal_nlb.arn
-  port              = 5432
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.db_tg_prv_ip.arn
-  }
+data "aws_lb_listener" "internal_tcp_5432_prv_ip" {
+  arn = var.marquez_tcp_listener_arn
 }
 
 ######################
-# Target Groups
+# Listener Rules (Data Sources - Reference existing by ARN)
+# IMPORTANT: Since you do not have permissions to manage these,
+# they are referenced as data sources. You MUST provide their ARNs
+# in your .tfvars file. Terraform will NOT create or modify these rules.
 ######################
-resource "aws_lb_target_group" "api_tg_prv_ip" {
-  name        = "marquez-api-prv-ip-tg"
-  port        = 5000
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = "/api/v1/namespaces"
-    matcher             = "200"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
+data "aws_lb_listener_rule" "api_rule_prv_ip" {
+  arn = var.marquez_api_listener_rule_arn
 }
 
-resource "aws_lb_target_group" "web_tg_prv_ip" {
-  name        = "marquez-web-prv-ip-tg"
-  port        = 3000
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = "/"
-    matcher             = "200"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
-}
-
-resource "aws_lb_target_group" "db_tg_prv_ip" {
-  name        = "marquez-db-prv-ip-tg"
-  port        = 5432
-  protocol    = "TCP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    protocol            = "TCP"
-    interval            = 30
-    timeout             = 10
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-  }
-}
-
-######################
-# Listener Rules
-######################
-resource "aws_lb_listener_rule" "api_rule_prv_ip" {
-  listener_arn = data.aws_lb_listener.public_http.arn
-  priority     = 1006
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.api_tg_prv_ip.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/api*", "/api/*"]
-    }
-  }
-}
-
-resource "aws_lb_listener_rule" "web_rule_prv_ip" {
-  listener_arn = data.aws_lb_listener.public_http.arn
-  priority     = 1007
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.web_tg_prv_ip.arn
-  }
-
-  condition {
-    host_header {
-      values = [var.marquez_domain_name]
-    }
-  }
+data "aws_lb_listener_rule" "web_rule_prv_ip" {
+  arn = var.marquez_web_listener_rule_arn
 }
 
 
 ######################
-# Log Groups
+# Log Groups (Resources - These are managed by your Terraform config)
+# CloudWatch Log Groups are typically managed alongside services.
 ######################
 resource "aws_cloudwatch_log_group" "api_logs" {
   name              = "${local.log_prefix}/api"
@@ -141,7 +82,8 @@ resource "aws_cloudwatch_log_group" "db_logs" {
 }
 
 ######################
-# Task Definitions
+# Task Definitions (Resources - These are managed by your Terraform config)
+# Task definitions define your container configurations.
 ######################
 resource "aws_ecs_task_definition" "api" {
   family                   = "marquez-api-prv-ip"
@@ -154,7 +96,7 @@ resource "aws_ecs_task_definition" "api" {
 
   container_definitions = jsonencode([{
     name  = "marquez-api"
-    image = var.marquez_api_image                        
+    image = var.marquez_api_image
     portMappings = [
       { containerPort = 5000 },
       { containerPort = 5001 }
@@ -177,8 +119,6 @@ resource "aws_ecs_task_definition" "api" {
     }
   }])
 }
-
-
 
 resource "aws_ecs_task_definition" "web" {
   family                   = "marquez-web-prv-ip"
@@ -238,7 +178,8 @@ resource "aws_ecs_task_definition" "db" {
 }
 
 ######################
-# ECS Services
+# ECS Services (Resources - These are managed by your Terraform config)
+# These services deploy and manage your tasks.
 ######################
 resource "aws_ecs_service" "api" {
   name                   = "marquez-api-prv-ip"
@@ -255,14 +196,15 @@ resource "aws_ecs_service" "api" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.api_tg_prv_ip.arn
+    target_group_arn = data.aws_lb_target_group.api_tg_prv_ip.arn
     container_name   = "marquez-api"
     container_port   = 5000
   }
 
+  # Depend on the log group and the *existence* of the listener rule
   depends_on = [
-    aws_lb_listener_rule.api_rule_prv_ip,
-    aws_cloudwatch_log_group.api_logs
+    aws_cloudwatch_log_group.api_logs,
+    data.aws_lb_listener_rule.api_rule_prv_ip # Now a data source
   ]
 
   health_check_grace_period_seconds = 60
@@ -283,14 +225,15 @@ resource "aws_ecs_service" "web" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.web_tg_prv_ip.arn
+    target_group_arn = data.aws_lb_target_group.web_tg_prv_ip.arn
     container_name   = "marquez-web"
     container_port   = 3000
   }
 
+  # Depend on the log group and the *existence* of the listener rule
   depends_on = [
-    aws_lb_listener_rule.web_rule_prv_ip,
-    aws_cloudwatch_log_group.web_logs
+    aws_cloudwatch_log_group.web_logs,
+    data.aws_lb_listener_rule.web_rule_prv_ip # Now a data source
   ]
 
   health_check_grace_period_seconds = 60
@@ -311,21 +254,23 @@ resource "aws_ecs_service" "db" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.db_tg_prv_ip.arn
+    target_group_arn = data.aws_lb_target_group.db_tg_prv_ip.arn
     container_name   = "marquez-db"
     container_port   = 5432
   }
 
+  # Depend on the log group and the *existence* of the listener
   depends_on = [
-    aws_lb_listener.internal_tcp_5432_prv_ip,
-    aws_cloudwatch_log_group.db_logs
+    aws_cloudwatch_log_group.db_logs,
+    data.aws_lb_listener.internal_tcp_5432_prv_ip # Now a data source
   ]
 
   health_check_grace_period_seconds = 60
 }
 
 ######################
-# Auto Scaling
+# Auto Scaling (Resources - These are managed by your Terraform config)
+# Configures auto-scaling for ECS services based on CPU utilization.
 ######################
 resource "aws_appautoscaling_target" "api_prv_ip" {
   max_capacity       = var.marquez_api_autoscaling_max
@@ -344,7 +289,7 @@ resource "aws_appautoscaling_policy" "api_cpu_prv_ip" {
   service_namespace   = aws_appautoscaling_target.api_prv_ip.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value = var.marquez_api_autoscaling_cpu_target
+    target_value           = var.marquez_api_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
@@ -370,7 +315,7 @@ resource "aws_appautoscaling_policy" "web_cpu_prv_ip" {
   service_namespace   = aws_appautoscaling_target.web_prv_ip.service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value = var.marquez_web_autoscaling_cpu_target
+    target_value           = var.marquez_web_autoscaling_cpu_target
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
