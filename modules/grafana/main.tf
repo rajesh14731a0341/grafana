@@ -44,11 +44,18 @@ data "aws_lb_listener" "redis_tcp" {
   arn = var.redis_tcp_listener_arn # This is your NLB Redis listener's ARN
 }
 
-# IMPORTANT: Since you do not have management access to the listeners or their rules,
-# no `resource "aws_lb_listener_rule"` blocks are present here.
-# Terraform will not attempt to create, modify, or delete any listener rules.
-# It assumes these rules are already configured correctly in AWS.
+##############################
+# NEW: Data Sources for Existing Listener Rules
+# These data blocks explicitly reference the pre-existing listener rules.
+# Terraform will verify their existence before proceeding with ECS service creation.
+##############################
+data "aws_lb_listener_rule" "grafana_rule" {
+  arn = var.grafana_listener_rule_arn
+}
 
+data "aws_lb_listener_rule" "renderer_rule" {
+  arn = var.renderer_listener_rule_arn
+}
 
 
 ##############################
@@ -57,6 +64,42 @@ data "aws_lb_listener" "redis_tcp" {
 data "aws_secretsmanager_secret_version" "db" {
   secret_id = var.db_secret_arn
 }
+
+##############################
+# CloudWatch Log Groups (Explicitly Managed by Terraform for Grafana & Renderer)
+# Redis log group is automatically created by ECS via awslogs-create-group = "true"
+##############################
+resource "aws_cloudwatch_log_group" "grafana_logs" {
+  name              = "${local.log_prefix}-grafana"
+  retention_in_days = 30 # Adjust retention as needed (e.g., 7, 30, 90, 365, etc.)
+  tags = {
+    Application = "Grafana"
+    Environment = "Production" # Or appropriate environment tag
+  }
+}
+
+resource "aws_cloudwatch_log_group" "renderer_logs" {
+  name              = "${local.log_prefix}-renderer"
+  retention_in_days = 30 # Adjust retention as needed
+  tags = {
+    Application = "Grafana Renderer"
+    Environment = "Production" # Or appropriate environment tag
+  }
+}
+
+resource "aws_cloudwatch_log_group" "redis_logs" {
+  name              = "${local.log_prefix}-redis"
+  retention_in_days = 30 # Adjust retention as needed
+  tags = {
+    Application = "Redis"
+    Environment = "Production" # Or appropriate environment tag
+  }
+  # Although the ECS task definition uses awslogs-create-group = "true",
+  # it's good practice to manage log groups explicitly with Terraform for consistency
+  # and to control properties like retention and tags.
+  # If this resource is present, ECS will use it rather than creating its own.
+}
+
 
 ##############################
 # ECS Task Definitions (these are managed by your Terraform config)
@@ -95,10 +138,10 @@ resource "aws_ecs_task_definition" "grafana" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "${local.log_prefix}-grafana"
+        awslogs-group         = aws_cloudwatch_log_group.grafana_logs.name # Reference explicit resource
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "grafana"
-        awslogs-create-group  = "true"
+        awslogs-create-group  = "true" # Keep this true for robustness, it won't create if group exists.
       }
     }
   }])
@@ -120,10 +163,10 @@ resource "aws_ecs_task_definition" "renderer" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "${local.log_prefix}-renderer"
+        awslogs-group         = aws_cloudwatch_log_group.renderer_logs.name # Reference explicit resource
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "renderer"
-        awslogs-create-group  = "true"
+        awslogs-create-group  = "true" # Keep this true for robustness
       }
     }
   }])
@@ -146,10 +189,10 @@ resource "aws_ecs_task_definition" "redis" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        awslogs-group         = "${local.log_prefix}-redis"
+        awslogs-group         = aws_cloudwatch_log_group.redis_logs.name # Reference explicit resource
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "redis"
-        awslogs-create-group  = "true"
+        awslogs-create-group  = "true" # Keep this true for robustness
       }
     }
   }])
@@ -159,11 +202,11 @@ resource "aws_ecs_task_definition" "redis" {
 # ECS Services & Auto Scaling (these are managed by your Terraform config)
 ##############################
 resource "aws_ecs_service" "grafana" {
-  name             = "grafana"
-  cluster          = var.ecs_cluster_id
-  launch_type      = "FARGATE"
-  desired_count    = var.grafana_desired_count
-  task_definition  = aws_ecs_task_definition.grafana.arn
+  name                   = "grafana"
+  cluster                = var.ecs_cluster_id
+  launch_type            = "FARGATE"
+  desired_count          = var.grafana_desired_count
+  task_definition        = aws_ecs_task_definition.grafana.arn
   enable_execute_command = true
 
   network_configuration {
@@ -177,15 +220,19 @@ resource "aws_ecs_service" "grafana" {
     container_name   = "grafana"
     container_port   = 3000
   }
-  # No depends_on on listener rules as they are not managed by Terraform
+  # Add explicit dependency on the listener rule and log group
+  depends_on = [
+    aws_cloudwatch_log_group.grafana_logs,
+    data.aws_lb_listener_rule.grafana_rule
+  ]
 }
 
 resource "aws_ecs_service" "renderer" {
-  name             = "renderer"
-  cluster          = var.ecs_cluster_id
-  launch_type      = "FARGATE"
-  desired_count    = var.renderer_desired_count
-  task_definition  = aws_ecs_task_definition.renderer.arn
+  name                   = "renderer"
+  cluster                = var.ecs_cluster_id
+  launch_type            = "FARGATE"
+  desired_count          = var.renderer_desired_count
+  task_definition        = aws_ecs_task_definition.renderer.arn
   enable_execute_command = true
 
   network_configuration {
@@ -199,15 +246,19 @@ resource "aws_ecs_service" "renderer" {
     container_name   = "renderer"
     container_port   = 8081
   }
-  # No depends_on on listener rules as they are not managed by Terraform
+  # Add explicit dependency on the listener rule and log group
+  depends_on = [
+    aws_cloudwatch_log_group.renderer_logs,
+    data.aws_lb_listener_rule.renderer_rule
+  ]
 }
 
 resource "aws_ecs_service" "redis" {
-  name             = "redis"
-  cluster          = var.ecs_cluster_id
-  launch_type      = "FARGATE"
-  desired_count    = var.redis_desired_count
-  task_definition  = aws_ecs_task_definition.redis.arn
+  name                   = "redis"
+  cluster                = var.ecs_cluster_id
+  launch_type            = "FARGATE"
+  desired_count          = var.redis_desired_count
+  task_definition        = aws_ecs_task_definition.redis.arn
   enable_execute_command = true
 
   network_configuration {
@@ -221,7 +272,11 @@ resource "aws_ecs_service" "redis" {
     container_name   = "redis"
     container_port   = 6379
   }
-  # No depends_on on redis_tcp listener as it's not managed by Terraform
+  # Add explicit dependency on the log group
+  depends_on = [
+    aws_cloudwatch_log_group.redis_logs
+  ]
+  # No depends_on on redis_tcp listener as NLB listeners don't have rules in the same way ALBs do for services.
 }
 
 resource "aws_appautoscaling_target" "grafana" {

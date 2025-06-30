@@ -1,54 +1,56 @@
-ecs_cluster_id          = "arn:aws:ecs:us-east-1:736747734611:cluster/rajesh-cluster"
-ecs_cluster_name        = "rajesh-cluster"
-vpc_id                  = "vpc-0baac8b1f8f1ca391"
+# env/grafana/terraform.tfvars
 
-public_subnet_ids = [
-  "subnet-0eddeac6a246b078f",
-  "subnet-0fcef6c827cb2624e"
-]
-
+# AWS Resource Identifiers
+ecs_cluster_id             = "arn:aws:ecs:us-east-1:736747734611:cluster/rajesh-cluster"
+ecs_cluster_name           = "rajesh-cluster"
+vpc_id                     = "vpc-0baac8b1f8f1ca391"
 private_subnet_ids = [
   "subnet-0c6757b8248f8ba4b",
   "subnet-07635da9f67f83442"
 ]
+security_group_id          = "sg-084b6f2c8b582a491"
+execution_role_arn         = "arn:aws:iam::736747734611:role/rajesh-ecs-task-execution-role"
+task_role_arn              = "arn:aws:iam::736747734611:role/rajesh-grafana-task-role"
 
-security_group_id  = "sg-084b6f2c8b582a491"
-execution_role_arn = "arn:aws:iam::736747734611:role/rajesh-ecs-task-execution-role"
-task_role_arn      = "arn:aws:iam::736747734611:role/rajesh-grafana-task-role"
+# Database Configuration
+db_secret_arn              = "arn:aws:secretsmanager:us-east-1:736747734611:secret:grafana/psql/rajesh-password-7YOPwB"
+db_endpoint                = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com"
 
-db_secret_arn = "arn:aws:secretsmanager:us-east-1:736747734611:secret:grafana/psql/rajesh-password-7YOPwB"
-db_endpoint   = "grafana-rds.c030msui2s50.us-east-1.rds.amazonaws.com"
+# Load Balancer Names
+alb_name                   = "ALB"
+nlb_name                   = "nlb"
 
-alb_name = "ALB"
-nlb_name = "nlb"
-
-# Route 53 zone details
-route53_zone_id   = "Z0686732266WVJGIULJ0U"
-
+# Grafana Domain Configuration
 # Only Grafana gets a dedicated hostname
-grafana_domain_name = "grafana.rajesh.com"
+grafana_domain_name        = "grafana.rajesh.com"
 
-# Grafana service config
-grafana_desired_count        = 0
-grafana_autoscaling_min      = 0
-grafana_autoscaling_max      = 5
+# Grafana Service Configuration
+grafana_desired_count      = 0
+grafana_autoscaling_min    = 0
+grafana_autoscaling_max    = 5
 grafana_autoscaling_cpu_target = 70
 
-# Renderer service config (path-based routing only)
-renderer_desired_count        = 0
-renderer_autoscaling_min      = 0
-renderer_autoscaling_max      = 5
+# Renderer Service Configuration (path-based routing only)
+renderer_desired_count     = 0
+renderer_autoscaling_min   = 0
+renderer_autoscaling_max   = 5
 renderer_autoscaling_cpu_target = 70
 
-# Redis service config
+# Redis Service Configuration
 redis_desired_count        = 0
 redis_autoscaling_min      = 0
 redis_autoscaling_max      = 5
 redis_autoscaling_cpu_target = 70
 
-grafana_tg_arn  = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/grafana-tg/0bc77d8e1be623b7"
-renderer_tg_arn = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/renderer-tg/45a2ff0a7870d7e9"
-redis_tg_arn    = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/redis-tg/223dad94fb9deca2"
+# Target Group ARNs
+grafana_tg_arn             = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/grafana-tg/0bc77d8e1be623b7"
+renderer_tg_arn            = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/renderer-tg/45a2ff0a7870d7e9"
+redis_tg_arn               = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/redis-tg/223dad94fb9deca2"
 
-grafana_listener_arn      = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener/app/ALB/d10dc6d0cabf2e47/bd5c948473e049b0"
-redis_tcp_listener_arn    = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener/net/nlb/964ca5505bf59dd0/033220415847f4f9"
+# Listener ARNs
+grafana_listener_arn       = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener/app/ALB/d10dc6d0cabf2e47/bd5c948473e049b0"
+redis_tcp_listener_arn     = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener/net/nlb/964ca5505bf59dd0/033220415847f4f9"
+
+# Listener Rule ARNs
+grafana_listener_rule_arn  = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener-rule/app/ALB/d10dc6d0cabf2e47/bd5c948473e049b0/your-grafana-rule-id" # <--- **UPDATE THIS**
+renderer_listener_rule_arn = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener-rule/app/ALB/d10dc6d0cabf2e47/bd5c948473e049b0/your-renderer-rule-id" # <--- **UPDATE THIS**
