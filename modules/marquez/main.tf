@@ -3,7 +3,7 @@ locals {
   marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}"
 }
 
-######################
+#####################
 # Load Balancers
 ######################
 data "aws_lb" "public_alb" {
