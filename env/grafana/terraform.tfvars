@@ -43,14 +43,14 @@ redis_autoscaling_max      = 5
 redis_autoscaling_cpu_target = 70
 
 # Target Group ARNs
-grafana_tg_arn             = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/grafana-tg/0bc77d8e1be623b7"
-renderer_tg_arn            = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/renderer-tg/45a2ff0a7870d7e9"
-redis_tg_arn               = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/redis-tg/223dad94fb9deca2"
+grafana_tg_arn             = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/grafana-tg/a6b27d45e949302b"
+renderer_tg_arn            = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/renderer-tg/c1c22a68f97c3663"
+redis_tg_arn               = "arn:aws:elasticloadbalancing:us-east-1:736747734611:targetgroup/redis-tg/3c0086fc906a7887"
 
 # Listener ARNs
 grafana_listener_arn       = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener/app/ALB/d10dc6d0cabf2e47/bd5c948473e049b0"
-redis_tcp_listener_arn     = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener/net/nlb/964ca5505bf59dd0/033220415847f4f9"
+redis_tcp_listener_arn     = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener/net/nlb/964ca5505bf59dd0/351654ccfeb40993"
 
 # Listener Rule ARNs
-grafana_listener_rule_arn  = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener-rule/app/ALB/d10dc6d0cabf2e47/bd5c948473e049b0/your-grafana-rule-id" # <--- **UPDATE THIS**
-renderer_listener_rule_arn = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener-rule/app/ALB/d10dc6d0cabf2e47/bd5c948473e049b0/your-renderer-rule-id" # <--- **UPDATE THIS**
+grafana_listener_rule_arn  = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener-rule/app/ALB/d10dc6d0cabf2e47/bd5c948473e049b0/aeab423dff4fbcfc" # <--- **UPDATE THIS**
+renderer_listener_rule_arn = "arn:aws:elasticloadbalancing:us-east-1:736747734611:listener-rule/app/ALB/d10dc6d0cabf2e47/bd5c948473e049b0/fbc84a37b16a827e" # <--- **UPDATE THIS**
