@@ -24,4 +24,10 @@ variable "marquez_api_image" {
   type        = string
 }
 
+variable "marquez_domain_name" {
+  description = "Hostname for Marquez Web (used in host-based routing)"
+  type        = string
+}
+
+
 

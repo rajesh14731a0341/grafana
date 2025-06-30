@@ -13,6 +13,7 @@ module "marquez" {
   nlb_name                           = var.nlb_name
   region = var.region
   marquez_api_image  = var.marquez_api_image
+  grafana_domain_name       = var.grafana_domain_name
 
 
   marquez_api_desired_count          = var.marquez_api_desired_count

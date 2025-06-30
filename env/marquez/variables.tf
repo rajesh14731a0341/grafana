@@ -23,4 +23,7 @@ variable "marquez_api_image" {
   description = "Custom Marquez API Docker image URI"
   type        = string
 }
-
+variable "marquez_domain_name" {
+  description = "Hostname for Marquez Web (used in host-based routing)"
+  type        = string
+}

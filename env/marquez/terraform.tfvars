@@ -22,3 +22,6 @@ marquez_web_autoscaling_cpu_target = 70
 
 # 👇 Add this line to point to your custom image in ECR
 marquez_api_image             = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:20250628-2111"
+
+# Only Grafana gets a dedicated hostname
+marquez_domain_name = "marquez.rajesh.com"
