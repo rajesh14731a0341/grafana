@@ -12,7 +12,7 @@ module "marquez" {
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
   region                             = var.region
-  marquez_api_image                  = var.marquez_api_image
+  #marquez_api_image                  = var.marquez_api_image
   marquez_domain_name               = var.marquez_domain_name  # ✅ Add this line
 
   marquez_api_desired_count          = var.marquez_api_desired_count
