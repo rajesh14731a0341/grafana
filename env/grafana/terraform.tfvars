@@ -25,20 +25,20 @@ nlb_name                   = "nlb"
 grafana_domain_name        = "grafana.rajesh.com"
 
 # Grafana Service Configuration
-grafana_desired_count      = 0
-grafana_autoscaling_min    = 0
+grafana_desired_count      = 1
+grafana_autoscaling_min    = 1
 grafana_autoscaling_max    = 5
 grafana_autoscaling_cpu_target = 70
 
 # Renderer Service Configuration (path-based routing only)
-renderer_desired_count     = 0
-renderer_autoscaling_min   = 0
+renderer_desired_count     = 1
+renderer_autoscaling_min   = 1
 renderer_autoscaling_max   = 5
 renderer_autoscaling_cpu_target = 70
 
 # Redis Service Configuration
-redis_desired_count        = 0
-redis_autoscaling_min      = 0
+redis_desired_count        = 1
+redis_autoscaling_min      = 1
 redis_autoscaling_max      = 5
 redis_autoscaling_cpu_target = 70
 
