@@ -24,3 +24,28 @@ variable "marquez_api_image" {
   type        = string
 }
 
+variable "marquez_postgres_port" {
+  type        = string
+  default     = "5432"
+  description = "Postgres DB port"
+}
+
+variable "marquez_postgres_user" {
+  type        = string
+  default     = "marquez"
+  description = "Postgres DB username"
+}
+
+variable "marquez_postgres_password" {
+  type        = string
+  default     = "marquez"
+  description = "Postgres DB password"
+  sensitive   = true
+}
+
+variable "marquez_postgres_db" {
+  type        = string
+  default     = "marquez"
+  description = "Postgres DB name"
+}
+

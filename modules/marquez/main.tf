@@ -160,10 +160,10 @@ resource "aws_ecs_task_definition" "api" {
     ]
     environment = [
       { name = "MARQUEZ_POSTGRES_HOST", value = data.aws_lb.internal_nlb.dns_name },
-      { name = "MARQUEZ_POSTGRES_PORT", value = "5432" },
-      { name = "MARQUEZ_POSTGRES_USER", value = "marquez" },
-      { name = "MARQUEZ_POSTGRES_PASSWORD", value = "marquez" },
-      { name = "MARQUEZ_POSTGRES_DB", value = "marquez" },
+      { name = "MARQUEZ_POSTGRES_PORT", value = var.marquez_postgres_port },
+      { name = "MARQUEZ_POSTGRES_USER", value = var.marquez_postgres_user },
+      { name = "MARQUEZ_POSTGRES_PASSWORD", value = var.marquez_postgres_password },
+      { name = "MARQUEZ_POSTGRES_DB", value = var.marquez_postgres_db },
       { name = "MARQUEZ_CONFIG", value = "/usr/src/app/marquez.dev.yml" }
     ]
     logConfiguration = {
@@ -221,9 +221,9 @@ resource "aws_ecs_task_definition" "db" {
     image       = "postgres:14"
     portMappings = [{ containerPort = 5432 }]
     environment = [
-      { name = "POSTGRES_USER", value = "marquez" },
-      { name = "POSTGRES_PASSWORD", value = "marquez" },
-      { name = "POSTGRES_DB", value = "marquez" }
+      { name = "POSTGRES_USER", value = var.marquez_postgres_user },
+      { name = "POSTGRES_PASSWORD", value = var.marquez_postgres_password },
+      { name = "POSTGRES_DB", value = var.marquez_postgres_db }
     ]
     logConfiguration = {
       logDriver = "awslogs"

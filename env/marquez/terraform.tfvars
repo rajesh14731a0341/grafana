@@ -22,3 +22,9 @@ marquez_web_autoscaling_cpu_target = 70
 
 # 👇 Add this line to point to your custom image in ECR
 marquez_api_image             = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:latest_3"
+
+marquez_postgres_port     = "5432"
+marquez_postgres_user     = "marquez"
+marquez_postgres_password = "marquez"
+marquez_postgres_db       = "marquez"
+
