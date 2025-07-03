@@ -28,13 +28,13 @@ migrateOnStartup: true
 graphql:
   enabled: true
 
-search:
-  enabled: ${SEARCH_ENABLED:-true}
-  scheme: http
-  host: ${SEARCH_HOST:-opensearch}
-  port: ${SEARCH_PORT:-9200}
-  username: ${SEARCH_USERNAME:-admin}
-  password: ${SEARCH_PASSWORD:-admin}
+# search:
+#   enabled: ${SEARCH_ENABLED:-true}
+#   scheme: http
+#   host: ${SEARCH_HOST:-opensearch}
+#   port: ${SEARCH_PORT:-9200}
+#   username: ${SEARCH_USERNAME:-admin}
+#   password: ${SEARCH_PASSWORD:-admin}
 
 tags:
   - name: PII
