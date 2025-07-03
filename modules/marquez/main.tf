@@ -164,7 +164,13 @@ resource "aws_ecs_task_definition" "api" {
       { name = "POSTGRES_PORT", value = "5432" },
       { name = "POSTGRES_USER", value = "marquez" },
       { name = "POSTGRES_PASSWORD", value = "marquez" },
+<<<<<<< HEAD
       { name = "POSTGRES_DB", value = "marquez" }
+=======
+      { name = "POSTGRES_DB", value = "marquez" },
+      { name = "MARQUEZ_CONFIG", value = "/usr/src/app/marquez.dev.yml" },
+      { name = "LOG_LEVEL", value = "INFO" }
+>>>>>>> 7166a15 (Add host-based routing for maruze)
     ]
     logConfiguration = {
       logDriver = "awslogs"
