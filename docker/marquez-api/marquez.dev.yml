@@ -16,9 +16,10 @@ logging:
 
 db:
   driverClass: org.postgresql.Driver
-  url: jdbc:postgresql://${POSTGRES_HOST:-localhost}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-marquez}
-  user: ${POSTGRES_USER:-marquez}
-  password: ${POSTGRES_PASSWORD:-marquez}
+  url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+  user: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  # Optional pool tuning (can be omitted or adjusted):
   maxSize: 10
   minSize: 2
   validationQuery: "SELECT 1"
