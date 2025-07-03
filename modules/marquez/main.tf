@@ -160,11 +160,11 @@ resource "aws_ecs_task_definition" "api" {
       { containerPort = 5001 }
     ]
     environment = [
-      { name = "POSTGRES_HOST",     value = data.aws_lb.internal_nlb.dns_name },
-      { name = "POSTGRES_PORT",     value = "5432" },
-      { name = "POSTGRES_USER",     value = "marquez" },
-      { name = "POSTGRES_PASSWORD", value = "marquez" },
-      { name = "POSTGRES_DB",       value = "marquez" },
+      { name = "MARQUEZ_POSTGRES_HOST",     value = data.aws_lb.internal_nlb.dns_name },
+      { name = "MARQUEZ_POSTGRES_PORT",     value = "5432" },
+      { name = "MARQUEZ_POSTGRES_USER",     value = "marquez" },
+      { name = "MARQUEZ_POSTGRES_PASSWORD", value = "marquez" },
+      { name = "MARQUEZ_POSTGRES_DB",       value = "marquez" },
       { name = "MARQUEZ_CONFIG",    value = "/usr/src/app/marquez.dev.yml" },
       { name = "LOG_LEVEL",         value = "INFO" }
     ]
