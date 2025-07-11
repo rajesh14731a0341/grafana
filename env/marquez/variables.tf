@@ -87,3 +87,15 @@ variable "alb_listener_arn" {
   description = "ARN of the ALB listener to use for path-based routing"
   type        = string
 }
+
+variable "clickhouse_desired_count" {
+  description = "ClickHouse desired count"
+  type        = number
+  default     = 1
+}
+
+variable "nginx_desired_count" {
+  description = "Nginx desired count"
+  type        = number
+  default     = 1
+}

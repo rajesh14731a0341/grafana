@@ -1,3 +1,14 @@
+data "aws_lb" "public_alb" {
+  name = var.alb_name
+}
+
+data "aws_lb_listener" "public_http" {
+  load_balancer_arn = data.aws_lb.public_alb.arn
+  port              = 80
+}
+
+
+
 module "marquez_stack" {
   source = "../../modules/marquez"
 
