@@ -53,10 +53,7 @@ variable "task_role_arn" {
   type        = string
 }
 
-variable "alb_listener_arn" {
-  description = "ARN of the ALB listener to attach nginx path-based rule"
-  type        = string
-}
+
 
 variable "alb_name" {
   description = "Name of the Application Load Balancer"

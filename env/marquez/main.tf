@@ -1,13 +1,3 @@
-data "aws_lb" "public_alb" {
-  name = var.alb_name
-}
-
-data "aws_lb_listener" "public_http" {
-  load_balancer_arn = data.aws_lb.public_alb.arn
-  port              = 80
-}
-
-
 
 module "marquez_stack" {
   source = "../../modules/marquez"
@@ -23,8 +13,6 @@ module "marquez_stack" {
   region                             = var.region
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
-  alb_listener_arn = data.aws_lb_listener.public_http.arn
-
   marquez_api_image                  = var.marquez_api_image
   marquez_postgres_port              = var.marquez_postgres_port
   marquez_postgres_user              = var.marquez_postgres_user
@@ -58,8 +46,6 @@ module "vector_stack" {
   execution_role_arn                 = var.execution_role_arn
   task_role_arn                      = var.task_role_arn
   region                             = var.region
-
-  alb_listener_arn                   = data.aws_lb_listener.public_http.arn
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
 
@@ -77,6 +63,3 @@ module "vector_stack" {
 }
 
 
-output "debug_alb_listener_arn" {
-  value = data.aws_lb_listener.public_http.arn
-}

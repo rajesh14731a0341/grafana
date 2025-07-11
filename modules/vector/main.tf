@@ -26,7 +26,10 @@ data "aws_lb" "public_alb" {
 data "aws_lb" "internal_nlb" {
   name = var.nlb_name
 }
-
+data "aws_lb_listener" "public_http" {
+  load_balancer_arn = data.aws_lb.public_alb.arn
+  port              = 80
+}
 
 ######################
 # Target Groups
@@ -69,11 +72,6 @@ resource "aws_lb_target_group" "nginx_vector_tg" {
 ######################
 # Listeners
 ######################
-data "aws_lb_listener" "public_http" {
-  load_balancer_arn = data.aws_lb.public_alb.arn
-  port              = 80
-}
-
 resource "aws_lb_listener" "clickhouse_tcp_8123" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
   port              = 8123
@@ -86,7 +84,7 @@ resource "aws_lb_listener" "clickhouse_tcp_8123" {
 }
 
 resource "aws_lb_listener_rule" "nginx_vector_path_rule" {
-  listener_arn = var.alb_listener_arn
+  listener_arn = data.aws_lb_listener.public_http.arn
   priority     = 60
 
   action {
