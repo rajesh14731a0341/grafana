@@ -7,36 +7,36 @@ sources:
     response_code: 201
     path: /api/v1/lineage
     strict_path: true
- 
+
 transforms:
   remap_json_fields:
     inputs:
-    - ol_input_events
+      - ol_input_events
     type: remap
     drop_on_error: false
     source: |
-          .event = .
-          .event_time = to_unix_timestamp(parse_timestamp!(.eventTime, format: "%+"))
-          .event_type = .eventType
-          .run_uuid = .run.runId
-          .job_name = .job.name
-          .job_namespace = .job.namespace
-          del(.job)
-          del(.eventType)
-          del(.eventTime)
-          del(.run)
-          del(.outputs)
-          del(.schemaURL)
- 
+      .event = .
+      .event_time = to_unix_timestamp(parse_timestamp!(.eventTime, format: "%+"))
+      .event_type = .eventType
+      .run_uuid = .run.runId
+      .job_name = .job.name
+      .job_namespace = .job.namespace
+      del(.job)
+      del(.eventType)
+      del(.eventTime)
+      del(.run)
+      del(.outputs)
+      del(.schemaURL)
+
 sinks:
   clickhouse_db:
     type: clickhouse
     inputs:
       - remap_json_fields
     database: default
-    endpoint: clickhouse://clickhouse:8123
+    endpoint: clickhouse://clickhouse-prv-ip:8123
     table: lineage_events
- 
+
   debug_file:
     type: file
     inputs:
@@ -44,7 +44,7 @@ sinks:
     encoding:
       codec: json
     path: /etc/vector/foo
- 
+
   marquez_db:
     type: http
     inputs:
@@ -60,4 +60,4 @@ sinks:
       retry_attempts: 3
       headers:
         Content-Type: application/json
-    uri: http://marquez-api:5000/api/v1/lineage
+    uri: http://marquez-api-prv-ip:5000/api/v1/lineage

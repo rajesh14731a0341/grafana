@@ -1,0 +1,22 @@
+events {}
+
+http {
+  server {
+    listen 80;
+
+    # Health check endpoint for ALB
+    location /healthz {
+      return 200 'OK';
+      add_header Content-Type text/plain;
+    }
+
+    location /ol-vector/ {
+      proxy_pass http://${VECTOR_HOST}:${VECTOR_PORT}/;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+
+      # Optional: Strip /ol-vector prefix if backend doesn't expect it
+      rewrite ^/ol-vector/?(.*)$ /$1 break;
+    }
+  }
+}
