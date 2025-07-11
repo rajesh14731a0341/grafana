@@ -384,9 +384,10 @@ resource "aws_appautoscaling_policy" "web_cpu_prv_ip" {
 resource "aws_s3_object" "vector_config" {
   bucket = var.vector_config_bucket
   key    = "vector.yaml"
-  source = "${path.module}/../../docker/vector.yaml"
-  etag   = filemd5("${path.module}/../../docker/vector.yaml")
+  source = "${path.root}/docker/vector/vector.yaml"
+  etag   = filemd5("${path.root}/docker/vector/vector.yaml")
 }
+
 
 resource "aws_cloudwatch_log_group" "vector_logs" {
   name              = "/ecs/vector-prv-ip"
