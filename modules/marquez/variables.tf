@@ -81,3 +81,7 @@ variable "vector_config_bucket" {
   type        = string
   description = "S3 bucket to store vector.yaml config"
 }
+variable "nginx_config_bucket" {
+  description = "The name of the S3 bucket that contains the nginx.template file"
+  type        = string
+}

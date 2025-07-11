@@ -1,0 +1,380 @@
+
+
+resource "aws_s3_object" "vector_config" {
+  bucket = var.vector_config_bucket
+  key    = "vector.yaml"
+  source = "${path.root}/../../docker/vector/vector.yaml"
+  etag   = filemd5("${path.root}/../../docker/vector/vector.yaml")
+}
+
+
+
+resource "aws_cloudwatch_log_group" "vector_logs" {
+  name              = "/ecs/vector-prv-ip"
+  retention_in_days = 7
+}
+
+resource "aws_ecs_task_definition" "vector" {
+  family                   = "vector-prv-ip"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name      = "vector"
+    image     = "timberio/vector:0.39.0-alpine"
+    essential = true
+    portMappings = [
+      { containerPort = 8686 }
+    ]
+    environment = [
+      {
+        name  = "AWS_REGION"
+        value = var.region
+      }
+    ]
+    command = [
+      "sh",
+      "-c",
+      "aws s3 cp s3://${var.vector_config_bucket}/vector.yaml /etc/vector/vector.yaml && vector"
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.vector_logs.name
+        awslogs-region        = var.region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+}
+
+resource "aws_ecs_service" "vector" {
+  name                   = "vector-prv-ip"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.vector.arn
+  desired_count          = var.vector_desired_count
+  launch_type            = "FARGATE"
+  enable_execute_command = true
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = false
+  }
+
+  depends_on = [
+    aws_ecs_task_definition.vector,
+    aws_cloudwatch_log_group.vector_logs,
+    aws_s3_object.vector_config
+  ]
+
+  health_check_grace_period_seconds = 60
+}
+
+resource "aws_appautoscaling_target" "vector" {
+  max_capacity       = 2
+  min_capacity       = 1
+  resource_id        = "service/${var.ecs_cluster_name}/vector-prv-ip"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "vector_cpu" {
+  name               = "vector-cpu-autoscaling"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.vector.resource_id
+  scalable_dimension = aws_appautoscaling_target.vector.scalable_dimension
+  policy_type        = "TargetTrackingScaling"
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 50.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
+  }
+}
+
+
+######################
+# CloudWatch Log Group
+######################
+resource "aws_cloudwatch_log_group" "clickhouse_logs" {
+  name              = "/ecs/clickhouse-prv-ip"
+  retention_in_days = 7
+}
+
+######################
+# Target Group (8123 Only)
+######################
+resource "aws_lb_target_group" "clickhouse_tg_prv_ip" {
+  name        = "clickhouse-prv-ip-tg"
+  port        = 8123
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    protocol            = "TCP"
+    port                = "8123"
+    interval            = 30
+    timeout             = 10
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+  }
+}
+
+######################
+# Listener (8123 Only)
+######################
+resource "aws_lb_listener" "clickhouse_tcp_8123" {
+  load_balancer_arn = data.aws_lb.internal_nlb.arn
+  port              = 8123
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
+  }
+}
+
+######################
+# Task Definition
+######################
+resource "aws_ecs_task_definition" "clickhouse" {
+  family                   = "clickhouse-prv-ip"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "1024"
+  memory                   = "2048"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name        = "clickhouse"
+    image       = "clickhouse/clickhouse-server:23.4"
+    portMappings = [
+      { containerPort = 8123 }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.clickhouse_logs.name
+        awslogs-region        = var.region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+}
+
+######################
+# ECS Service
+######################
+resource "aws_ecs_service" "clickhouse" {
+  name                   = "clickhouse-prv-ip"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.clickhouse.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
+  enable_execute_command = true
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
+    container_name   = "clickhouse"
+    container_port   = 8123
+  }
+
+  depends_on = [
+    aws_lb_listener.clickhouse_tcp_8123,
+    aws_cloudwatch_log_group.clickhouse_logs
+  ]
+
+  health_check_grace_period_seconds = 60
+}
+
+#########################
+# Upload nginx.conf to S3
+#########################
+resource "aws_s3_object" "nginx_template" {
+  bucket = var.nginx_config_bucket
+  key    = "nginx.template"
+  source = "${path.root}/../../docker/nginx/nginx.template"
+  etag   = filemd5("${path.root}/../../docker/nginx/nginx.template")
+}
+
+
+#########################
+# CloudWatch Log Group
+#########################
+resource "aws_cloudwatch_log_group" "nginx_logs" {
+  name              = "/ecs/nginx-vector-prv-ip"
+  retention_in_days = 7
+}
+
+#########################
+# Task Definition
+#########################
+resource "aws_ecs_task_definition" "nginx" {
+  family                   = "nginx-vector-prv-ip"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name        = "nginx"
+    image       = "nginx:alpine"
+    essential   = true
+    portMappings = [
+      { containerPort = 80 }
+    ]
+    command = [
+      "sh",
+      "-c",
+      join("\n", [
+        "apk add --no-cache envsubst",
+        "aws s3 cp s3://${var.nginx_config_bucket}/nginx.template /etc/nginx/nginx.template",
+        "envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf",
+        "nginx -g 'daemon off;'"
+      ])
+    ]
+    environment = [
+      {
+        name  = "AWS_REGION"
+        value = var.region
+      },
+      {
+        name  = "VECTOR_HOST"
+        value = "vector-prv-ip"
+      },
+      {
+        name  = "VECTOR_PORT"
+        value = "8686"
+      }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.nginx_logs.name
+        awslogs-region        = var.region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+}
+
+
+#########################
+# Target Group (NGINX)
+#########################
+resource "aws_lb_target_group" "nginx_vector_tg" {
+  name        = "nginx-vector-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    path                = "/healthz"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    matcher             = "200"
+  }
+}
+
+
+#########################
+# Listener Rule for /ol/vec
+#########################
+resource "aws_lb_listener_rule" "nginx_vector_path_rule" {
+  listener_arn = var.alb_listener_arn
+  priority     = 60
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.nginx_vector_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/ol-vector*", "/healthz"]
+    }
+  }
+}
+
+
+#########################
+# ECS Service
+#########################
+resource "aws_ecs_service" "nginx" {
+  name                   = "nginx-vector-prv-ip"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.nginx.arn
+  desired_count          = var.nginx_desired_count
+  launch_type            = "FARGATE"
+  enable_execute_command = true
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.nginx_vector_tg.arn
+    container_name   = "nginx"
+    container_port   = 80
+  }
+
+  depends_on = [
+    aws_lb_listener_rule.nginx_vector_path_rule,
+    aws_cloudwatch_log_group.nginx_logs,
+    aws_s3_object.nginx_template
+  ]
+
+  health_check_grace_period_seconds = 60
+}
+
+#########################
+# Auto Scaling (Optional)
+#########################
+resource "aws_appautoscaling_target" "nginx" {
+  max_capacity       = 2
+  min_capacity       = 1
+  resource_id        = "service/${var.ecs_cluster_name}/nginx-vector-prv-ip"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "nginx_cpu" {
+  name               = "nginx-cpu-autoscaling"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.nginx.resource_id
+  scalable_dimension = aws_appautoscaling_target.nginx.scalable_dimension
+  policy_type        = "TargetTrackingScaling"
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 50.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
+  }
+}

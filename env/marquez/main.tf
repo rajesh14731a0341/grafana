@@ -1,4 +1,4 @@
-module "marquez" {
+module "marquez_stack" {
   source = "../../modules/marquez"
 
   ecs_cluster_id                     = var.ecs_cluster_id
@@ -9,9 +9,10 @@ module "marquez" {
   security_group_id                  = var.security_group_id
   execution_role_arn                 = var.execution_role_arn
   task_role_arn                      = var.task_role_arn
+  region                             = var.region
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
-  region                             = var.region
+  alb_listener_arn                   = var.alb_listener_arn
 
   marquez_api_image                  = var.marquez_api_image
   marquez_postgres_port              = var.marquez_postgres_port
@@ -28,13 +29,31 @@ module "marquez" {
   marquez_web_autoscaling_min        = var.marquez_web_autoscaling_min
   marquez_web_autoscaling_max        = var.marquez_web_autoscaling_max
   marquez_web_autoscaling_cpu_target = var.marquez_web_autoscaling_cpu_target
+}
 
-  # ✅ Missing arguments added below
-  config_s3_bucket_name              = var.config_s3_bucket_name
-  vector_config_bucket               = var.vector_config_bucket
+module "vector_stack" {
+  source = "../../modules/vector"
 
-  vector_desired_count               = var.vector_desired_count
-  vector_autoscaling_min             = var.vector_autoscaling_min
-  vector_autoscaling_max             = var.vector_autoscaling_max
-  vector_autoscaling_cpu_target      = var.vector_autoscaling_cpu_target
+  ecs_cluster_id                = var.ecs_cluster_id
+  ecs_cluster_name              = var.ecs_cluster_name
+  vpc_id                        = var.vpc_id
+  private_subnet_ids            = var.private_subnet_ids
+  security_group_id             = var.security_group_id
+  execution_role_arn            = var.execution_role_arn
+  task_role_arn                 = var.task_role_arn
+  region                        = var.region
+
+  alb_listener_arn              = var.alb_listener_arn
+  nlb_name                      = var.nlb_name
+
+  vector_desired_count          = var.vector_desired_count
+  vector_autoscaling_min        = var.vector_autoscaling_min
+  vector_autoscaling_max        = var.vector_autoscaling_max
+  vector_autoscaling_cpu_target = var.vector_autoscaling_cpu_target
+  vector_config_bucket          = var.vector_config_bucket
+
+  clickhouse_desired_count      = var.clickhouse_desired_count
+
+  nginx_desired_count           = var.nginx_desired_count
+  nginx_config_bucket           = var.nginx_config_bucket
 }
