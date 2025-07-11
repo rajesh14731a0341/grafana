@@ -75,3 +75,8 @@ module "vector_stack" {
   clickhouse_desired_count           = var.clickhouse_desired_count
   nginx_desired_count                = var.nginx_desired_count
 }
+
+
+output "debug_alb_listener_arn" {
+  value = data.aws_lb_listener.public_http.arn
+}
