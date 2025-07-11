@@ -29,33 +29,38 @@ module "marquez_stack" {
   marquez_web_autoscaling_min        = var.marquez_web_autoscaling_min
   marquez_web_autoscaling_max        = var.marquez_web_autoscaling_max
   marquez_web_autoscaling_cpu_target = var.marquez_web_autoscaling_cpu_target
+
+  # Required for Marquez module due to shared S3 config handling
+  vector_config_bucket               = var.vector_config_bucket
+  nginx_config_bucket                = var.nginx_config_bucket
+  config_s3_bucket_name              = var.config_s3_bucket_name
 }
 
 module "vector_stack" {
   source = "../../modules/vector"
 
-  ecs_cluster_id                = var.ecs_cluster_id
-  ecs_cluster_name              = var.ecs_cluster_name
-  vpc_id                        = var.vpc_id
-  private_subnet_ids            = var.private_subnet_ids
-  security_group_id             = var.security_group_id
-  execution_role_arn            = var.execution_role_arn
-  task_role_arn                 = var.task_role_arn
-  region                        = var.region
+  ecs_cluster_id                     = var.ecs_cluster_id
+  ecs_cluster_name                   = var.ecs_cluster_name
+  vpc_id                             = var.vpc_id
+  private_subnet_ids                 = var.private_subnet_ids
+  security_group_id                  = var.security_group_id
+  execution_role_arn                 = var.execution_role_arn
+  task_role_arn                      = var.task_role_arn
+  region                             = var.region
 
-  alb_listener_arn              = data.aws_lb_listener.public_http.arn
-  alb_name                      = var.alb_name
-  nlb_name                      = var.nlb_name
+  alb_listener_arn                   = data.aws_lb_listener.public_http.arn
+  alb_name                           = var.alb_name
+  nlb_name                           = var.nlb_name
 
-  vector_desired_count          = var.vector_desired_count
-  vector_autoscaling_min        = var.vector_autoscaling_min
-  vector_autoscaling_max        = var.vector_autoscaling_max
-  vector_autoscaling_cpu_target = var.vector_autoscaling_cpu_target
-  vector_config_bucket          = var.vector_config_bucket
+  vector_desired_count               = var.vector_desired_count
+  vector_autoscaling_min             = var.vector_autoscaling_min
+  vector_autoscaling_max             = var.vector_autoscaling_max
+  vector_autoscaling_cpu_target      = var.vector_autoscaling_cpu_target
+  vector_config_bucket               = var.vector_config_bucket
 
-  nginx_config_bucket           = var.nginx_config_bucket
-  config_s3_bucket_name         = var.config_s3_bucket_name
+  nginx_config_bucket                = var.nginx_config_bucket
+  config_s3_bucket_name              = var.config_s3_bucket_name
 
-  clickhouse_desired_count      = var.clickhouse_desired_count
-  nginx_desired_count           = var.nginx_desired_count
+  clickhouse_desired_count           = var.clickhouse_desired_count
+  nginx_desired_count                = var.nginx_desired_count
 }
