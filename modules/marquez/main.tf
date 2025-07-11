@@ -480,3 +480,106 @@ resource "aws_appautoscaling_policy" "vector_cpu" {
     scale_out_cooldown = 300
   }
 }
+
+
+######################
+# CloudWatch Log Group
+######################
+resource "aws_cloudwatch_log_group" "clickhouse_logs" {
+  name              = "/ecs/clickhouse-prv-ip"
+  retention_in_days = 7
+}
+
+######################
+# Target Group (8123 Only)
+######################
+resource "aws_lb_target_group" "clickhouse_tg_prv_ip" {
+  name        = "clickhouse-prv-ip-tg"
+  port        = 8123
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    protocol            = "TCP"
+    port                = "8123"
+    interval            = 30
+    timeout             = 10
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+  }
+}
+
+######################
+# Listener (8123 Only)
+######################
+resource "aws_lb_listener" "clickhouse_tcp_8123" {
+  load_balancer_arn = data.aws_lb.internal_nlb.arn
+  port              = 8123
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
+  }
+}
+
+######################
+# Task Definition
+######################
+resource "aws_ecs_task_definition" "clickhouse" {
+  family                   = "clickhouse-prv-ip"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "1024"
+  memory                   = "2048"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name        = "clickhouse"
+    image       = "clickhouse/clickhouse-server:23.4"
+    portMappings = [
+      { containerPort = 8123 }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.clickhouse_logs.name
+        awslogs-region        = var.region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+}
+
+######################
+# ECS Service
+######################
+resource "aws_ecs_service" "clickhouse" {
+  name                   = "clickhouse-prv-ip"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.clickhouse.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
+  enable_execute_command = true
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
+    container_name   = "clickhouse"
+    container_port   = 8123
+  }
+
+  depends_on = [
+    aws_lb_listener.clickhouse_tcp_8123,
+    aws_cloudwatch_log_group.clickhouse_logs
+  ]
+
+  health_check_grace_period_seconds = 60
+}
