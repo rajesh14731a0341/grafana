@@ -217,12 +217,11 @@ resource "aws_ecs_task_definition" "nginx" {
         }
       ]
       entryPoint = ["sh", "-c"]
-      command = [
-        "sh", "-c", <<-EOT
-          aws s3 cp s3://${NGINX_CONFIG_BUCKET_VAR}/nginx.template /etc/nginx/nginx.template && \
-          envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && \
-          nginx -g 'daemon off;'
-        EOT
+      command = [<<EOF
+aws s3 cp s3://$NGINX_CONFIG_BUCKET_VAR/nginx.template /etc/nginx/nginx.template && \
+envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && \
+nginx -g 'daemon off;'
+EOF
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -235,6 +234,7 @@ resource "aws_ecs_task_definition" "nginx" {
     }
   ])
 }
+
 
 
 
