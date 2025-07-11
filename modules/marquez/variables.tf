@@ -79,3 +79,24 @@ variable "vector_config_bucket" {
   description = "S3 bucket to store vector.yaml config"
 }
 
+variable "vector_desired_count" {
+  type    = number
+  default = 1
+}
+
+variable "vector_autoscaling_min" {
+  type    = number
+  default = 1
+}
+
+variable "vector_autoscaling_max" {
+  type    = number
+  default = 2
+}
+
+variable "vector_autoscaling_cpu_target" {
+  type    = number
+  default = 50
+}
+
+

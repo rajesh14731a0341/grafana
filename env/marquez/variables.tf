@@ -49,10 +49,6 @@ variable "marquez_postgres_db" {
   description = "Postgres DB name"
 }
 
-variable "config_s3_bucket_name" {
-  description = "S3 bucket to store config files"
-  type        = string
-}
 
 variable "vector_desired_count" {
   type    = number

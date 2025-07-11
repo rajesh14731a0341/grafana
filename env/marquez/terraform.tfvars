@@ -28,7 +28,7 @@ marquez_postgres_user     = "marquez"
 marquez_postgres_password = "marquez"
 marquez_postgres_db       = "marquez"
 
-config_s3_bucket_name = "my-bucket-name"
+config_s3_bucket_name = "redshift-data-migration-bucket"
 
 vector_desired_count           = 1
 vector_autoscaling_min         = 1
