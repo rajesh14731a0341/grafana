@@ -48,18 +48,18 @@ module "vector_stack" {
   region                             = var.region
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
-
   vector_desired_count               = var.vector_desired_count
   vector_autoscaling_min             = var.vector_autoscaling_min
   vector_autoscaling_max             = var.vector_autoscaling_max
   vector_autoscaling_cpu_target      = var.vector_autoscaling_cpu_target
   vector_config_bucket               = var.vector_config_bucket
-
   nginx_config_bucket                = var.nginx_config_bucket
   config_s3_bucket_name              = var.config_s3_bucket_name
-
   clickhouse_desired_count           = var.clickhouse_desired_count
   nginx_desired_count                = var.nginx_desired_count
+  nginx_autoscaling_min             = var.nginx_autoscaling_min
+  nginx_autoscaling_max             = var.nginx_autoscaling_max
+  nginx_autoscaling_cpu_target      = var.nginx_autoscaling_cpu_target
 }
 
 
