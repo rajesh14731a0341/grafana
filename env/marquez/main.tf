@@ -43,9 +43,9 @@ module "vector_stack" {
   task_role_arn                 = var.task_role_arn
   region                        = var.region
 
-  alb_listener_arn = data.aws_lb_listener.public_http.arn
-  alb_name                           = var.alb_name
-  nlb_name                           = var.nlb_name
+  alb_listener_arn              = data.aws_lb_listener.public_http.arn
+  alb_name                      = var.alb_name
+  nlb_name                      = var.nlb_name
 
   vector_desired_count          = var.vector_desired_count
   vector_autoscaling_min        = var.vector_autoscaling_min
@@ -53,8 +53,9 @@ module "vector_stack" {
   vector_autoscaling_cpu_target = var.vector_autoscaling_cpu_target
   vector_config_bucket          = var.vector_config_bucket
 
-  clickhouse_desired_count      = var.clickhouse_desired_count
-
-  nginx_desired_count           = var.nginx_desired_count
   nginx_config_bucket           = var.nginx_config_bucket
+  config_s3_bucket_name         = var.config_s3_bucket_name
+
+  clickhouse_desired_count      = var.clickhouse_desired_count
+  nginx_desired_count           = var.nginx_desired_count
 }
