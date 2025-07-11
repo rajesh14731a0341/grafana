@@ -82,3 +82,8 @@ variable "nginx_config_bucket" {
   description = "The name of the S3 bucket that contains the nginx.template file"
   type        = string
 }
+
+variable "alb_listener_arn" {
+  description = "ARN of the ALB listener to use for path-based routing"
+  type        = string
+}

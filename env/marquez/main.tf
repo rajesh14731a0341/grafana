@@ -12,7 +12,7 @@ module "marquez_stack" {
   region                             = var.region
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
-  alb_listener_arn                   = var.alb_listener_arn
+  alb_listener_arn = data.aws_lb_listener.public_http.arn
 
   marquez_api_image                  = var.marquez_api_image
   marquez_postgres_port              = var.marquez_postgres_port
