@@ -9,6 +9,8 @@ variable "task_role_arn" {}
 variable "alb_name" {}
 variable "nlb_name" {}
 
+variable "region" {}
+
 variable "marquez_api_desired_count" {}
 variable "marquez_api_autoscaling_min" {}
 variable "marquez_api_autoscaling_max" {}
@@ -18,7 +20,7 @@ variable "marquez_web_desired_count" {}
 variable "marquez_web_autoscaling_min" {}
 variable "marquez_web_autoscaling_max" {}
 variable "marquez_web_autoscaling_cpu_target" {}
-variable "region" {}
+
 variable "marquez_api_image" {
   description = "Custom Marquez API Docker image URI"
   type        = string
@@ -54,31 +56,7 @@ variable "config_s3_bucket_name" {
   type        = string
 }
 
-variable "vector_desired_count" {
-  type    = number
-  default = 1
-}
-
-variable "vector_min_capacity" {
-  type    = number
-  default = 1
-}
-
-variable "vector_max_capacity" {
-  type    = number
-  default = 2
-}
-
-variable "vector_autoscaling_cpu_target" {
-  type    = number
-  default = 50.0
-}
-
-variable "vector_config_bucket" {
-  type        = string
-  description = "S3 bucket to store vector.yaml config"
-}
-
+# 🟩 Vector service variables
 variable "vector_desired_count" {
   type    = number
   default = 1
@@ -99,4 +77,7 @@ variable "vector_autoscaling_cpu_target" {
   default = 50
 }
 
-
+variable "vector_config_bucket" {
+  type        = string
+  description = "S3 bucket to store vector.yaml config"
+}
