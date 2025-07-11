@@ -43,7 +43,7 @@ module "vector_stack" {
   task_role_arn                 = var.task_role_arn
   region                        = var.region
 
-  alb_listener_arn              = var.alb_listener_arn
+  alb_listener_arn = data.aws_lb_listener.public_http.arn
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
 
