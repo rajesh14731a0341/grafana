@@ -60,6 +60,7 @@ module "vector_stack" {
   nginx_autoscaling_min             = var.nginx_autoscaling_min
   nginx_autoscaling_max             = var.nginx_autoscaling_max
   nginx_autoscaling_cpu_target      = var.nginx_autoscaling_cpu_target
+  nginx_image                       = var.nginx_image
 }
 
 
