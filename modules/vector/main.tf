@@ -142,8 +142,6 @@ resource "aws_ecs_task_definition" "vector" {
       }
     ]
     command = [
-      "sh",
-      "-c",
       "aws s3 cp s3://${var.vector_config_bucket}/vector.yaml /etc/vector/vector.yaml && vector"
     ]
     logConfiguration = {
