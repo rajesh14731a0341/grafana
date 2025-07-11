@@ -28,3 +28,9 @@ marquez_postgres_user     = "marquez"
 marquez_postgres_password = "marquez"
 marquez_postgres_db       = "marquez"
 
+config_s3_bucket_name = "my-bucket-name"
+
+vector_desired_count           = 1
+vector_autoscaling_min         = 1
+vector_autoscaling_max         = 2
+vector_autoscaling_cpu_target  = 50

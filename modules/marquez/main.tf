@@ -377,3 +377,104 @@ resource "aws_appautoscaling_policy" "web_cpu_prv_ip" {
     scale_out_cooldown = 60
   }
 }
+
+
+#################################################################
+
+resource "aws_s3_object" "vector_config" {
+  bucket = var.vector_config_bucket
+  key    = "vector.yaml"
+  source = "${path.module}/../../docker/vector.yaml"
+  etag   = filemd5("${path.module}/../../docker/vector.yaml")
+}
+
+resource "aws_cloudwatch_log_group" "vector_logs" {
+  name              = "/ecs/vector-prv-ip"
+  retention_in_days = 7
+}
+
+resource "aws_ecs_task_definition" "vector" {
+  family                   = "vector-prv-ip"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "1024"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name      = "vector"
+    image     = "timberio/vector:0.39.0-alpine"
+    essential = true
+    portMappings = [
+      { containerPort = 8686 }
+    ]
+    environment = [
+      {
+        name  = "AWS_REGION"
+        value = var.region
+      }
+    ]
+    command = [
+      "sh",
+      "-c",
+      "aws s3 cp s3://${var.vector_config_bucket}/vector.yaml /etc/vector/vector.yaml && vector"
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.vector_logs.name
+        awslogs-region        = var.region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
+  }])
+}
+
+resource "aws_ecs_service" "vector" {
+  name                   = "vector-prv-ip"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.vector.arn
+  desired_count          = var.vector_desired_count
+  launch_type            = "FARGATE"
+  enable_execute_command = true
+
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = false
+  }
+
+  depends_on = [
+    aws_ecs_task_definition.vector,
+    aws_cloudwatch_log_group.vector_logs,
+    aws_s3_object.vector_config
+  ]
+
+  health_check_grace_period_seconds = 60
+}
+
+resource "aws_appautoscaling_target" "vector" {
+  max_capacity       = 2
+  min_capacity       = 1
+  resource_id        = "service/${var.ecs_cluster_name}/vector-prv-ip"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "vector_cpu" {
+  name               = "vector-cpu-autoscaling"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.vector.resource_id
+  scalable_dimension = aws_appautoscaling_target.vector.scalable_dimension
+  policy_type        = "TargetTrackingScaling"
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 50.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
+  }
+}

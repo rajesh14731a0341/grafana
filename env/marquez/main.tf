@@ -17,14 +17,10 @@ module "marquez" {
   marquez_postgres_user              = var.marquez_postgres_user
   marquez_postgres_password          = var.marquez_postgres_password
   marquez_postgres_db                = var.marquez_postgres_db
-
-
-
   marquez_api_desired_count          = var.marquez_api_desired_count
   marquez_api_autoscaling_min        = var.marquez_api_autoscaling_min
   marquez_api_autoscaling_max        = var.marquez_api_autoscaling_max
   marquez_api_autoscaling_cpu_target = var.marquez_api_autoscaling_cpu_target
-
   marquez_web_desired_count          = var.marquez_web_desired_count
   marquez_web_autoscaling_min        = var.marquez_web_autoscaling_min
   marquez_web_autoscaling_max        = var.marquez_web_autoscaling_max
