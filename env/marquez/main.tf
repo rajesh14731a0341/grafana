@@ -44,7 +44,8 @@ module "vector_stack" {
   region                        = var.region
 
   alb_listener_arn              = var.alb_listener_arn
-  nlb_name                      = var.nlb_name
+  alb_name                           = var.alb_name
+  nlb_name                           = var.nlb_name
 
   vector_desired_count          = var.vector_desired_count
   vector_autoscaling_min        = var.vector_autoscaling_min

@@ -1,5 +1,108 @@
+######################
+# CloudWatch Log Groups
+######################
+resource "aws_cloudwatch_log_group" "vector_logs" {
+  name              = "/ecs/vector-prv-ip"
+  retention_in_days = 7
+}
 
+resource "aws_cloudwatch_log_group" "clickhouse_logs" {
+  name              = "/ecs/clickhouse-prv-ip"
+  retention_in_days = 7
+}
 
+resource "aws_cloudwatch_log_group" "nginx_logs" {
+  name              = "/ecs/nginx-vector-prv-ip"
+  retention_in_days = 7
+}
+
+######################
+# Load Balancers
+######################
+data "aws_lb" "public_alb" {
+  name = var.alb_name
+}
+
+data "aws_lb" "internal_nlb" {
+  name = var.nlb_name
+}
+
+######################
+# Target Groups
+######################
+resource "aws_lb_target_group" "clickhouse_tg_prv_ip" {
+  name        = "clickhouse-prv-ip-tg"
+  port        = 8123
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    protocol            = "TCP"
+    port                = "8123"
+    interval            = 30
+    timeout             = 10
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+  }
+}
+
+resource "aws_lb_target_group" "nginx_vector_tg" {
+  name        = "nginx-vector-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    path                = "/healthz"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    matcher             = "200"
+  }
+}
+
+######################
+# Listeners
+######################
+data "aws_lb_listener" "public_http" {
+  load_balancer_arn = data.aws_lb.public_alb.arn
+  port              = 80
+}
+
+resource "aws_lb_listener" "clickhouse_tcp_8123" {
+  load_balancer_arn = data.aws_lb.internal_nlb.arn
+  port              = 8123
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
+  }
+}
+
+resource "aws_lb_listener_rule" "nginx_vector_path_rule" {
+  listener_arn = var.alb_listener_arn
+  priority     = 60
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.nginx_vector_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/ol-vector*", "/healthz"]
+    }
+  }
+}
+
+######################
+# S3 Objects
+######################
 resource "aws_s3_object" "vector_config" {
   bucket = var.vector_config_bucket
   key    = "vector.yaml"
@@ -7,13 +110,16 @@ resource "aws_s3_object" "vector_config" {
   etag   = filemd5("${path.root}/../../docker/vector/vector.yaml")
 }
 
-
-
-resource "aws_cloudwatch_log_group" "vector_logs" {
-  name              = "/ecs/vector-prv-ip"
-  retention_in_days = 7
+resource "aws_s3_object" "nginx_template" {
+  bucket = var.nginx_config_bucket
+  key    = "nginx.template"
+  source = "${path.root}/../../docker/nginx/nginx.template"
+  etag   = filemd5("${path.root}/../../docker/nginx/nginx.template")
 }
 
+######################
+# Task Definitions
+######################
 resource "aws_ecs_task_definition" "vector" {
   family                   = "vector-prv-ip"
   requires_compatibilities = ["FARGATE"]
@@ -52,100 +158,6 @@ resource "aws_ecs_task_definition" "vector" {
   }])
 }
 
-resource "aws_ecs_service" "vector" {
-  name                   = "vector-prv-ip"
-  cluster                = var.ecs_cluster_id
-  task_definition        = aws_ecs_task_definition.vector.arn
-  desired_count          = var.vector_desired_count
-  launch_type            = "FARGATE"
-  enable_execute_command = true
-
-  network_configuration {
-    subnets          = var.private_subnet_ids
-    security_groups  = [var.security_group_id]
-    assign_public_ip = false
-  }
-
-  depends_on = [
-    aws_ecs_task_definition.vector,
-    aws_cloudwatch_log_group.vector_logs,
-    aws_s3_object.vector_config
-  ]
-
-  health_check_grace_period_seconds = 60
-}
-
-resource "aws_appautoscaling_target" "vector" {
-  max_capacity       = 2
-  min_capacity       = 1
-  resource_id        = "service/${var.ecs_cluster_name}/vector-prv-ip"
-  scalable_dimension = "ecs:service:DesiredCount"
-  service_namespace  = "ecs"
-}
-
-resource "aws_appautoscaling_policy" "vector_cpu" {
-  name               = "vector-cpu-autoscaling"
-  service_namespace  = "ecs"
-  resource_id        = aws_appautoscaling_target.vector.resource_id
-  scalable_dimension = aws_appautoscaling_target.vector.scalable_dimension
-  policy_type        = "TargetTrackingScaling"
-
-  target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
-    target_value       = 50.0
-    scale_in_cooldown  = 300
-    scale_out_cooldown = 300
-  }
-}
-
-
-######################
-# CloudWatch Log Group
-######################
-resource "aws_cloudwatch_log_group" "clickhouse_logs" {
-  name              = "/ecs/clickhouse-prv-ip"
-  retention_in_days = 7
-}
-
-######################
-# Target Group (8123 Only)
-######################
-resource "aws_lb_target_group" "clickhouse_tg_prv_ip" {
-  name        = "clickhouse-prv-ip-tg"
-  port        = 8123
-  protocol    = "TCP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    protocol            = "TCP"
-    port                = "8123"
-    interval            = 30
-    timeout             = 10
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-  }
-}
-
-######################
-# Listener (8123 Only)
-######################
-resource "aws_lb_listener" "clickhouse_tcp_8123" {
-  load_balancer_arn = data.aws_lb.internal_nlb.arn
-  port              = 8123
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
-  }
-}
-
-######################
-# Task Definition
-######################
 resource "aws_ecs_task_definition" "clickhouse" {
   family                   = "clickhouse-prv-ip"
   requires_compatibilities = ["FARGATE"]
@@ -172,59 +184,6 @@ resource "aws_ecs_task_definition" "clickhouse" {
   }])
 }
 
-######################
-# ECS Service
-######################
-resource "aws_ecs_service" "clickhouse" {
-  name                   = "clickhouse-prv-ip"
-  cluster                = var.ecs_cluster_id
-  task_definition        = aws_ecs_task_definition.clickhouse.arn
-  desired_count          = 1
-  launch_type            = "FARGATE"
-  enable_execute_command = true
-
-  network_configuration {
-    subnets          = var.private_subnet_ids
-    security_groups  = [var.security_group_id]
-    assign_public_ip = false
-  }
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
-    container_name   = "clickhouse"
-    container_port   = 8123
-  }
-
-  depends_on = [
-    aws_lb_listener.clickhouse_tcp_8123,
-    aws_cloudwatch_log_group.clickhouse_logs
-  ]
-
-  health_check_grace_period_seconds = 60
-}
-
-#########################
-# Upload nginx.conf to S3
-#########################
-resource "aws_s3_object" "nginx_template" {
-  bucket = var.nginx_config_bucket
-  key    = "nginx.template"
-  source = "${path.root}/../../docker/nginx/nginx.template"
-  etag   = filemd5("${path.root}/../../docker/nginx/nginx.template")
-}
-
-
-#########################
-# CloudWatch Log Group
-#########################
-resource "aws_cloudwatch_log_group" "nginx_logs" {
-  name              = "/ecs/nginx-vector-prv-ip"
-  retention_in_days = 7
-}
-
-#########################
-# Task Definition
-#########################
 resource "aws_ecs_task_definition" "nginx" {
   family                   = "nginx-vector-prv-ip"
   requires_compatibilities = ["FARGATE"]
@@ -276,52 +235,60 @@ resource "aws_ecs_task_definition" "nginx" {
   }])
 }
 
+######################
+# ECS Services
+######################
+resource "aws_ecs_service" "vector" {
+  name                   = "vector-prv-ip"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.vector.arn
+  desired_count          = var.vector_desired_count
+  launch_type            = "FARGATE"
+  enable_execute_command = true
 
-#########################
-# Target Group (NGINX)
-#########################
-resource "aws_lb_target_group" "nginx_vector_tg" {
-  name        = "nginx-vector-tg"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = "/healthz"
-    protocol            = "HTTP"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    matcher             = "200"
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = false
   }
+
+  depends_on = [
+    aws_ecs_task_definition.vector,
+    aws_cloudwatch_log_group.vector_logs,
+    aws_s3_object.vector_config
+  ]
+
+  health_check_grace_period_seconds = 60
 }
 
+resource "aws_ecs_service" "clickhouse" {
+  name                   = "clickhouse-prv-ip"
+  cluster                = var.ecs_cluster_id
+  task_definition        = aws_ecs_task_definition.clickhouse.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
+  enable_execute_command = true
 
-#########################
-# Listener Rule for /ol/vec
-#########################
-resource "aws_lb_listener_rule" "nginx_vector_path_rule" {
-  listener_arn = var.alb_listener_arn
-  priority     = 60
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.nginx_vector_tg.arn
+  network_configuration {
+    subnets          = var.private_subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = false
   }
 
-  condition {
-    path_pattern {
-      values = ["/ol-vector*", "/healthz"]
-    }
+  load_balancer {
+    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
+    container_name   = "clickhouse"
+    container_port   = 8123
   }
+
+  depends_on = [
+    aws_lb_listener.clickhouse_tcp_8123,
+    aws_cloudwatch_log_group.clickhouse_logs
+  ]
+
+  health_check_grace_period_seconds = 60
 }
 
-
-#########################
-# ECS Service
-#########################
 resource "aws_ecs_service" "nginx" {
   name                   = "nginx-vector-prv-ip"
   cluster                = var.ecs_cluster_id
@@ -351,9 +318,34 @@ resource "aws_ecs_service" "nginx" {
   health_check_grace_period_seconds = 60
 }
 
-#########################
-# Auto Scaling (Optional)
-#########################
+######################
+# Auto Scaling
+######################
+resource "aws_appautoscaling_target" "vector" {
+  max_capacity       = 2
+  min_capacity       = 1
+  resource_id        = "service/${var.ecs_cluster_name}/vector-prv-ip"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "vector_cpu" {
+  name               = "vector-cpu-autoscaling"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.vector.resource_id
+  scalable_dimension = aws_appautoscaling_target.vector.scalable_dimension
+  policy_type        = "TargetTrackingScaling"
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 50.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
+  }
+}
+
 resource "aws_appautoscaling_target" "nginx" {
   max_capacity       = 2
   min_capacity       = 1
