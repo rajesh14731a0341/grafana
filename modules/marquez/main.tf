@@ -625,10 +625,12 @@ resource "aws_ecs_task_definition" "nginx" {
     command = [
       "sh",
       "-c",
-      "apk add --no-cache envsubst && \
-       aws s3 cp s3://${var.nginx_config_bucket}/nginx.template /etc/nginx/nginx.template && \
-       envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && \
-       nginx -g 'daemon off;'"
+      join("\n", [
+        "apk add --no-cache envsubst",
+        "aws s3 cp s3://${var.nginx_config_bucket}/nginx.template /etc/nginx/nginx.template",
+        "envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf",
+        "nginx -g 'daemon off;'"
+      ])
     ]
     environment = [
       {
