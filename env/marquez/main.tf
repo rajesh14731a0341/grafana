@@ -2,7 +2,7 @@ module "marquez" {
   source = "../../modules/marquez"
 
   ecs_cluster_id                     = var.ecs_cluster_id
-  ecs_cluster_name                  = var.ecs_cluster_name
+  ecs_cluster_name                   = var.ecs_cluster_name
   vpc_id                             = var.vpc_id
   public_subnet_ids                  = var.public_subnet_ids
   private_subnet_ids                 = var.private_subnet_ids
@@ -11,18 +11,30 @@ module "marquez" {
   task_role_arn                      = var.task_role_arn
   alb_name                           = var.alb_name
   nlb_name                           = var.nlb_name
-  region = var.region
-  marquez_api_image  = var.marquez_api_image
+  region                             = var.region
+
+  marquez_api_image                  = var.marquez_api_image
   marquez_postgres_port              = var.marquez_postgres_port
   marquez_postgres_user              = var.marquez_postgres_user
   marquez_postgres_password          = var.marquez_postgres_password
   marquez_postgres_db                = var.marquez_postgres_db
+
   marquez_api_desired_count          = var.marquez_api_desired_count
   marquez_api_autoscaling_min        = var.marquez_api_autoscaling_min
   marquez_api_autoscaling_max        = var.marquez_api_autoscaling_max
   marquez_api_autoscaling_cpu_target = var.marquez_api_autoscaling_cpu_target
+
   marquez_web_desired_count          = var.marquez_web_desired_count
   marquez_web_autoscaling_min        = var.marquez_web_autoscaling_min
   marquez_web_autoscaling_max        = var.marquez_web_autoscaling_max
   marquez_web_autoscaling_cpu_target = var.marquez_web_autoscaling_cpu_target
+
+  # ✅ Missing arguments added below
+  config_s3_bucket_name              = var.config_s3_bucket_name
+  vector_config_bucket               = var.vector_config_bucket
+
+  vector_desired_count               = var.vector_desired_count
+  vector_autoscaling_min             = var.vector_autoscaling_min
+  vector_autoscaling_max             = var.vector_autoscaling_max
+  vector_autoscaling_cpu_target      = var.vector_autoscaling_cpu_target
 }

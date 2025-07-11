@@ -73,3 +73,8 @@ variable "vector_autoscaling_cpu_target" {
 variable "config_s3_bucket_name" {
   type = string
 }
+
+variable "vector_config_bucket" {
+  type        = string
+  description = "S3 bucket to store vector.yaml config"
+}
