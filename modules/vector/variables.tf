@@ -96,3 +96,17 @@ variable "clickhouse_desired_count" {
   description = "Desired task count for ClickHouse service"
   type        = number
 }
+variable "nginx_autoscaling_min" {
+  description = "Minimum number of nginx service tasks for autoscaling"
+  type        = number
+}
+
+variable "nginx_autoscaling_max" {
+  description = "Maximum number of nginx service tasks for autoscaling"
+  type        = number
+}
+
+variable "nginx_autoscaling_cpu_target" {
+  description = "Target CPU utilization for autoscaling nginx service"
+  type        = number
+}

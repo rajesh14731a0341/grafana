@@ -323,9 +323,11 @@ resource "aws_ecs_service" "nginx" {
 resource "aws_appautoscaling_target" "vector" {
   max_capacity       = 2
   min_capacity       = 1
-  resource_id        = "service/${var.ecs_cluster_name}/vector-prv-ip"
+  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.vector.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
+
+  depends_on = [aws_ecs_service.vector]
 }
 
 resource "aws_appautoscaling_policy" "vector_cpu" {
@@ -346,12 +348,15 @@ resource "aws_appautoscaling_policy" "vector_cpu" {
 }
 
 resource "aws_appautoscaling_target" "nginx" {
-  max_capacity       = 2
-  min_capacity       = 1
-  resource_id        = "service/${var.ecs_cluster_name}/nginx-vector-prv-ip"
+  min_capacity       = var.nginx_autoscaling_min
+  max_capacity       = var.nginx_autoscaling_max
+  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.nginx.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
+
+  depends_on = [aws_ecs_service.nginx]
 }
+
 
 resource "aws_appautoscaling_policy" "nginx_cpu" {
   name               = "nginx-cpu-autoscaling"
@@ -364,8 +369,9 @@ resource "aws_appautoscaling_policy" "nginx_cpu" {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    target_value       = 50.0
+    target_value       = var.nginx_autoscaling_cpu_target
     scale_in_cooldown  = 300
     scale_out_cooldown = 300
   }
 }
+

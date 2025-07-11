@@ -36,3 +36,8 @@ vector_desired_count           = 1
 vector_autoscaling_min         = 1
 vector_autoscaling_max         = 2
 vector_autoscaling_cpu_target  = 70
+
+nginx_desired_count           = 1
+nginx_autoscaling_min         = 1
+nginx_autoscaling_max         = 2
+nginx_autoscaling_cpu_target  = 70
