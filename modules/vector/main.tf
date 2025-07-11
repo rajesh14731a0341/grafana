@@ -182,55 +182,58 @@ resource "aws_ecs_task_definition" "clickhouse" {
 }
 
 resource "aws_ecs_task_definition" "nginx" {
-  family                   = "nginx-vector-prv-ip"
+  family                   = "nginx-vector-proxy"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = "512"
-  memory                   = "1024"
+  cpu                      = "256"
+  memory                   = "512"
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([{
-    name        = "nginx"
-    image       = "nginx:alpine"
-    essential   = true
-    portMappings = [
-      { containerPort = 80 }
-    ]
-    command = [
-      "sh",
-      "-c",
-      join("\n", [
-        "apk add --no-cache envsubst",
-        "aws s3 cp s3://${var.nginx_config_bucket}/nginx.template /etc/nginx/nginx.template",
-        "envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf",
-        "nginx -g 'daemon off;'"
-      ])
-    ]
-    environment = [
-      {
-        name  = "AWS_REGION"
-        value = var.region
-      },
-      {
-        name  = "VECTOR_HOST"
-        value = "vector-prv-ip"
-      },
-      {
-        name  = "VECTOR_PORT"
-        value = "8686"
-      }
-    ]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.nginx_logs.name
-        awslogs-region        = var.region
-        awslogs-stream-prefix = "ecs"
+  container_definitions = jsonencode([
+    {
+      name      = "nginx"
+      image     = var.nginx_image
+      essential = true
+      portMappings = [
+        {
+          containerPort = 80
+          hostPort      = 80
+          protocol      = "tcp"
+        }
+      ]
+      environment = [
+        {
+          name  = "NGINX_CONFIG_BUCKET_VAR"
+          value = var.nginx_config_bucket
+        },
+        {
+          name  = "VECTOR_HOST"
+          value = data.aws_lb.public_alb.dns_name
+        },
+        {
+          name  = "VECTOR_PORT"
+          value = "8686"
+        }
+      ]
+      entryPoint = ["sh", "-c"]
+      command = [
+        "aws s3 cp s3://${NGINX_CONFIG_BUCKET_VAR}/nginx.template /etc/nginx/nginx.template && \
+         envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && \
+         nginx -g 'daemon off;'"
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.nginx_logs.name
+          awslogs-region        = var.region
+          awslogs-stream-prefix = "ecs"
+        }
       }
     }
-  }])
+  ])
 }
+
 
 ######################
 # ECS Services

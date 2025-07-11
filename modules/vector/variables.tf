@@ -110,3 +110,7 @@ variable "nginx_autoscaling_cpu_target" {
   description = "Target CPU utilization for autoscaling nginx service"
   type        = number
 }
+variable "nginx_image" {
+  description = "Custom nginx_image Docker image URI"
+  type        = string
+}
