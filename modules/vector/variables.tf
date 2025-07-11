@@ -8,6 +8,11 @@ variable "nginx_config_bucket" {
   type        = string
 }
 
+variable "config_s3_bucket_name" {
+  description = "Common S3 bucket name where configuration files are uploaded"
+  type        = string
+}
+
 variable "region" {
   description = "AWS region"
   type        = string
@@ -53,14 +58,44 @@ variable "alb_listener_arn" {
   type        = string
 }
 
+variable "alb_name" {
+  description = "Name of the Application Load Balancer"
+  type        = string
+}
+
+variable "nlb_name" {
+  description = "Name of the Network Load Balancer"
+  type        = string
+}
+
 variable "vector_desired_count" {
   description = "Desired task count for vector service"
   type        = number
   default     = 1
 }
 
+variable "vector_autoscaling_min" {
+  description = "Minimum number of vector service tasks for autoscaling"
+  type        = number
+}
+
+variable "vector_autoscaling_max" {
+  description = "Maximum number of vector service tasks for autoscaling"
+  type        = number
+}
+
+variable "vector_autoscaling_cpu_target" {
+  description = "Target CPU utilization for autoscaling vector service"
+  type        = number
+}
+
 variable "nginx_desired_count" {
   description = "Desired task count for nginx service"
   type        = number
   default     = 1
+}
+
+variable "clickhouse_desired_count" {
+  description = "Desired task count for ClickHouse service"
+  type        = number
 }
