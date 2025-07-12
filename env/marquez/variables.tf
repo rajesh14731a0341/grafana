@@ -28,6 +28,12 @@ variable "nginx_image" {
   description = "Custom nginx_image Docker image URI"
   type        = string
 }
+
+variable "vector_image" {
+  description = "Custom vector_image Docker image URI"
+  type        = string
+}
+
 variable "marquez_postgres_port" {
   type        = string
   default     = "5432"

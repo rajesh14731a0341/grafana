@@ -99,3 +99,4 @@ variable "nginx_autoscaling_cpu_target" {
   description = "Target CPU utilization for autoscaling nginx service"
   type        = number
 }
+

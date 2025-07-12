@@ -26,7 +26,6 @@ module "marquez_stack" {
   marquez_web_autoscaling_min        = var.marquez_web_autoscaling_min
   marquez_web_autoscaling_max        = var.marquez_web_autoscaling_max
   marquez_web_autoscaling_cpu_target = var.marquez_web_autoscaling_cpu_target
-  # Required for Marquez module due to shared S3 config handling
   vector_config_bucket               = var.vector_config_bucket
   nginx_config_bucket                = var.nginx_config_bucket
   config_s3_bucket_name              = var.config_s3_bucket_name
@@ -61,6 +60,7 @@ module "vector_stack" {
   nginx_autoscaling_max             = var.nginx_autoscaling_max
   nginx_autoscaling_cpu_target      = var.nginx_autoscaling_cpu_target
   nginx_image                       = var.nginx_image
+  vector_image                       = var.vector_image
 }
 
 

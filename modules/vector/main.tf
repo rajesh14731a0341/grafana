@@ -130,7 +130,7 @@ resource "aws_ecs_task_definition" "vector" {
 
   container_definitions = jsonencode([{
     name      = "vector"
-    image     = "timberio/vector:0.39.0-alpine"
+    image     = var.vector_image
     essential = true
     portMappings = [
       { containerPort = 8686 }
@@ -139,10 +139,11 @@ resource "aws_ecs_task_definition" "vector" {
       {
         name  = "AWS_REGION"
         value = var.region
+      },
+      {
+        name  = "VECTOR_CONFIG_BUCKET"
+        value = var.vector_config_bucket
       }
-    ]
-    command = [
-      "aws s3 cp s3://${var.vector_config_bucket}/vector.yaml /etc/vector/vector.yaml && vector"
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -154,6 +155,7 @@ resource "aws_ecs_task_definition" "vector" {
     }
   }])
 }
+
 
 resource "aws_ecs_task_definition" "clickhouse" {
   family                   = "clickhouse-prv-ip"
@@ -217,12 +219,10 @@ resource "aws_ecs_task_definition" "nginx" {
         }
       ]
       entryPoint = ["sh", "-c"]
-      command = [<<EOF
-aws s3 cp s3://$NGINX_CONFIG_BUCKET_VAR/nginx.template /etc/nginx/nginx.template && \
-envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && \
-nginx -g 'daemon off;'
-EOF
-      ]
+      command = [
+  "aws s3 cp s3://$${NGINX_CONFIG_BUCKET_VAR}/nginx.template /etc/nginx/nginx.template && envsubst '$$VECTOR_HOST $$VECTOR_PORT' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+]
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
