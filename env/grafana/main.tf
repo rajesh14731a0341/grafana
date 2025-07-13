@@ -29,4 +29,8 @@ module "grafana" {
   redis_autoscaling_min        = var.redis_autoscaling_min
   redis_autoscaling_max        = var.redis_autoscaling_max
   redis_autoscaling_cpu_target = var.redis_autoscaling_cpu_target
+  grafana_image                = var.grafana_image
+  grafana_admin_user     = var.grafana_admin_user
+  grafana_admin_password = var.grafana_admin_password
+  clickhouse_sources     = var.clickhouse_sources
 }

@@ -29,3 +29,15 @@ redis_desired_count          = 1
 redis_autoscaling_min        = 1
 redis_autoscaling_max        = 5
 redis_autoscaling_cpu_target = 70
+
+clickhouse_sources = {
+  ol_vector_clickhouse = {
+    host = "nlb-964ca5505bf59dd0.elb.us-east-1.amazonaws.com"
+    port = 8123
+  }
+}
+
+grafana_admin_user     = "admin"
+grafana_admin_password = "admin"
+
+grafana_image                  = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:grafana"

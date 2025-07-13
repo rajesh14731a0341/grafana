@@ -157,7 +157,7 @@ resource "aws_ecs_task_definition" "grafana" {
   container_definitions = jsonencode([
     {
       name  = "grafana"
-      image = "grafana/grafana-enterprise:latest"
+      image = var.grafana_image
       portMappings = [{ containerPort = 3000 }]
       environment = [
         {
@@ -278,7 +278,7 @@ resource "aws_ecs_service" "grafana" {
   task_definition = aws_ecs_task_definition.grafana.arn
 
   network_configuration {
-    subnets         = var.public_subnet_ids
+    subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -301,7 +301,7 @@ resource "aws_ecs_service" "renderer" {
   task_definition = aws_ecs_task_definition.renderer.arn
 
   network_configuration {
-    subnets         = var.public_subnet_ids
+    subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -324,7 +324,7 @@ resource "aws_ecs_service" "redis" {
   task_definition = aws_ecs_task_definition.redis.arn
 
   network_configuration {
-    subnets         = var.public_subnet_ids
+    subnets         = var.private_subnet_ids
     security_groups = [var.security_group_id]
     assign_public_ip = false
   }
@@ -419,4 +419,53 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
     scale_in_cooldown  = 60
     scale_out_cooldown = 60
   }
+}
+
+##################################
+
+resource "null_resource" "clickhouse_provision" {
+  for_each = var.clickhouse_sources
+
+  provisioner "local-exec" {
+    command = <<EOT
+#!/bin/bash
+
+# Wait for Grafana to be healthy (max 60s)
+for i in {1..6}; do
+  STATUS=$(curl -s -u admin:${var.grafana_admin_password} http://${data.aws_lb.public_alb.dns_name}/grafana/api/health | grep '"database":"ok"')
+  if [ ! -z "$STATUS" ]; then
+    echo "Grafana is healthy."
+    break
+  fi
+  echo "Waiting for Grafana to be ready..."
+  sleep 10
+done
+
+# Create ClickHouse datasource
+curl -s -u admin:${var.grafana_admin_password} -X POST \
+  http://${data.aws_lb.public_alb.dns_name}/grafana/api/datasources \
+  -H "Content-Type: application/json" \
+  -d '${jsonencode({
+    name       = each.key,
+    type       = "vertamedia-clickhouse-datasource",
+    access     = "proxy",
+    url        = "http://${each.value.host}:${each.value.port}",
+    basicAuth  = false,
+    jsonData   = {
+      defaultDatabase = "default",
+      port            = each.value.port
+    }
+  })}'
+EOT
+
+    interpreter = ["/bin/bash", "-c"]
+  }
+
+  triggers = {
+    datasource = each.key
+  }
+
+  depends_on = [
+    aws_ecs_service.grafana
+  ]
 }

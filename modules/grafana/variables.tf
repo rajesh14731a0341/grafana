@@ -117,3 +117,25 @@ variable "redis_autoscaling_cpu_target" {
   type        = number
   description = "Target CPU utilization for Redis autoscaling"
 }
+
+variable "clickhouse_sources" {
+  description = "Map of ClickHouse source aliases and host/port"
+  type = map(object({
+    host = string
+    port = number
+  }))
+}
+
+variable "grafana_admin_user" {
+  description = "Grafana admin username"
+  type        = string
+}
+
+variable "grafana_admin_password" {
+  description = "Grafana admin password"
+  type        = string
+}
+variable "grafana_image" {
+  description = "Custom vector_image Docker image URI"
+  type        = string
+}
