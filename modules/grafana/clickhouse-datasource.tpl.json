@@ -6,6 +6,6 @@
   "basicAuth": false,
   "jsonData": {
     "defaultDatabase": "default",
-    "port": ${port}
+    "port": "${port}"
   }
 }
