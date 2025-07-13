@@ -17,7 +17,7 @@ data "aws_lb" "internal_nlb" {
 ######################
 # Listeners
 ######################
-data "aws_lb_listener" "public_http" {
+data "aws_lb_listener" "public_listener" {
   load_balancer_arn = data.aws_lb.public_alb.arn
   port              = 80
 }
@@ -90,7 +90,7 @@ resource "aws_lb_target_group" "db_tg_prv_ip" {
 # Listener Rules
 ######################
 resource "aws_lb_listener_rule" "api_rule_prv_ip" {
-  listener_arn = data.aws_lb_listener.public_http.arn
+  listener_arn = data.aws_lb_listener.public_listener.arn
   priority     = 1006
 
   action {
@@ -106,7 +106,7 @@ resource "aws_lb_listener_rule" "api_rule_prv_ip" {
 }
 
 resource "aws_lb_listener_rule" "web_rule_prv_ip" {
-  listener_arn = data.aws_lb_listener.public_http.arn
+  listener_arn = data.aws_lb_listener.public_listener.arn
   priority     = 1007
 
   action {
