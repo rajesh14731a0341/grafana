@@ -43,13 +43,13 @@ resource "aws_lb_target_group" "clickhouse_tg_prv_ip" {
 
   health_check {
     protocol            = "TCP"
-    port                = "8123"
     interval            = 30
-    timeout             = 10
-    healthy_threshold   = 3
+    timeout             = 5
+    healthy_threshold   = 2
     unhealthy_threshold = 3
   }
 }
+
 
 resource "aws_lb_target_group" "nginx_vector_tg" {
   name        = "nginx-vector-tg"
@@ -68,6 +68,23 @@ resource "aws_lb_target_group" "nginx_vector_tg" {
     matcher             = "200"
   }
 }
+
+resource "aws_lb_target_group" "vector_tg_prv_ip" {
+  name        = "vector-prv-ip-tg"
+  port        = 8686
+  protocol    = "TCP"  # ✅ FIX: Change from HTTP to TCP
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    protocol            = "TCP"     # ✅ TCP health check, since protocol is TCP
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+  }
+}
+
 
 ######################
 # Listeners
@@ -96,6 +113,17 @@ resource "aws_lb_listener_rule" "nginx_vector_path_rule" {
     path_pattern {
       values = ["/ol-vector*", "/healthz"]
     }
+  }
+}
+
+resource "aws_lb_listener" "vector_TCP_8686" {
+  load_balancer_arn = data.aws_lb.internal_nlb.arn
+  port              = 8686
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.vector_tg_prv_ip.arn
   }
 }
 
@@ -143,6 +171,18 @@ resource "aws_ecs_task_definition" "vector" {
       {
         name  = "VECTOR_CONFIG_BUCKET"
         value = var.vector_config_bucket
+      },
+      {
+        name  = "CLICKHOUSE_HOST"
+        value = data.aws_lb.internal_nlb.dns_name
+      },
+      {
+        name  = "MARQUEZ_API_HOST"
+        value = data.aws_lb.public_alb.dns_name
+      },
+      {
+        name  = "MARQUEZ_API_PATH"
+        value = "/api/v1/lineage"
       }
     ]
     logConfiguration = {
@@ -211,7 +251,7 @@ resource "aws_ecs_task_definition" "nginx" {
         },
         {
           name  = "VECTOR_HOST"
-          value = data.aws_lb.public_alb.dns_name
+          value = data.aws_lb.internal_nlb.dns_name
         },
         {
           name  = "VECTOR_PORT"
@@ -255,14 +295,22 @@ resource "aws_ecs_service" "vector" {
     assign_public_ip = false
   }
 
+  load_balancer {
+    target_group_arn = aws_lb_target_group.vector_tg_prv_ip.arn
+    container_name   = "vector"
+    container_port   = 8686
+  }
+
   depends_on = [
     aws_ecs_task_definition.vector,
     aws_cloudwatch_log_group.vector_logs,
-    aws_s3_object.vector_config
+    aws_s3_object.vector_config,
+    aws_lb_listener.vector_TCP_8686  # Ensure listener is ready before service
   ]
 
   health_check_grace_period_seconds = 60
 }
+
 
 resource "aws_ecs_service" "clickhouse" {
   name                   = "clickhouse-prv-ip"
