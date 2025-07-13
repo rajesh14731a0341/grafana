@@ -1,0 +1,11 @@
+{
+  "name": "${name}",
+  "type": "vertamedia-clickhouse-datasource",
+  "access": "proxy",
+  "url": "http://${host}:${port}",
+  "basicAuth": false,
+  "jsonData": {
+    "defaultDatabase": "default",
+    "port": ${port}
+  }
+}

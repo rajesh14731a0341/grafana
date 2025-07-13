@@ -422,6 +422,17 @@ resource "aws_appautoscaling_policy" "redis_cpu" {
 }
 
 ##################################
+resource "local_file" "clickhouse_datasource_json" {
+  for_each = var.clickhouse_sources
+
+  content = templatefile("${path.module}/clickhouse-datasource.tpl.json", {
+    name = each.key
+    host = each.value.host
+    port = each.value.port
+  })
+
+  filename = "${path.module}/clickhouse-${each.key}.json"
+}
 
 resource "null_resource" "clickhouse_provision" {
   for_each = var.clickhouse_sources
@@ -430,42 +441,31 @@ resource "null_resource" "clickhouse_provision" {
     command = <<EOT
 #!/bin/bash
 
-# Wait for Grafana to be healthy (max 60s)
-for i in {1..6}; do
-  STATUS=$(curl -s -u admin:${var.grafana_admin_password} http://${data.aws_lb.public_alb.dns_name}/grafana/api/health | grep '"database":"ok"')
+# Wait for Grafana to be healthy
+for i in {1..12}; do
+  STATUS=$(curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} http://${data.aws_lb.public_alb.dns_name}/grafana/api/health | grep '"database":"ok"')
   if [ ! -z "$STATUS" ]; then
     echo "Grafana is healthy."
     break
   fi
-  echo "Waiting for Grafana to be ready..."
+  echo "Waiting for Grafana..."
   sleep 10
 done
 
 # Create ClickHouse datasource
-curl -s -u admin:${var.grafana_admin_password} -X POST \
-  http://${data.aws_lb.public_alb.dns_name}/grafana/api/datasources \
+curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} \
+  -X POST http://${data.aws_lb.public_alb.dns_name}/grafana/api/datasources \
   -H "Content-Type: application/json" \
-  -d '${jsonencode({
-    name       = each.key,
-    type       = "vertamedia-clickhouse-datasource",
-    access     = "proxy",
-    url        = "http://${each.value.host}:${each.value.port}",
-    basicAuth  = false,
-    jsonData   = {
-      defaultDatabase = "default",
-      port            = each.value.port
-    }
-  })}'
+  -d @${local_file.clickhouse_datasource_json[each.key].filename}
 EOT
-
     interpreter = ["/bin/bash", "-c"]
-  }
-
-  triggers = {
-    datasource = each.key
   }
 
   depends_on = [
     aws_ecs_service.grafana
   ]
+
+  triggers = {
+    datasource = local_file.clickhouse_datasource_json[each.key].content
+  }
 }
