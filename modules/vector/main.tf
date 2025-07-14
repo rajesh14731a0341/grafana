@@ -244,6 +244,7 @@ resource "aws_ecs_task_definition" "nginx" {
       name      = "nginx"
       image     = var.nginx_image
       essential = true
+
       portMappings = [
         {
           containerPort = 80
@@ -251,6 +252,7 @@ resource "aws_ecs_task_definition" "nginx" {
           protocol      = "tcp"
         }
       ]
+
       environment = [
         {
           name  = "NGINX_CONFIG_BUCKET_VAR"
@@ -265,9 +267,19 @@ resource "aws_ecs_task_definition" "nginx" {
           value = "8686"
         }
       ]
+
       entryPoint = ["sh", "-c"]
       command = [
-        "aws s3 cp s3://$$NGINX_CONFIG_BUCKET_VAR/nginx.template /etc/nginx/nginx.template && aws s3 cp s3://$$NGINX_CONFIG_BUCKET_VAR/proxy-headers.conf /etc/nginx/proxy-headers.conf && envsubst '$$OL_VECTOR_HOST  $$OL_VECTOR_PORT' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+        <<-EOF
+        set -e
+        echo "Downloading config files from s3://$${NGINX_CONFIG_BUCKET_VAR}/"
+        aws s3 cp s3://$${NGINX_CONFIG_BUCKET_VAR}/nginx.template /etc/nginx/nginx.template
+        aws s3 cp s3://$${NGINX_CONFIG_BUCKET_VAR}/proxy-headers.conf /etc/nginx/proxy-headers.conf
+        echo "Generating nginx.conf using envsubst"
+        envsubst '$${OL_VECTOR_HOST} $${OL_VECTOR_PORT}' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf
+        echo "Starting NGINX"
+        nginx -g 'daemon off;'
+        EOF
       ]
 
       logConfiguration = {
