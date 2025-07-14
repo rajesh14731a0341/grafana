@@ -10,8 +10,9 @@ RUN apk update && \
 # Expose the default HTTP port
 EXPOSE 80
 
-# Default CMD — ECS will override, but good for local testing
+# Default CMD — ECS overrides, but works for local testing
 CMD ["sh", "-c", "\
   aws s3 cp s3://${NGINX_CONFIG_BUCKET_VAR}/nginx.template /etc/nginx/nginx.template && \
+  aws s3 cp s3://${NGINX_CONFIG_BUCKET_VAR}/proxy-headers.conf /etc/nginx/proxy-headers.conf && \
   envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && \
   nginx -g 'daemon off;'"]

@@ -2,7 +2,7 @@
 AWS_REGION=us-east-1
 ACCOUNT_ID=736747734611
 REPO_NAME=project
-IMAGE_NAME=grafana
+IMAGE_NAME=nginx
 TAG=latest
 
 # 2. Build image

@@ -144,6 +144,13 @@ resource "aws_s3_object" "nginx_template" {
   etag   = filemd5("${path.root}/../../docker/nginx/nginx.template")
 }
 
+resource "aws_s3_object" "proxy_headers_conf" {
+  bucket = var.nginx_config_bucket
+  key    = "proxy-headers.conf"
+  source = "${path.root}/../../docker/nginx/proxy-headers.conf"
+  etag   = filemd5("${path.root}/../../docker/nginx/proxy-headers.conf")
+}
+
 ######################
 # Task Definitions
 ######################
@@ -250,18 +257,18 @@ resource "aws_ecs_task_definition" "nginx" {
           value = var.nginx_config_bucket
         },
         {
-          name  = "VECTOR_HOST"
+          name  = "OL_VECTOR_HOST"
           value = data.aws_lb.internal_nlb.dns_name
         },
         {
-          name  = "VECTOR_PORT"
+          name  = "OL_VECTOR_PORT"
           value = "8686"
         }
       ]
       entryPoint = ["sh", "-c"]
       command = [
-  "aws s3 cp s3://$${NGINX_CONFIG_BUCKET_VAR}/nginx.template /etc/nginx/nginx.template && envsubst '$$VECTOR_HOST $$VECTOR_PORT' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
-]
+        "aws s3 cp s3://$$NGINX_CONFIG_BUCKET_VAR/nginx.template /etc/nginx/nginx.template && aws s3 cp s3://$$NGINX_CONFIG_BUCKET_VAR/proxy-headers.conf /etc/nginx/proxy-headers.conf && envsubst '$$OL_VECTOR_HOST  $$OL_VECTOR_PORT' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+      ]
 
       logConfiguration = {
         logDriver = "awslogs"
@@ -274,6 +281,7 @@ resource "aws_ecs_task_definition" "nginx" {
     }
   ])
 }
+
 
 
 

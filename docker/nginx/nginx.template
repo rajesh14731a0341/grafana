@@ -1,48 +1,27 @@
-events {}
+worker_processes 1;
+events {
+    worker_connections 1024;
+}
 
 http {
-  log_format main '$remote_addr - $remote_user [$time_local] "$request" '
-                  '$status $body_bytes_sent "$http_referer" '
-                  '"$http_user_agent" "$http_x_forwarded_for"';
+    include       mime.types;
+    default_type  application/octet-stream;
 
-  access_log /dev/stdout main;
-  error_log /dev/stderr warn;
+    sendfile        on;
+    keepalive_timeout 65;
 
-  server {
-    listen 80;
-    server_name localhost;
+    server {
+        listen 80;
 
-    # Health check
-    location /healthz {
-      access_log off;
-      return 200 'OK';
-      add_header Content-Type text/plain;
+        # ol-vector proxy block
+        location /ol-vector/ {
+            rewrite ^/ol-vector/(.*)$ /$1 break;
+            proxy_pass http://${OL_VECTOR_HOST}:${OL_VECTOR_PORT};
+            include /etc/nginx/proxy-headers.conf;
+        }
+
+        # Future team paths can be added below, like:
+        # location /team-a/ { ... }
+        # location /team-b/ { ... }
     }
-
-    # Redirect /ol-vector to /ol-vector/
-    location = /ol-vector {
-      return 301 /ol-vector/;
-    }
-
-    # Main reverse proxy logic
-    location /ol-vector/ {
-      # Removes /ol-vector/ prefix before proxying
-      rewrite ^/ol-vector/(.*)$ /$1 break;
-
-      proxy_pass http://${VECTOR_HOST}:${VECTOR_PORT};
-
-      proxy_http_version 1.1;
-      proxy_set_header Host              $host;
-      proxy_set_header X-Real-IP         $remote_addr;
-      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Proto $scheme;
-
-      proxy_connect_timeout 10s;
-      proxy_send_timeout    30s;
-      proxy_read_timeout    30s;
-      send_timeout          30s;
-
-      proxy_buffering off;
-    }
-  }
 }
