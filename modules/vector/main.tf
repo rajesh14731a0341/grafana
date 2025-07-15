@@ -2,17 +2,17 @@
 # CloudWatch Log Groups
 ######################
 resource "aws_cloudwatch_log_group" "vector_logs" {
-  name              = "/ecs/vector-prv-ip"
+  name              = "/ecs/vector"
   retention_in_days = 7
 }
 
 resource "aws_cloudwatch_log_group" "clickhouse_logs" {
-  name              = "/ecs/clickhouse-prv-ip"
+  name              = "/ecs/clickhouse"
   retention_in_days = 7
 }
 
 resource "aws_cloudwatch_log_group" "nginx_logs" {
-  name              = "/ecs/nginx-vector-prv-ip"
+  name              = "/ecs/nginx-vector"
   retention_in_days = 7
 }
 
@@ -34,8 +34,8 @@ data "aws_lb_listener" "public_http" {
 ######################
 # Target Groups
 ######################
-resource "aws_lb_target_group" "clickhouse_tg_prv_ip" {
-  name        = "clickhouse-prv-ip-tg"
+resource "aws_lb_target_group" "clickhouse_tg" {
+  name        = "clickhouse-tg"
   port        = 8123
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -69,8 +69,8 @@ resource "aws_lb_target_group" "nginx_vector_tg" {
   }
 }
 
-resource "aws_lb_target_group" "vector_tg_prv_ip" {
-  name        = "vector-prv-ip-tg"
+resource "aws_lb_target_group" "vector_tg" {
+  name        = "vector-tg"
   port        = 8686
   protocol    = "TCP"  # ✅ FIX: Change from HTTP to TCP
   vpc_id      = var.vpc_id
@@ -96,7 +96,7 @@ resource "aws_lb_listener" "clickhouse_tcp_8123" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
+    target_group_arn = aws_lb_target_group.clickhouse_tg.arn
   }
 }
 
@@ -123,7 +123,7 @@ resource "aws_lb_listener" "vector_TCP_8686" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.vector_tg_prv_ip.arn
+    target_group_arn = aws_lb_target_group.vector_tg.arn
   }
 }
 
@@ -155,7 +155,7 @@ resource "aws_s3_object" "proxy_headers_conf" {
 # Task Definitions
 ######################
 resource "aws_ecs_task_definition" "vector" {
-  family                   = "vector-prv-ip"
+  family                   = "vector"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -205,7 +205,7 @@ resource "aws_ecs_task_definition" "vector" {
 
 
 resource "aws_ecs_task_definition" "clickhouse" {
-  family                   = "clickhouse-prv-ip"
+  family                   = "clickhouse"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "1024"
@@ -302,7 +302,7 @@ resource "aws_ecs_task_definition" "nginx" {
 # ECS Services
 ######################
 resource "aws_ecs_service" "vector" {
-  name                   = "vector-prv-ip"
+  name                   = "vector"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.vector.arn
   desired_count          = var.vector_desired_count
@@ -316,7 +316,7 @@ resource "aws_ecs_service" "vector" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.vector_tg_prv_ip.arn
+    target_group_arn = aws_lb_target_group.vector_tg.arn
     container_name   = "vector"
     container_port   = 8686
   }
@@ -333,7 +333,7 @@ resource "aws_ecs_service" "vector" {
 
 
 resource "aws_ecs_service" "clickhouse" {
-  name                   = "clickhouse-prv-ip"
+  name                   = "clickhouse"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.clickhouse.arn
   desired_count          = 1
@@ -347,7 +347,7 @@ resource "aws_ecs_service" "clickhouse" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.clickhouse_tg_prv_ip.arn
+    target_group_arn = aws_lb_target_group.clickhouse_tg.arn
     container_name   = "clickhouse"
     container_port   = 8123
   }
@@ -361,7 +361,7 @@ resource "aws_ecs_service" "clickhouse" {
 }
 
 resource "aws_ecs_service" "nginx" {
-  name                   = "nginx-vector-prv-ip"
+  name                   = "nginx-vector"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.nginx.arn
   desired_count          = var.nginx_desired_count

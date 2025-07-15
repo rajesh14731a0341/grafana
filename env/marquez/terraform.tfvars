@@ -21,7 +21,7 @@ marquez_web_autoscaling_max   = 5
 marquez_web_autoscaling_cpu_target = 70
 
 # 👇 Add this line to point to your custom image in ECR
-marquez_api_image             = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:latest_3"
+marquez_api_image             = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:marquez_api"
 nginx_image                   = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:nginx"
 vector_image                  = "736747734611.dkr.ecr.us-east-1.amazonaws.com/project:vector"
 
