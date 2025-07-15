@@ -93,7 +93,7 @@ resource "aws_lb_listener" "public_listener" {
 
 
 resource "aws_lb_listener_rule" "grafana_rule" {
-  listener_arn = data.aws_lb_listener.public_listener.arn
+  listener_arn = aws_lb_listener.public_listener.arn
   priority     = 100
 
   action {
@@ -110,7 +110,7 @@ resource "aws_lb_listener_rule" "grafana_rule" {
 
 
 resource "aws_lb_listener_rule" "renderer_rule" {
-  listener_arn = data.aws_lb_listener.public_listener.arn
+  listener_arn = aws_lb_listener.public_listener.arn
   priority     = 200
 
   action {
