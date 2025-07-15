@@ -306,8 +306,8 @@ output "resource_names" {
     nlb_name                  = aws_lb.errorbudget_nlb.name
     security_group_name       = aws_security_group.errorbudget_allow_all_sg.tags["Name"]
     key_pair_name             = aws_key_pair.errorbudget_key.key_name
-    ec2_instance_name         = aws_instance.errorbudget_ec2.tags["Name"]
-    ec2_instance_public_ip    = aws_instance.errorbudget_ec2.public_ip
+    #ec2_instance_name         = aws_instance.errorbudget_ec2.tags["Name"]
+    #ec2_instance_public_ip    = aws_instance.errorbudget_ec2.public_ip
     ec2_private_key_file_path = local_file.errorbudget_private_key.filename
     s3_bucket_name            = aws_s3_bucket.errorbudget_s3.bucket
     ecr_repo_name             = aws_ecr_repository.errorbudget_repo.name
