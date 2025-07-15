@@ -20,5 +20,5 @@ output "nginx_target_group_arn" {
 
 output "clickhouse_target_group_arn" {
   description = "Target group ARN for ClickHouse (8123)"
-  value       = aws_lb_target_group.clickhouse_tg_prv_ip.arn
+  value       = aws_lb_target_group.clickhouse_tg.arn
 }
