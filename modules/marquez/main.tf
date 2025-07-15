@@ -37,7 +37,7 @@ resource "aws_lb_listener" "internal_tcp_5432" {
 # Target Groups
 ######################
 resource "aws_lb_target_group" "api_tg" {
-  name        = "marquez-api-prv-ip-tg"
+  name        = "marquez-api-tg"
   port        = 5000
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -54,7 +54,7 @@ resource "aws_lb_target_group" "api_tg" {
 }
 
 resource "aws_lb_target_group" "web_tg" {
-  name        = "marquez-web-prv-ip-tg"
+  name        = "marquez-web-tg"
   port        = 3000
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -71,7 +71,7 @@ resource "aws_lb_target_group" "web_tg" {
 }
 
 resource "aws_lb_target_group" "db_tg" {
-  name        = "marquez-db-prv-ip-tg"
+  name        = "marquez-db-tg"
   port        = 5432
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -143,7 +143,7 @@ resource "aws_cloudwatch_log_group" "db_logs" {
 # Task Definitions
 ######################
 resource "aws_ecs_task_definition" "api" {
-  family                   = "marquez-api-prv-ip"
+  family                   = "marquez-api"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -180,7 +180,7 @@ resource "aws_ecs_task_definition" "api" {
 
 
 resource "aws_ecs_task_definition" "web" {
-  family                   = "marquez-web-prv-ip"
+  family                   = "marquez-web"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -208,7 +208,7 @@ resource "aws_ecs_task_definition" "web" {
 }
 
 resource "aws_ecs_task_definition" "db" {
-  family                   = "marquez-db-prv-ip"
+  family                   = "marquez-db"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -240,7 +240,7 @@ resource "aws_ecs_task_definition" "db" {
 # ECS Services
 ######################
 resource "aws_ecs_service" "api" {
-  name                   = "marquez-api-prv-ip"
+  name                   = "marquez-api"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.api.arn
   desired_count          = var.marquez_api_desired_count
@@ -268,7 +268,7 @@ resource "aws_ecs_service" "api" {
 }
 
 resource "aws_ecs_service" "web" {
-  name                   = "marquez-web-prv-ip"
+  name                   = "marquez-web"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.web.arn
   desired_count          = var.marquez_web_desired_count
@@ -296,7 +296,7 @@ resource "aws_ecs_service" "web" {
 }
 
 resource "aws_ecs_service" "db" {
-  name                   = "marquez-db-prv-ip"
+  name                   = "marquez-db"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.db.arn
   desired_count          = 1
@@ -329,14 +329,14 @@ resource "aws_ecs_service" "db" {
 resource "aws_appautoscaling_target" "api" {
   max_capacity       = var.marquez_api_autoscaling_max
   min_capacity       = var.marquez_api_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_name}/marquez-api-prv-ip"
+  resource_id        = "service/${var.ecs_cluster_name}/marquez-api"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
   depends_on         = [aws_ecs_service.api]
 }
 
 resource "aws_appautoscaling_policy" "api_cpu" {
-  name                = "api-prv-ip-cpu-scaling"
+  name                = "api-cpu-scaling"
   policy_type         = "TargetTrackingScaling"
   resource_id         = aws_appautoscaling_target.api.resource_id
   scalable_dimension  = aws_appautoscaling_target.api.scalable_dimension
@@ -355,14 +355,14 @@ resource "aws_appautoscaling_policy" "api_cpu" {
 resource "aws_appautoscaling_target" "web" {
   max_capacity       = var.marquez_web_autoscaling_max
   min_capacity       = var.marquez_web_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_name}/marquez-web-prv-ip"
+  resource_id        = "service/${var.ecs_cluster_name}/marquez-web"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
   depends_on         = [aws_ecs_service.web]
 }
 
 resource "aws_appautoscaling_policy" "web_cpu" {
-  name                = "web-prv-ip-cpu-scaling"
+  name                = "web-cpu-scaling"
   policy_type         = "TargetTrackingScaling"
   resource_id         = aws_appautoscaling_target.web.resource_id
   scalable_dimension  = aws_appautoscaling_target.web.scalable_dimension
