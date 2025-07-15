@@ -32,7 +32,7 @@ redis_autoscaling_cpu_target = 70
 
 clickhouse_sources = {
   ol_vector_clickhouse = {
-    host = "nlb-964ca5505bf59dd0.elb.us-east-1.amazonaws.com"
+    host = "rajesh-errorbudget-nlb-54e2cd93acff92ad.elb.us-east-1.amazonaws.com"
     port = 8123
   }
 }
