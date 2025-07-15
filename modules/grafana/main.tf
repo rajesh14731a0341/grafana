@@ -468,7 +468,7 @@ resource "local_file" "postgres_datasource_json" {
     host     = var.db_endpoint
     port     = 5432
     user     = "rajesh"
-    password = jsondecode(data.aws_secretsmanager_secret_version.db.secret_string)
+    password = data.aws_secretsmanager_secret_version.db.secret_string
     database = "grafana"
     sslmode  = "require"
   })
