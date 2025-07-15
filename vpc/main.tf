@@ -228,44 +228,45 @@ data "aws_iam_instance_profile" "errorbudget_profile" {
   name = "errorbudget_ec2_role"
 }
 
+
 # EC2 Instance
-resource "aws_instance" "errorbudget_ec2" {
-  ami                         = "ami-053b0d53c279acc90"
-  instance_type               = "t2.large"
-  subnet_id                   = aws_subnet.errorbudget_public_1.id
-  associate_public_ip_address = true
-  key_name                    = aws_key_pair.errorbudget_key.key_name
-  vpc_security_group_ids      = [aws_security_group.errorbudget_allow_all_sg.id]
-  iam_instance_profile        = data.aws_iam_instance_profile.errorbudget_profile.name
+# resource "aws_instance" "errorbudget_ec2" {
+#   ami                         = "ami-053b0d53c279acc90"
+#   instance_type               = "t2.large"
+#   subnet_id                   = aws_subnet.errorbudget_public_1.id
+#   associate_public_ip_address = true
+#   key_name                    = aws_key_pair.errorbudget_key.key_name
+#   vpc_security_group_ids      = [aws_security_group.errorbudget_allow_all_sg.id]
+#   iam_instance_profile        = data.aws_iam_instance_profile.errorbudget_profile.name
 
-  user_data = <<-EOF
-              #!/bin/bash
-              apt-get update -y
-              apt-get install -y unzip curl jq awscli docker.io gnupg lsb-release
-              systemctl start docker
-              systemctl enable docker
-              usermod -aG docker ubuntu
-              curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-              echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-              apt-get update && apt-get install terraform -y
-              cd /tmp
-              curl -O https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/amazon-ssm-agent.deb
-              dpkg -i amazon-ssm-agent.deb
-              systemctl enable amazon-ssm-agent
-              systemctl start amazon-ssm-agent
-              export HOME=/home/ubuntu
-              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-              export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-              nvm install --lts
-              nvm use --lts
-              chown -R ubuntu:ubuntu /home/ubuntu
-              EOF
+#   user_data = <<-EOF
+#               #!/bin/bash
+#               apt-get update -y
+#               apt-get install -y unzip curl jq awscli docker.io gnupg lsb-release
+#               systemctl start docker
+#               systemctl enable docker
+#               usermod -aG docker ubuntu
+#               curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+#               echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
+#               apt-get update && apt-get install terraform -y
+#               cd /tmp
+#               curl -O https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/amazon-ssm-agent.deb
+#               dpkg -i amazon-ssm-agent.deb
+#               systemctl enable amazon-ssm-agent
+#               systemctl start amazon-ssm-agent
+#               export HOME=/home/ubuntu
+#               curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+#               export NVM_DIR="$HOME/.nvm"
+#               [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+#               nvm install --lts
+#               nvm use --lts
+#               chown -R ubuntu:ubuntu /home/ubuntu
+#               EOF
 
-  tags = merge(local.common_tags, {
-    Name = "errorbudget_ec2"
-  })
-}
+#   tags = merge(local.common_tags, {
+#     Name = "errorbudget_ec2"
+#   })
+# }
 
 # ECR Repository
 resource "aws_ecr_repository" "errorbudget_repo" {
