@@ -72,11 +72,24 @@ resource "aws_lb_target_group" "redis_tg" {
 ##############################
 # Load Balancer Listeners
 ##############################
-
-data "aws_lb_listener" "public_listener" {
+resource "aws_lb_listener" "public_listener" {
   load_balancer_arn = data.aws_lb.public_alb.arn
   port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Not Found"
+      status_code  = "404"
+    }
+  }
 }
+#data "aws_lb_listener" "public_listener" {
+ # load_balancer_arn = data.aws_lb.public_alb.arn
+ # port              = 80
+#}
 
 
 resource "aws_lb_listener_rule" "grafana_rule" {
@@ -163,7 +176,7 @@ resource "aws_ecs_task_definition" "grafana" {
         { name = "GF_DATABASE_TYPE", value = "postgres" },
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
         { name = "GF_DATABASE_NAME", value = "grafana" },
-        { name = "GF_DATABASE_USER", value = "rajesh" },
+        { name = "GF_DATABASE_USER", value = "grafana" },
         {
           name  = "GF_DATABASE_PASSWORD"
           value = data.aws_secretsmanager_secret_version.db.secret_string
