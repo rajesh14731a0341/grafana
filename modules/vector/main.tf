@@ -12,7 +12,7 @@ resource "aws_cloudwatch_log_group" "clickhouse_logs" {
 }
 
 resource "aws_cloudwatch_log_group" "nginx_logs" {
-  name              = "/ecs/nginx-vector"
+  name              = "/ecs/nginx"
   retention_in_days = 7
 }
 
@@ -52,7 +52,7 @@ resource "aws_lb_target_group" "clickhouse_tg" {
 
 
 resource "aws_lb_target_group" "nginx_vector_tg" {
-  name        = "nginx-vector-tg"
+  name        = "nginx-tg"
   port        = 80
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -231,7 +231,7 @@ resource "aws_ecs_task_definition" "clickhouse" {
 }
 
 resource "aws_ecs_task_definition" "nginx" {
-  family                   = "nginx-vector-proxy"
+  family                   = "nginx-proxy"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "256"
@@ -361,7 +361,7 @@ resource "aws_ecs_service" "clickhouse" {
 }
 
 resource "aws_ecs_service" "nginx" {
-  name                   = "nginx-vector"
+  name                   = "nginx"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.nginx.arn
   desired_count          = var.nginx_desired_count
