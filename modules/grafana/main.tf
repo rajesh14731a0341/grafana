@@ -461,3 +461,98 @@ EOT
     datasource = local_file.clickhouse_datasource_json[each.key].content
   }
 }
+
+resource "local_file" "postgres_datasource_json" {
+  content = templatefile("${path.module}/postgres-datasource.tpl.json", {
+    name     = "rds-postgres"
+    host     = var.db_endpoint
+    port     = 5432
+    user     = "rajesh"
+    password = jsondecode(data.aws_secretsmanager_secret_version.db.secret_string)
+    database = "grafana"
+    sslmode  = "require"
+  })
+
+  filename = "${path.module}/postgres-datasource.json"
+}
+
+
+resource "null_resource" "postgres_provision" {
+  provisioner "local-exec" {
+    command = <<EOT
+#!/bin/bash
+
+# Wait for Grafana to be healthy
+for i in {1..12}; do
+  STATUS=$(curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} http://${data.aws_lb.public_alb.dns_name}/grafana/api/health | grep '"database":"ok"')
+  if [ ! -z "$STATUS" ]; then
+    echo "Grafana is healthy."
+    break
+  fi
+  echo "Waiting for Grafana..."
+  sleep 10
+done
+
+# Create RDS datasource
+curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} \
+  -X POST http://${data.aws_lb.public_alb.dns_name}/grafana/api/datasources \
+  -H "Content-Type: application/json" \
+  -d @${local_file.postgres_datasource_json.filename}
+EOT
+    interpreter = ["/bin/bash", "-c"]
+  }
+
+  depends_on = [
+    aws_ecs_service.grafana
+  ]
+
+  triggers = {
+    datasource = local_file.postgres_datasource_json.content
+  }
+}
+
+
+
+resource "local_file" "redis_datasource_json" {
+  content = templatefile("${path.module}/redis-datasource.tpl.json", {
+    name = "redis"
+    host = data.aws_lb.internal_nlb.dns_name
+    port = 6379
+  })
+
+  filename = "${path.module}/redis-datasource.json"
+}
+
+resource "null_resource" "redis_provision" {
+  provisioner "local-exec" {
+    command = <<EOT
+#!/bin/bash
+
+# Wait for Grafana to be healthy
+for i in {1..12}; do
+  STATUS=$(curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} http://${data.aws_lb.public_alb.dns_name}/grafana/api/health | grep '"database":"ok"')
+  if [ ! -z "$STATUS" ]; then
+    echo "Grafana is healthy."
+    break
+  fi
+  echo "Waiting for Grafana..."
+  sleep 10
+done
+
+# Create Redis datasource
+curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} \
+  -X POST http://${data.aws_lb.public_alb.dns_name}/grafana/api/datasources \
+  -H "Content-Type: application/json" \
+  -d @${local_file.redis_datasource_json.filename}
+EOT
+    interpreter = ["/bin/bash", "-c"]
+  }
+
+  depends_on = [
+    aws_ecs_service.grafana
+  ]
+
+  triggers = {
+    datasource = local_file.redis_datasource_json.content
+  }
+}
