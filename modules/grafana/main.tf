@@ -29,13 +29,11 @@ data "aws_lb_target_group" "redis_tg" {
 data "aws_lb_listener" "public_listener" {
   load_balancer_arn = data.aws_lb.public_alb.arn
   port              = 80
-  protocol          = "HTTP"
 }
 
 data "aws_lb_listener" "redis_tcp" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
   port              = 6379
-  protocol          = "TCP"
 }
 
 ##############################
