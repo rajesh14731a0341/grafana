@@ -36,7 +36,7 @@ data "aws_lb_listener" "public_http" {
 ######################
 
 resource "aws_lb_target_group" "d3po_clickhouse_tg" {
-  name        = "d3po-clickhouse_tg"
+  name        = "d3po-clickhouse-tg"
   port        = 8123
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -52,7 +52,7 @@ resource "aws_lb_target_group" "d3po_clickhouse_tg" {
 }
 
 resource "aws_lb_target_group" "nginx_marquez_tg" {
-  name        = "nginx_marquez_tg"
+  name        = "nginx_marquez-tg"
   port        = 80
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
