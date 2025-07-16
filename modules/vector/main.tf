@@ -34,7 +34,7 @@ data "aws_lb_listener" "public_http" {
 ######################
 # Target Groups
 ######################
-resource "aws_lb_target_group" "clickhouse_tg" {
+resource "aws_lb_target_group" "d3po_clickhouse_tg" {
   name        = "clickhouse-tg"
   port        = 8123
   protocol    = "TCP"
@@ -51,7 +51,7 @@ resource "aws_lb_target_group" "clickhouse_tg" {
 }
 
 
-resource "aws_lb_target_group" "nginx_vector_tg" {
+resource "aws_lb_target_group" "nginx_marquez_tg" {
   name        = "nginx-tg"
   port        = 80
   protocol    = "HTTP"
@@ -70,7 +70,7 @@ resource "aws_lb_target_group" "nginx_vector_tg" {
 }
 
 resource "aws_lb_target_group" "vector_tg" {
-  name        = "vector-tg"
+  name        = "d3po_vector-tg"
   port        = 8686
   protocol    = "TCP"  # ✅ FIX: Change from HTTP to TCP
   vpc_id      = var.vpc_id
@@ -155,7 +155,7 @@ resource "aws_s3_object" "proxy_headers_conf" {
 # Task Definitions
 ######################
 resource "aws_ecs_task_definition" "vector" {
-  family                   = "vector"
+  family                   = "d3po_vector"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -205,7 +205,7 @@ resource "aws_ecs_task_definition" "vector" {
 
 
 resource "aws_ecs_task_definition" "clickhouse" {
-  family                   = "clickhouse"
+  family                   = "d3po_clickhouse"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "1024"
@@ -302,7 +302,7 @@ resource "aws_ecs_task_definition" "nginx" {
 # ECS Services
 ######################
 resource "aws_ecs_service" "vector" {
-  name                   = "vector"
+  name                   = "d3po_vector"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.vector.arn
   desired_count          = var.vector_desired_count
@@ -333,7 +333,7 @@ resource "aws_ecs_service" "vector" {
 
 
 resource "aws_ecs_service" "clickhouse" {
-  name                   = "clickhouse"
+  name                   = "d3po_clickhouse"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.clickhouse.arn
   desired_count          = 1
