@@ -3,7 +3,7 @@ locals {
 }
 
 ##############################
-# Data Sources for Load Balancers
+# Data Sources for Load Balancers and Target Groups
 ##############################
 
 data "aws_lb" "public_alb" {
@@ -14,124 +14,29 @@ data "aws_lb" "internal_nlb" {
   name = var.nlb_name
 }
 
-##############################
-# Target Groups
-##############################
-
-resource "aws_lb_target_group" "grafana_tg" {
-  name        = "grafana-tg"
-  port        = 3000
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path     = "/grafana/login"
-    protocol = "HTTP"
-    matcher  = "200-399"
-  }
+data "aws_lb_target_group" "grafana_tg" {
+  name = "grafana-tg"
 }
 
-
-resource "aws_lb_target_group" "renderer_tg" {
-  name        = "renderer-tg"
-  port        = 8081
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = "/render/version"
-    protocol            = "HTTP"
-    matcher             = "200-499"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
+data "aws_lb_target_group" "renderer_tg" {
+  name = "renderer-tg"
 }
 
-resource "aws_lb_target_group" "redis_tg" {
-  name        = "redis-tg"
-  port        = 6379
-  protocol    = "TCP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    protocol            = "TCP"
-    port                = "traffic-port"  # ✅ This matches port 6379
-    interval            = 30
-    timeout             = 10
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-  }
+data "aws_lb_target_group" "redis_tg" {
+  name = "redis-tg"
 }
 
-
-##############################
-# Load Balancer Listeners
-##############################
-resource "aws_lb_listener" "public_listener" {
+data "aws_lb_listener" "public_listener" {
   load_balancer_arn = data.aws_lb.public_alb.arn
   port              = 80
   protocol          = "HTTP"
-
-  default_action {
-    type = "fixed-response"
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "Not Found"
-      status_code  = "404"
-    }
-  }
 }
 
-resource "aws_lb_listener_rule" "grafana_rule" {
-  listener_arn = aws_lb_listener.public_listener.arn
-  priority     = 100
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.grafana_tg.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/grafana", "/grafana/*"]
-    }
-  }
-}
-
-
-resource "aws_lb_listener_rule" "renderer_rule" {
-  listener_arn = aws_lb_listener.public_listener.arn
-  priority     = 200
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.renderer_tg.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/render", "/render/*"]
-    }
-  }
-}
-
-
-resource "aws_lb_listener" "redis_tcp" {
+data "aws_lb_listener" "redis_tcp" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
   port              = 6379
   protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.redis_tg.arn
-  }
 }
-
 
 ##############################
 # Secrets Manager
@@ -171,7 +76,7 @@ resource "aws_ecs_task_definition" "grafana" {
         { name = "GF_DATABASE_TYPE", value = "postgres" },
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
         { name = "GF_DATABASE_NAME", value = "grafana" },
-        { name = "GF_DATABASE_USER", value = "rajesh" },
+        { name = "GF_DATABASE_USER", value = "grafana" },
         {
           name  = "GF_DATABASE_PASSWORD"
           value = data.aws_secretsmanager_secret_version.db.secret_string
@@ -207,8 +112,6 @@ resource "aws_ecs_task_definition" "grafana" {
     }
   ])
 }
-
-
 
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
@@ -265,7 +168,6 @@ resource "aws_ecs_task_definition" "redis" {
   }])
 }
 
-
 ##############################
 # ECS Services
 ##############################
@@ -284,13 +186,13 @@ resource "aws_ecs_service" "grafana" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.grafana_tg.arn
+    target_group_arn = data.aws_lb_target_group.grafana_tg.arn
     container_name   = "grafana"
     container_port   = 3000
   }
 
   enable_execute_command = true
-  depends_on             = [aws_lb_listener_rule.grafana_rule]
+  depends_on             = [data.aws_lb_listener.public_listener]
 }
 
 resource "aws_ecs_service" "renderer" {
@@ -307,13 +209,13 @@ resource "aws_ecs_service" "renderer" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.renderer_tg.arn
+    target_group_arn = data.aws_lb_target_group.renderer_tg.arn
     container_name   = "renderer"
     container_port   = 8081
   }
 
   enable_execute_command = true
-  depends_on             = [aws_lb_listener_rule.renderer_rule]
+  depends_on             = [data.aws_lb_listener.public_listener]
 }
 
 resource "aws_ecs_service" "redis" {
@@ -330,13 +232,13 @@ resource "aws_ecs_service" "redis" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.redis_tg.arn
+    target_group_arn = data.aws_lb_target_group.redis_tg.arn
     container_name   = "redis"
     container_port   = 6379
   }
 
   enable_execute_command = true
-  depends_on             = [aws_lb_listener.redis_tcp]
+  depends_on             = [data.aws_lb_listener.redis_tcp]
 }
 
 ##############################
