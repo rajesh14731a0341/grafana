@@ -20,7 +20,7 @@ grafana_autoscaling_min        = 1
 grafana_autoscaling_max        = 5
 grafana_autoscaling_cpu_target = 70
 
-renderer_desired_count          = 1
+renderer_desired_count          = 2
 renderer_autoscaling_min        = 1
 renderer_autoscaling_max        = 5
 renderer_autoscaling_cpu_target = 70
