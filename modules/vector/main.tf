@@ -52,7 +52,7 @@ resource "aws_lb_target_group" "d3po_clickhouse_tg" {
 }
 
 resource "aws_lb_target_group" "nginx_marquez_tg" {
-  name        = "nginx_marquez-tg"
+  name        = "nginx-marquez-tg"
   port        = 80
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -319,7 +319,7 @@ resource "aws_ecs_service" "vector" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.vector_tg.arn
+    target_group_arn = aws_lb_target_group.d3po_vector_tg.arn
     container_name   = "vector"
     container_port   = 8686
   }
@@ -328,7 +328,7 @@ resource "aws_ecs_service" "vector" {
     aws_ecs_task_definition.vector,
     aws_cloudwatch_log_group.vector_logs,
     aws_s3_object.vector_config,
-    aws_lb_listener.vector_TCP_8686  # Ensure listener is ready before service
+    aws_lb_listener.vector_tcp_8686  # Ensure listener is ready before service
   ]
 
   health_check_grace_period_seconds = 60
@@ -350,7 +350,7 @@ resource "aws_ecs_service" "clickhouse" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.clickhouse_tg.arn
+    target_group_arn = aws_lb_target_group.d3po_clickhouse_tg.arn
     container_name   = "clickhouse"
     container_port   = 8123
   }
@@ -378,7 +378,7 @@ resource "aws_ecs_service" "nginx" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.nginx_vector_tg.arn
+    target_group_arn = aws_lb_target_group.nginx_marquez_tg.arn
     container_name   = "nginx"
     container_port   = 80
   }
