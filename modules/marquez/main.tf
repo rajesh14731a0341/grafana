@@ -143,7 +143,7 @@ resource "aws_cloudwatch_log_group" "db_logs" {
 # Task Definitions
 ######################
 resource "aws_ecs_task_definition" "api" {
-  family                   = "d3po_marquez-api"
+  family                   = "d3po-marquez-api"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -180,7 +180,7 @@ resource "aws_ecs_task_definition" "api" {
 
 
 resource "aws_ecs_task_definition" "web" {
-  family                   = "d3po_marquez-web"
+  family                   = "d3po-marquez-web"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -208,7 +208,7 @@ resource "aws_ecs_task_definition" "web" {
 }
 
 resource "aws_ecs_task_definition" "db" {
-  family                   = "d3po_marquez-db"
+  family                   = "d3po-marquez-db"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -240,7 +240,7 @@ resource "aws_ecs_task_definition" "db" {
 # ECS Services
 ######################
 resource "aws_ecs_service" "api" {
-  name                   = "d3po_marquez-api"
+  name                   = "d3po-marquez-api"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.api.arn
   desired_count          = var.marquez_api_desired_count
@@ -268,7 +268,7 @@ resource "aws_ecs_service" "api" {
 }
 
 resource "aws_ecs_service" "web" {
-  name                   = "d3po_marquez-web"
+  name                   = "d3po-marquez-web"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.web.arn
   desired_count          = var.marquez_web_desired_count
@@ -296,7 +296,7 @@ resource "aws_ecs_service" "web" {
 }
 
 resource "aws_ecs_service" "db" {
-  name                   = "d3po_marquez-db"
+  name                   = "d3po-marquez-db"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.db.arn
   desired_count          = 1
@@ -329,7 +329,7 @@ resource "aws_ecs_service" "db" {
 resource "aws_appautoscaling_target" "api" {
   max_capacity       = var.marquez_api_autoscaling_max
   min_capacity       = var.marquez_api_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_name}/d3po_marquez-api"
+  resource_id        = "service/${var.ecs_cluster_name}/d3po-marquez-api"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
   depends_on         = [aws_ecs_service.api]
@@ -355,7 +355,7 @@ resource "aws_appautoscaling_policy" "api_cpu" {
 resource "aws_appautoscaling_target" "web" {
   max_capacity       = var.marquez_web_autoscaling_max
   min_capacity       = var.marquez_web_autoscaling_min
-  resource_id        = "service/${var.ecs_cluster_name}/d3po_marquez-web"
+  resource_id        = "service/${var.ecs_cluster_name}/d3po-marquez-web"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
   depends_on         = [aws_ecs_service.web]
