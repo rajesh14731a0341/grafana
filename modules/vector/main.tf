@@ -34,8 +34,9 @@ data "aws_lb_listener" "public_http" {
 ######################
 # Target Groups
 ######################
-resource "aws_lb_target_group" "d3po-clickhouse_tg" {
-  name        = "clickhouse-tg"
+
+resource "aws_lb_target_group" "d3po_clickhouse_tg" {
+  name        = "d3po-clickhouse_tg"
   port        = 8123
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -50,9 +51,8 @@ resource "aws_lb_target_group" "d3po-clickhouse_tg" {
   }
 }
 
-
 resource "aws_lb_target_group" "nginx_marquez_tg" {
-  name        = "nginx-tg"
+  name        = "nginx_marquez_tg"
   port        = 80
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -69,15 +69,15 @@ resource "aws_lb_target_group" "nginx_marquez_tg" {
   }
 }
 
-resource "aws_lb_target_group" "vector_tg" {
+resource "aws_lb_target_group" "d3po_vector_tg" {
   name        = "d3po-vector-tg"
   port        = 8686
-  protocol    = "TCP"  # ✅ FIX: Change from HTTP to TCP
+  protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
-    protocol            = "TCP"     # ✅ TCP health check, since protocol is TCP
+    protocol            = "TCP"
     interval            = 30
     timeout             = 5
     healthy_threshold   = 2
@@ -86,9 +86,11 @@ resource "aws_lb_target_group" "vector_tg" {
 }
 
 
+
 ######################
 # Listeners
 ######################
+
 resource "aws_lb_listener" "clickhouse_tcp_8123" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
   port              = 8123
@@ -96,7 +98,7 @@ resource "aws_lb_listener" "clickhouse_tcp_8123" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.clickhouse_tg.arn
+    target_group_arn = aws_lb_target_group.d3po_clickhouse_tg.arn
   }
 }
 
@@ -106,7 +108,7 @@ resource "aws_lb_listener_rule" "nginx_vector_path_rule" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.nginx_vector_tg.arn
+    target_group_arn = aws_lb_target_group.nginx_marquez_tg.arn
   }
 
   condition {
@@ -116,16 +118,17 @@ resource "aws_lb_listener_rule" "nginx_vector_path_rule" {
   }
 }
 
-resource "aws_lb_listener" "vector_TCP_8686" {
+resource "aws_lb_listener" "vector_tcp_8686" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
   port              = 8686
   protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.vector_tg.arn
+    target_group_arn = aws_lb_target_group.d3po_vector_tg.arn
   }
 }
+
 
 ######################
 # S3 Objects
