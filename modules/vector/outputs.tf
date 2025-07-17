@@ -23,17 +23,17 @@ output "nginx_service_name" {
 
 output "vector_target_group_arn" {
   description = "Target group ARN for Vector (8686)"
-  value       = aws_lb_target_group.d3po_vector_tg.arn
+  value       = data.aws_lb_target_group.d3po_vector_tg.arn
 }
 
 output "clickhouse_target_group_arn" {
   description = "Target group ARN for ClickHouse (8123)"
-  value       = aws_lb_target_group.d3po_clickhouse_tg.arn
+  value       = data.aws_lb_target_group.d3po_clickhouse_tg.arn
 }
 
 output "nginx_target_group_arn" {
   description = "Target group ARN for NGINX"
-  value       = aws_lb_target_group.nginx_marquez_tg.arn
+  value       = data.aws_lb_target_group.nginx_marquez_tg.arn
 }
 
 #######################
