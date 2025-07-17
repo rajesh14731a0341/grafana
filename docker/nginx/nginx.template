@@ -22,8 +22,7 @@ http {
 
         # ol-vector proxy block
         location /ol-vector/ {
-            rewrite ^/ol-vector/(.*)$ /$1 break;
-            proxy_pass http://${OL_VECTOR_HOST}:${OL_VECTOR_PORT};
+            proxy_pass http://${OL_VECTOR_HOST}:${OL_VECTOR_PORT}/;
             include /etc/nginx/proxy-headers.conf;
         }
 
