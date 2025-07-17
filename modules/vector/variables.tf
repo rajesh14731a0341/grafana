@@ -39,9 +39,10 @@ variable "private_subnet_ids" {
 }
 
 variable "security_group_id" {
-  description = "Security group ID used by ECS services"
-  type        = string
+  description = "List of security group IDs for ECS services"
+  type        = list(string)
 }
+
 
 variable "execution_role_arn" {
   description = "IAM role ARN used by ECS task execution"

@@ -166,7 +166,7 @@ resource "aws_ecs_service" "api" {
 
   network_configuration {
     subnets          = var.private_subnet_ids
-    security_groups  = [var.security_group_id]
+    security_groups  = var.security_group_id
     assign_public_ip = false
   }
 
@@ -193,7 +193,8 @@ resource "aws_ecs_service" "web" {
 
   network_configuration {
     subnets          = var.private_subnet_ids
-    security_groups  = [var.security_group_id]
+    security_groups  = var.security_group_id
+    
     assign_public_ip = false
   }
 
@@ -220,7 +221,7 @@ resource "aws_ecs_service" "db" {
 
   network_configuration {
     subnets          = var.private_subnet_ids
-    security_groups  = [var.security_group_id]
+    security_groups  = var.security_group_id
     assign_public_ip = false
   }
 
