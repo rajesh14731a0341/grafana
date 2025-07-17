@@ -14,11 +14,12 @@ output "nginx_service_name" {
 }
 
 output "nginx_target_group_arn" {
-  description = "Target group ARN for nginx"
-  value       = aws_lb_target_group.nginx_vector_tg.arn
+  description = "ARN of the existing NGINX target group"
+  value       = data.aws_lb_target_group.nginx_vector_tg.arn
 }
 
 output "clickhouse_target_group_arn" {
-  description = "Target group ARN for ClickHouse (8123)"
-  value       = aws_lb_target_group.clickhouse_tg.arn
+  description = "ARN of the existing ClickHouse target group"
+  value       = data.aws_lb_target_group.clickhouse_tg.arn
 }
+
