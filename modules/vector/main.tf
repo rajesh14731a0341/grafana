@@ -35,7 +35,7 @@ data "aws_lb_listener" "public_http" {
 # Target Groups
 ######################
 resource "aws_lb_target_group" "clickhouse_tg" {
-  name        = "clickhouse-tg"
+  name        = "d3po-clickhouse-tg"
   port        = 8123
   protocol    = "TCP"
   vpc_id      = var.vpc_id
@@ -70,7 +70,7 @@ resource "aws_lb_target_group" "nginx_vector_tg" {
 }
 
 resource "aws_lb_target_group" "vector_tg" {
-  name        = "vector-tg"
+  name        = "d3po-vector-tg"
   port        = 8686
   protocol    = "TCP"  # ✅ FIX: Change from HTTP to TCP
   vpc_id      = var.vpc_id
@@ -130,32 +130,45 @@ resource "aws_lb_listener" "vector_TCP_8686" {
 ######################
 # S3 Objects
 ######################
+locals {
+  vector_parts = split("/", var.vector_config_bucket)
+  nginx_parts  = split("/", var.nginx_config_bucket)
+
+  vector_bucket = local.vector_parts[0]
+  vector_prefix = join("/", slice(local.vector_parts, 1, length(local.vector_parts)))
+
+  nginx_bucket  = local.nginx_parts[0]
+  nginx_prefix  = join("/", slice(local.nginx_parts, 1, length(local.nginx_parts)))
+}
+
 resource "aws_s3_object" "vector_config" {
-  bucket = var.vector_config_bucket
-  key    = "vector.yaml"
+  bucket = local.vector_bucket
+  key    = "${local.vector_prefix}/vector.yaml"
   source = "${path.root}/../../docker/vector/vector.yaml"
   etag   = filemd5("${path.root}/../../docker/vector/vector.yaml")
 }
 
 resource "aws_s3_object" "nginx_template" {
-  bucket = var.nginx_config_bucket
-  key    = "nginx.template"
+  bucket = local.nginx_bucket
+  key    = "${local.nginx_prefix}/nginx.template"
   source = "${path.root}/../../docker/nginx/nginx.template"
   etag   = filemd5("${path.root}/../../docker/nginx/nginx.template")
 }
 
 resource "aws_s3_object" "proxy_headers_conf" {
-  bucket = var.nginx_config_bucket
-  key    = "proxy-headers.conf"
+  bucket = local.nginx_bucket
+  key    = "${local.nginx_prefix}/proxy-headers.conf"
   source = "${path.root}/../../docker/nginx/proxy-headers.conf"
   etag   = filemd5("${path.root}/../../docker/nginx/proxy-headers.conf")
 }
+
+
 
 ######################
 # Task Definitions
 ######################
 resource "aws_ecs_task_definition" "vector" {
-  family                   = "vector"
+  family                   = "d3po-vector"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "512"
@@ -205,7 +218,7 @@ resource "aws_ecs_task_definition" "vector" {
 
 
 resource "aws_ecs_task_definition" "clickhouse" {
-  family                   = "clickhouse"
+  family                   = "d3po-clickhouse"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "1024"
@@ -302,7 +315,7 @@ resource "aws_ecs_task_definition" "nginx" {
 # ECS Services
 ######################
 resource "aws_ecs_service" "vector" {
-  name                   = "vector"
+  name                   = "d3po-vector"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.vector.arn
   desired_count          = var.vector_desired_count
@@ -333,7 +346,7 @@ resource "aws_ecs_service" "vector" {
 
 
 resource "aws_ecs_service" "clickhouse" {
-  name                   = "clickhouse"
+  name                   = "d3po-clickhouse"
   cluster                = var.ecs_cluster_id
   task_definition        = aws_ecs_task_definition.clickhouse.arn
   desired_count          = 1

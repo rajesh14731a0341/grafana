@@ -1,8 +1,8 @@
 # 1. Define variables
 AWS_REGION=us-east-1
-ACCOUNT_ID=736747734611
-REPO_NAME=project
-IMAGE_NAME=marquez_api
+ACCOUNT_ID=324936657337
+REPO_NAME=errorbudget_repo
+IMAGE_NAME=grafana
 TAG=latest
 
 # 2. Build image
