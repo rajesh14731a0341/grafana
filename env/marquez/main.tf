@@ -1,11 +1,9 @@
-
 module "marquez_stack" {
   source = "../../modules/marquez"
 
   ecs_cluster_id                     = var.ecs_cluster_id
   ecs_cluster_name                   = var.ecs_cluster_name
   vpc_id                             = var.vpc_id
-  public_subnet_ids                  = var.public_subnet_ids
   private_subnet_ids                 = var.private_subnet_ids
   security_group_id                  = var.security_group_id
   execution_role_arn                 = var.execution_role_arn
@@ -29,9 +27,9 @@ module "marquez_stack" {
   vector_config_bucket               = var.vector_config_bucket
   nginx_config_bucket                = var.nginx_config_bucket
   config_s3_bucket_name              = var.config_s3_bucket_name
-  nginx_autoscaling_min             = var.nginx_autoscaling_min
-  nginx_autoscaling_max             = var.nginx_autoscaling_max
-  nginx_autoscaling_cpu_target      = var.nginx_autoscaling_cpu_target
+  nginx_autoscaling_min              = var.nginx_autoscaling_min
+  nginx_autoscaling_max              = var.nginx_autoscaling_max
+  nginx_autoscaling_cpu_target       = var.nginx_autoscaling_cpu_target
 }
 
 module "vector_stack" {
@@ -56,11 +54,9 @@ module "vector_stack" {
   config_s3_bucket_name              = var.config_s3_bucket_name
   clickhouse_desired_count           = var.clickhouse_desired_count
   nginx_desired_count                = var.nginx_desired_count
-  nginx_autoscaling_min             = var.nginx_autoscaling_min
-  nginx_autoscaling_max             = var.nginx_autoscaling_max
-  nginx_autoscaling_cpu_target      = var.nginx_autoscaling_cpu_target
-  nginx_image                       = var.nginx_image
+  nginx_autoscaling_min              = var.nginx_autoscaling_min
+  nginx_autoscaling_max              = var.nginx_autoscaling_max
+  nginx_autoscaling_cpu_target       = var.nginx_autoscaling_cpu_target
+  nginx_image                        = var.nginx_image
   vector_image                       = var.vector_image
 }
-
-

@@ -1,7 +1,6 @@
 variable "ecs_cluster_id" {}
 variable "ecs_cluster_name" {}
 variable "vpc_id" {}
-variable "public_subnet_ids" {}
 variable "private_subnet_ids" {}
 variable "security_group_id" {}
 variable "execution_role_arn" {}
