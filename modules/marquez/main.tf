@@ -22,68 +22,24 @@ data "aws_lb_listener" "public_listener" {
   port              = 80
 }
 
-resource "aws_lb_listener" "internal_tcp_5432" {
+data "aws_lb_listener" "internal_tcp_5432" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
   port              = 5432
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.db_tg.arn
-  }
 }
 
 ######################
 # Target Groups
 ######################
-resource "aws_lb_target_group" "api_tg" {
-  name        = "marquez-api-tg"
-  port        = 5000
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = "/api/v1/namespaces"
-    matcher             = "200"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
+data "aws_lb_target_group" "api_tg" {
+  name = "marquez-api-tg"
 }
 
-resource "aws_lb_target_group" "web_tg" {
-  name        = "marquez-web-tg"
-  port        = 3000
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = "/"
-    matcher             = "200"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
+data "aws_lb_target_group" "web_tg" {
+  name = "marquez-web-tg"
 }
 
-resource "aws_lb_target_group" "db_tg" {
-  name        = "marquez-db-tg"
-  port        = 5432
-  protocol    = "TCP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    protocol            = "TCP"
-    interval            = 30
-    timeout             = 10
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-  }
+data "aws_lb_target_group" "db_tg" {
+  name = "marquez-db-tg"
 }
 
 ######################
@@ -95,7 +51,7 @@ resource "aws_lb_listener_rule" "api_rule" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.api_tg.arn
+    target_group_arn = data.aws_lb_target_group.api_tg.arn
   }
 
   condition {
@@ -111,7 +67,7 @@ resource "aws_lb_listener_rule" "web_rule" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.web_tg.arn
+    target_group_arn = data.aws_lb_target_group.web_tg.arn
   }
 
   condition {
@@ -176,8 +132,6 @@ resource "aws_ecs_task_definition" "api" {
     }
   }])
 }
-
-
 
 resource "aws_ecs_task_definition" "web" {
   family                   = "d3po-marquez-web"
@@ -254,7 +208,7 @@ resource "aws_ecs_service" "api" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.api_tg.arn
+    target_group_arn = data.aws_lb_target_group.api_tg.arn
     container_name   = "marquez-api"
     container_port   = 5000
   }
@@ -282,7 +236,7 @@ resource "aws_ecs_service" "web" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.web_tg.arn
+    target_group_arn = data.aws_lb_target_group.web_tg.arn
     container_name   = "marquez-web"
     container_port   = 3000
   }
@@ -310,13 +264,13 @@ resource "aws_ecs_service" "db" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.db_tg.arn
+    target_group_arn = data.aws_lb_target_group.db_tg.arn
     container_name   = "marquez-db"
     container_port   = 5432
   }
 
   depends_on = [
-    aws_lb_listener.internal_tcp_5432,
+    data.aws_lb_listener.internal_tcp_5432,
     aws_cloudwatch_log_group.db_logs
   ]
 
@@ -377,5 +331,3 @@ resource "aws_appautoscaling_policy" "web_cpu" {
     scale_out_cooldown = 60
   }
 }
-
-

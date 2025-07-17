@@ -32,6 +32,10 @@ module "marquez_stack" {
   nginx_autoscaling_min             = var.nginx_autoscaling_min
   nginx_autoscaling_max             = var.nginx_autoscaling_max
   nginx_autoscaling_cpu_target      = var.nginx_autoscaling_cpu_target
+  api_target_group_name = var.api_target_group_name
+  web_target_group_name = var.web_target_group_name
+  db_target_group_name  = var.db_target_group_name
+
 }
 
 module "vector_stack" {

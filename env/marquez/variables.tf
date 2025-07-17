@@ -120,3 +120,18 @@ variable "nginx_autoscaling_cpu_target" {
   description = "Target CPU utilization for autoscaling nginx service"
   type        = number
 }
+
+variable "api_target_group_name" {
+  description = "Name of the existing ALB target group for Marquez API"
+  type        = string
+}
+
+variable "web_target_group_name" {
+  description = "Name of the existing ALB target group for Marquez Web"
+  type        = string
+}
+
+variable "db_target_group_name" {
+  description = "Name of the existing NLB target group for Marquez DB"
+  type        = string
+}
