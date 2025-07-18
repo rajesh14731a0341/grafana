@@ -60,37 +60,51 @@ data "aws_lb_target_group" "vector_tg" {
 ######################
 # S3 Objects
 ######################
+
 locals {
-  vector_parts = split("/", var.vector_config_bucket)
-  nginx_parts  = split("/", var.nginx_config_bucket)
-
-  vector_bucket = local.vector_parts[0]
-  vector_prefix = join("/", slice(local.vector_parts, 1, length(local.vector_parts)))
-
-  nginx_bucket  = local.nginx_parts[0]
-  nginx_prefix  = join("/", slice(local.nginx_parts, 1, length(local.nginx_parts)))
+  s3_bucket        = "errorbudget-s3"
+  s3_common_prefix = "errorbudget-terraform-tfstate/d3po-marquez" # ✅ no trailing slash
 }
 
 resource "aws_s3_object" "vector_config" {
-  bucket = local.vector_bucket
-  key    = "${local.vector_prefix}/vector.yaml"
-  source = "${path.root}/../../docker/vector/vector.yaml"
-  etag   = filemd5("${path.root}/../../docker/vector/vector.yaml")
+  bucket       = local.s3_bucket
+  key          = "${local.s3_common_prefix}/vector.yaml"
+  source       = abspath("${path.root}/../../docker/vector/vector.yaml")
+  etag         = filemd5(abspath("${path.root}/../../docker/vector/vector.yaml"))
+  content_type = "text/yaml"
+  tags         = {}
+
+  lifecycle {
+   ignore_changes  = [tags]
+  }
 }
 
 resource "aws_s3_object" "nginx_template" {
-  bucket = local.nginx_bucket
-  key    = "${local.nginx_prefix}/nginx.template"
-  source = "${path.root}/../../docker/nginx/nginx.template"
-  etag   = filemd5("${path.root}/../../docker/nginx/nginx.template")
+  bucket       = local.s3_bucket
+  key          = "${local.s3_common_prefix}/nginx.template"
+  source       = abspath("${path.root}/../../docker/nginx/nginx.template")
+  etag         = filemd5(abspath("${path.root}/../../docker/nginx/nginx.template"))
+  content_type = "text/plain"
+  tags         = {}
+
+  lifecycle {
+    ignore_changes  = [tags]
+  }
 }
 
 resource "aws_s3_object" "proxy_headers_conf" {
-  bucket = local.nginx_bucket
-  key    = "${local.nginx_prefix}/proxy-headers.conf"
-  source = "${path.root}/../../docker/nginx/proxy-headers.conf"
-  etag   = filemd5("${path.root}/../../docker/nginx/proxy-headers.conf")
+  bucket       = local.s3_bucket
+  key          = "${local.s3_common_prefix}/proxy-headers.conf"
+  source       = abspath("${path.root}/../../docker/nginx/proxy-headers.conf")
+  etag         = filemd5(abspath("${path.root}/../../docker/nginx/proxy-headers.conf"))
+  content_type = "text/plain"
+  tags         = {}
+
+  lifecycle {
+    ignore_changes  = [tags]
+  }
 }
+
 
 ######################
 # Task Definitions
@@ -104,45 +118,70 @@ resource "aws_ecs_task_definition" "vector" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
-  container_definitions = jsonencode([{
-    name      = "vector"
-    image     = var.vector_image
-    essential = true
-    portMappings = [
-      { containerPort = 8686 }
-    ]
-    environment = [
-      {
-        name  = "AWS_REGION"
-        value = var.region
-      },
-      {
-        name  = "VECTOR_CONFIG_BUCKET"
-        value = var.vector_config_bucket
-      },
-      {
-        name  = "CLICKHOUSE_HOST"
-        value = data.aws_lb.internal_nlb.dns_name
-      },
-      {
-        name  = "MARQUEZ_API_HOST"
-        value = data.aws_lb.public_alb.dns_name
-      },
-      {
-        name  = "MARQUEZ_API_PATH"
-        value = "/api/v1/lineage"
-      }
-    ]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.vector_logs.name
-        awslogs-region        = var.region
-        awslogs-stream-prefix = "ecs"
+  container_definitions = jsonencode([
+    {
+      name      = "vector"
+      image     = var.vector_image
+      essential = true
+
+      portMappings = [
+        {
+          containerPort = 8686
+          hostPort      = 8686
+          protocol      = "tcp"
+        }
+      ]
+
+      environment = [
+        {
+          name  = "AWS_REGION"
+          value = var.region
+        },
+        {
+          name  = "VECTOR_CONFIG_BUCKET"
+          value = var.vector_config_bucket
+        },
+        {
+          name  = "VECTOR_CONFIG_PREFIX"
+          value = var.vector_config_prefix
+        },
+        {
+          name  = "CLICKHOUSE_HOST"
+          value = data.aws_lb.internal_nlb.dns_name
+        },
+        {
+          name  = "MARQUEZ_API_HOST"
+          value = data.aws_lb.public_alb.dns_name
+        },
+        {
+          name  = "MARQUEZ_API_PATH"
+          value = "/api/v1/lineage"
+        }
+      ]
+
+      entryPoint = ["sh", "-c"]
+      command = [
+        <<-EOF
+        set -e
+        echo "Downloading Vector config from S3..."
+        aws s3 cp s3://$${VECTOR_CONFIG_BUCKET}/$${VECTOR_CONFIG_PREFIX}/vector.yaml /etc/vector/vector.yaml
+        echo "Starting Vector..."
+        exec vector --config /etc/vector/vector.yaml
+        EOF
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.vector_logs.name
+          awslogs-region        = var.region
+          awslogs-stream-prefix = "ecs"
+        }
       }
     }
-  }])
+  ])
 }
+
 
 resource "aws_ecs_task_definition" "clickhouse" {
   family                   = "d3po-clickhouse"
@@ -182,7 +221,7 @@ resource "aws_ecs_task_definition" "nginx" {
   container_definitions = jsonencode([
     {
       name      = "nginx"
-      image     = var.nginx_image
+      image     = var.nginx_image  
       essential = true
 
       portMappings = [
@@ -196,7 +235,11 @@ resource "aws_ecs_task_definition" "nginx" {
       environment = [
         {
           name  = "NGINX_CONFIG_BUCKET_VAR"
-          value = var.nginx_config_bucket
+          value = var.nginx_config_bucket 
+        },
+        {
+          name  = "NGINX_CONFIG_PREFIX"
+          value = var.nginx_config_prefix  
         },
         {
           name  = "OL_VECTOR_HOST"
@@ -206,20 +249,6 @@ resource "aws_ecs_task_definition" "nginx" {
           name  = "OL_VECTOR_PORT"
           value = "8686"
         }
-      ]
-
-      entryPoint = ["sh", "-c"]
-      command = [
-        <<-EOF
-        set -e
-        echo "Downloading config files from s3://$${NGINX_CONFIG_BUCKET_VAR}/"
-        aws s3 cp s3://$${NGINX_CONFIG_BUCKET_VAR}/nginx.template /etc/nginx/nginx.template
-        aws s3 cp s3://$${NGINX_CONFIG_BUCKET_VAR}/proxy-headers.conf /etc/nginx/proxy-headers.conf
-        echo "Generating nginx.conf using envsubst"
-        envsubst '$${OL_VECTOR_HOST} $${OL_VECTOR_PORT}' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf
-        echo "Starting NGINX"
-        nginx -g 'daemon off;'
-        EOF
       ]
 
       logConfiguration = {

@@ -1,4 +1,4 @@
-# Use the official lightweight NGINX image
+# Use lightweight official NGINX image
 FROM nginx:alpine
 
 # Install AWS CLI and envsubst
@@ -7,12 +7,12 @@ RUN apk update && \
     pip install --break-system-packages awscli && \
     rm -rf /var/cache/apk/*
 
-# Expose the default HTTP port
+# Copy entrypoint script into container
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Expose HTTP port
 EXPOSE 80
 
-# Default CMD — ECS overrides, but works for local testing
-CMD ["sh", "-c", "\
-  aws s3 cp s3://${NGINX_CONFIG_BUCKET_VAR}/nginx.template /etc/nginx/nginx.template && \
-  aws s3 cp s3://${NGINX_CONFIG_BUCKET_VAR}/proxy-headers.conf /etc/nginx/proxy-headers.conf && \
-  envsubst < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && \
-  nginx -g 'daemon off;'"]
+# Always use the entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]

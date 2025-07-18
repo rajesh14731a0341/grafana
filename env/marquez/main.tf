@@ -30,6 +30,8 @@ module "marquez_stack" {
   nginx_autoscaling_min              = var.nginx_autoscaling_min
   nginx_autoscaling_max              = var.nginx_autoscaling_max
   nginx_autoscaling_cpu_target       = var.nginx_autoscaling_cpu_target
+  vector_config_prefix               = var.vector_config_prefix
+  nginx_config_prefix                = var.nginx_config_prefix
 }
 
 module "vector_stack" {
@@ -59,4 +61,6 @@ module "vector_stack" {
   nginx_autoscaling_cpu_target       = var.nginx_autoscaling_cpu_target
   nginx_image                        = var.nginx_image
   vector_image                       = var.vector_image
+  vector_config_prefix               = var.vector_config_prefix
+  nginx_config_prefix                = var.nginx_config_prefix
 }

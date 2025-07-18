@@ -3,7 +3,7 @@ ecs_cluster_id     = "arn:aws:ecs:us-east-1:324936657337:cluster/errorbudget-clu
 ecs_cluster_name   = "errorbudget-cluster"
 vpc_id             = "vpc-0e68bf7f59a3c89d4"
 private_subnet_ids = ["subnet-0c2a2cfee95ed2a2e", "subnet-078af0ab3c67821ea"]
-security_group_id  = ["sg-0707c29990939be2b" ,"sg-089d0e2469b40cdcb"]
+security_group_id  = "sg-0707c29990939be2b"
 execution_role_arn = "arn:aws:iam::324936657337:role/errorbudget_ec2_role"
 task_role_arn      = "arn:aws:iam::324936657337:role/errorbudget_ec2_role"
 alb_name = "rajesh-errorbudget-alb"
@@ -21,11 +21,12 @@ marquez_postgres_user     = "marquez"
 marquez_postgres_password = "marquez"
 marquez_postgres_db       = "marquez"
 
-config_s3_bucket_name = "errorbudget-s3/d3po"
-vector_config_bucket     = "errorbudget-s3/d3po"
-nginx_config_bucket = "errorbudget-s3/d3po"
+config_s3_bucket_name = "errorbudget-s3"
+vector_config_bucket  = "errorbudget-s3"
+vector_config_prefix  = "errorbudget-terraform-tfstate/d3po-marquez"
 
-
+nginx_config_bucket   = "errorbudget-s3"
+nginx_config_prefix   = "errorbudget-terraform-tfstate/d3po-marquez"
 
 marquez_api_desired_count     = 1
 marquez_api_autoscaling_min   = 1
