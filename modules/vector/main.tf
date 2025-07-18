@@ -130,36 +130,55 @@ resource "aws_lb_listener" "vector_TCP_8686" {
 ######################
 # S3 Objects
 ######################
+
 locals {
-  vector_parts = split("/", var.vector_config_bucket)
-  nginx_parts  = split("/", var.nginx_config_bucket)
-
-  vector_bucket = local.vector_parts[0]
-  vector_prefix = join("/", slice(local.vector_parts, 1, length(local.vector_parts)))
-
-  nginx_bucket  = local.nginx_parts[0]
-  nginx_prefix  = join("/", slice(local.nginx_parts, 1, length(local.nginx_parts)))
+  s3_bucket        = "errorbudget-s3"
+  s3_common_prefix = "errorbudget-terraform-tfstate/d3po-marquez" # ✅ no trailing slash
 }
 
 resource "aws_s3_object" "vector_config" {
-  bucket = local.vector_bucket
-  key    = "${local.vector_prefix}/vector.yaml"
-  source = "${path.root}/../../docker/vector/vector.yaml"
-  etag   = filemd5("${path.root}/../../docker/vector/vector.yaml")
+  bucket = local.s3_bucket
+  key    = "${local.s3_common_prefix}/vector.yaml"
+
+  source = abspath("${path.root}/../../docker/vector/vector.yaml")
+  etag   = filemd5(abspath("${path.root}/../../docker/vector/vector.yaml"))
+
+  force_destroy = true
+  tags          = {}
+
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
 
 resource "aws_s3_object" "nginx_template" {
-  bucket = local.nginx_bucket
-  key    = "${local.nginx_prefix}/nginx.template"
-  source = "${path.root}/../../docker/nginx/nginx.template"
-  etag   = filemd5("${path.root}/../../docker/nginx/nginx.template")
+  bucket = local.s3_bucket
+  key    = "${local.s3_common_prefix}/nginx.template"
+
+  source = abspath("${path.root}/../../docker/nginx/nginx.template")
+  etag   = filemd5(abspath("${path.root}/../../docker/nginx/nginx.template"))
+
+  force_destroy = true
+  tags          = {}
+
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
 
 resource "aws_s3_object" "proxy_headers_conf" {
-  bucket = local.nginx_bucket
-  key    = "${local.nginx_prefix}/proxy-headers.conf"
-  source = "${path.root}/../../docker/nginx/proxy-headers.conf"
-  etag   = filemd5("${path.root}/../../docker/nginx/proxy-headers.conf")
+  bucket = local.s3_bucket
+  key    = "${local.s3_common_prefix}/proxy-headers.conf"
+
+  source = abspath("${path.root}/../../docker/nginx/proxy-headers.conf")
+  etag   = filemd5(abspath("${path.root}/../../docker/nginx/proxy-headers.conf"))
+
+  force_destroy = true
+  tags          = {}
+
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
 
 

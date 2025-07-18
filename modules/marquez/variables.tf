@@ -100,3 +100,14 @@ variable "nginx_autoscaling_cpu_target" {
   type        = number
 }
 
+variable "vector_config_prefix" {
+  description = "A description for vector_config_prefix."
+  type        = string
+  # default     = "some_default_value" # Optional: provide a default value
+}
+
+variable "nginx_config_prefix" {
+  description = "A description for nginx_config_prefix."
+  type        = string
+  # default     = "another_default_value" # Optional: provide a default value
+}

@@ -22,9 +22,12 @@ marquez_postgres_user     = "marquez"
 marquez_postgres_password = "marquez"
 marquez_postgres_db       = "marquez"
 
-config_s3_bucket_name = "errorbudget-s3/d3po"
-vector_config_bucket     = "errorbudget-s3/d3po"
-nginx_config_bucket = "errorbudget-s3/d3po"
+config_s3_bucket_name = "errorbudget-s3"
+vector_config_bucket  = "errorbudget-s3"
+vector_config_prefix  = "errorbudget-terraform-tfstate/d3po-marquez"
+
+nginx_config_bucket   = "errorbudget-s3"
+nginx_config_prefix   = "errorbudget-terraform-tfstate/d3po-marquez"
 
 marquez_api_desired_count     = 1
 marquez_api_autoscaling_min   = 1
