@@ -2,7 +2,7 @@
 AWS_REGION=us-east-1
 ACCOUNT_ID=324936657337
 REPO_NAME=errorbudget_repo
-IMAGE_NAME=nginx-2
+IMAGE_NAME=vector
 TAG=latest
 
 # 2. Build image

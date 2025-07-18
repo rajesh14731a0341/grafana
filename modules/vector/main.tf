@@ -137,50 +137,46 @@ locals {
 }
 
 resource "aws_s3_object" "vector_config" {
-  bucket = local.s3_bucket
-  key    = "${local.s3_common_prefix}/vector.yaml"
-
-  source = abspath("${path.root}/../../docker/vector/vector.yaml")
-  etag   = filemd5(abspath("${path.root}/../../docker/vector/vector.yaml"))
-
-  force_destroy = true
-  tags          = {}
+  bucket       = local.s3_bucket
+  key          = "${local.s3_common_prefix}/vector.yaml"
+  source       = abspath("${path.root}/../../docker/vector/vector.yaml")
+  etag         = filemd5(abspath("${path.root}/../../docker/vector/vector.yaml"))
+  content_type = "text/yaml"
+  tags         = {}
 
   lifecycle {
-    ignore_changes = [tags]
+    prevent_destroy = true
+    ignore_changes  = [tags]
   }
 }
 
 resource "aws_s3_object" "nginx_template" {
-  bucket = local.s3_bucket
-  key    = "${local.s3_common_prefix}/nginx.template"
-
-  source = abspath("${path.root}/../../docker/nginx/nginx.template")
-  etag   = filemd5(abspath("${path.root}/../../docker/nginx/nginx.template"))
-
-  force_destroy = true
-  tags          = {}
+  bucket       = local.s3_bucket
+  key          = "${local.s3_common_prefix}/nginx.template"
+  source       = abspath("${path.root}/../../docker/nginx/nginx.template")
+  etag         = filemd5(abspath("${path.root}/../../docker/nginx/nginx.template"))
+  content_type = "text/plain"
+  tags         = {}
 
   lifecycle {
-    ignore_changes = [tags]
+    prevent_destroy = true
+    ignore_changes  = [tags]
   }
 }
 
 resource "aws_s3_object" "proxy_headers_conf" {
-  bucket = local.s3_bucket
-  key    = "${local.s3_common_prefix}/proxy-headers.conf"
-
-  source = abspath("${path.root}/../../docker/nginx/proxy-headers.conf")
-  etag   = filemd5(abspath("${path.root}/../../docker/nginx/proxy-headers.conf"))
-
-  force_destroy = true
-  tags          = {}
+  bucket       = local.s3_bucket
+  key          = "${local.s3_common_prefix}/proxy-headers.conf"
+  source       = abspath("${path.root}/../../docker/nginx/proxy-headers.conf")
+  etag         = filemd5(abspath("${path.root}/../../docker/nginx/proxy-headers.conf"))
+  content_type = "text/plain"
+  tags         = {}
 
   lifecycle {
-    ignore_changes = [tags]
+    prevent_destroy = true
+    ignore_changes  = [tags]
   }
 }
-
 
 
 ######################
