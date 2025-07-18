@@ -1,7 +1,6 @@
 variable "ecs_cluster_id" {}
 variable "ecs_cluster_name" {}
 variable "vpc_id" {}
-variable "private_subnet_ids" {}
 variable "execution_role_arn" {}
 variable "task_role_arn" {}
 variable "alb_name" {}
@@ -102,6 +101,11 @@ variable "security_group_id" {
   description = "List of security group IDs for ECS services"
   type        = list(string)
 }
+
+variable "private_subnet_ids" {
+  type = list(string)
+}
+
 variable "vector_config_prefix" {
   description = "A description for vector_config_prefix."
   type        = string

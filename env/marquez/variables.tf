@@ -1,7 +1,6 @@
 variable "ecs_cluster_id" {}
 variable "ecs_cluster_name" {}
 variable "vpc_id" {}
-variable "private_subnet_ids" {}
 variable "execution_role_arn" {}
 variable "task_role_arn" {}
 variable "alb_name" {}
@@ -132,4 +131,7 @@ variable "nginx_config_prefix" {
   description = "A description for nginx_config_prefix."
   type        = string
   # default     = "another_default_value" # Optional: provide a default value
+}
+variable "private_subnet_ids" {
+  type = list(string)
 }
