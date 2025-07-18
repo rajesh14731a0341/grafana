@@ -145,7 +145,7 @@ resource "aws_s3_object" "vector_config" {
   tags         = {}
 
   lifecycle {
-   ignore_changes  = all
+   ignore_changes  = [tags]
   }
 }
 
@@ -158,7 +158,7 @@ resource "aws_s3_object" "nginx_template" {
   tags         = {}
 
   lifecycle {
-    ignore_changes  = all
+    ignore_changes  = [tags]
   }
 }
 
@@ -171,7 +171,7 @@ resource "aws_s3_object" "proxy_headers_conf" {
   tags         = {}
 
   lifecycle {
-    ignore_changes  = all
+    ignore_changes  = [tags]
   }
 }
 
