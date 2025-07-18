@@ -13,8 +13,8 @@ nlb_name = "rajesh-errorbudget-nlb"
 
 # 👇 Add this line to point to your custom image in ECR
 marquez_api_image             = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:marquez-api"
-nginx_image                   = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:nginx"
-vector_image                  = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:vector"
+nginx_image                   = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:nginx-2"
+vector_image                  = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:vector-2"
 
 
 marquez_postgres_port     = "5432"
