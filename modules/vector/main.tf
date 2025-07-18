@@ -145,8 +145,7 @@ resource "aws_s3_object" "vector_config" {
   tags         = {}
 
   lifecycle {
-    prevent_destroy = true
-    ignore_changes  = all
+   ignore_changes  = all
   }
 }
 
@@ -159,7 +158,6 @@ resource "aws_s3_object" "nginx_template" {
   tags         = {}
 
   lifecycle {
-    prevent_destroy = true
     ignore_changes  = all
   }
 }
@@ -173,7 +171,6 @@ resource "aws_s3_object" "proxy_headers_conf" {
   tags         = {}
 
   lifecycle {
-    prevent_destroy = true
     ignore_changes  = all
   }
 }
