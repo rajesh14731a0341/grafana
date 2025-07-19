@@ -3,7 +3,7 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - grafana_lb_already_type   # Change this to your branch if different
+      - origin/grafana_stack_wv_cr_tg   # Change this to your branch if different
 
 jobs:
   deploy:
