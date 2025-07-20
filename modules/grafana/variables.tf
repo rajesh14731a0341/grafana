@@ -139,3 +139,13 @@ variable "grafana_image" {
   description = "Custom vector_image Docker image URI"
   type        = string
 }
+
+variable "grafana_datasource_bucket" {
+  description = "S3 bucket to upload Grafana datasource JSONs"
+  type        = string
+}
+
+variable "grafana_datasource_prefix" {
+  description = "S3 key prefix for Grafana datasource files"
+  type        = string
+}

@@ -1,12 +1,9 @@
 {
   "name": "${name}",
   "type": "redis-datasource",
-  "access": "proxy",
   "url": "${host}:${port}",
+  "access": "proxy",
   "jsonData": {
-    "client": "standalone",
-    "password": "",
-    "poolSize": 5,
-    "timeout": 10
+    "poolSize": 5
   }
 }

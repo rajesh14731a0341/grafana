@@ -3,7 +3,7 @@ locals {
 }
 
 ##############################
-# Data Sources for Load Balancers
+# Data Sources for Load Balancers and Target Groups
 ##############################
 
 data "aws_lb" "public_alb" {
@@ -14,116 +14,27 @@ data "aws_lb" "internal_nlb" {
   name = var.nlb_name
 }
 
-##############################
-# Target Groups
-##############################
-
-resource "aws_lb_target_group" "grafana_tg" {
-  name        = "grafana-tg"
-  port        = 3000
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path     = "/grafana/login"
-    protocol = "HTTP"
-    matcher  = "200-399"
-  }
-}
-
-
-resource "aws_lb_target_group" "renderer_tg" {
-  name        = "renderer-tg"
-  port        = 8081
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    path                = "/render/version"
-    protocol            = "HTTP"
-    matcher             = "200-499"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-  }
-}
-
-resource "aws_lb_target_group" "redis_tg" {
-  name        = "redis-tg"
-  port        = 6379
-  protocol    = "TCP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    protocol            = "TCP"
-    port                = "traffic-port"  # ✅ This matches port 6379
-    interval            = 30
-    timeout             = 10
-    healthy_threshold   = 3
-    unhealthy_threshold = 3
-  }
-}
-
-
-##############################
-# Load Balancer Listeners
-##############################
-
 data "aws_lb_listener" "public_listener" {
   load_balancer_arn = data.aws_lb.public_alb.arn
   port              = 80
 }
 
-
-resource "aws_lb_listener_rule" "grafana_rule" {
-  listener_arn = data.aws_lb_listener.public_listener.arn
-  priority     = 100
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.grafana_tg.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/grafana", "/grafana/*"]
-    }
-  }
-}
-
-
-resource "aws_lb_listener_rule" "renderer_rule" {
-  listener_arn = data.aws_lb_listener.public_listener.arn
-  priority     = 200
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.renderer_tg.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/render", "/render/*"]
-    }
-  }
-}
-
-
-resource "aws_lb_listener" "redis_tcp" {
+data "aws_lb_listener" "redis_tcp_listener" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
   port              = 6379
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.redis_tg.arn
-  }
 }
 
+data "aws_lb_target_group" "grafana_tg" {
+  name = "grafana-tg"
+}
+
+data "aws_lb_target_group" "renderer_tg" {
+  name = "renderer-tg"
+}
+
+data "aws_lb_target_group" "redis_tg" {
+  name = "redis-tg"
+}
 
 ##############################
 # Secrets Manager
@@ -151,42 +62,30 @@ resource "aws_ecs_task_definition" "grafana" {
       name  = "grafana"
       image = var.grafana_image
       portMappings = [{ containerPort = 3000 }]
+
       environment = [
-        {
-          name  = "GF_SERVER_ROOT_URL"
-          value = "http://${data.aws_lb.public_alb.dns_name}/grafana"
-        },
-        {
-          name  = "GF_SERVER_SERVE_FROM_SUB_PATH"
-          value = "true"
-        },
+        { name = "GF_SECURITY_ADMIN_USER", value = var.grafana_admin_user },
+        { name = "GF_SECURITY_ADMIN_PASSWORD", value = var.grafana_admin_password },
+        { name = "GF_SERVER_ROOT_URL", value = "http://${data.aws_lb.public_alb.dns_name}/grafana" },
+        { name = "GF_SERVER_SERVE_FROM_SUB_PATH", value = "true" },
         { name = "GF_DATABASE_TYPE", value = "postgres" },
         { name = "GF_DATABASE_HOST", value = var.db_endpoint },
         { name = "GF_DATABASE_NAME", value = "grafana" },
         { name = "GF_DATABASE_USER", value = "grafana" },
-        {
-          name  = "GF_DATABASE_PASSWORD"
-          value = data.aws_secretsmanager_secret_version.db.secret_string
-        },
+        { name = "GF_DATABASE_PASSWORD", value = data.aws_secretsmanager_secret_version.db.secret_string },
         { name = "GF_DATABASE_SSL_MODE", value = "require" },
-        {
-          name = "GF_RENDERING_SERVER_URL"
-          value = "http://${data.aws_lb.public_alb.dns_name}/render"
-        },
-        {
-          name = "GF_RENDERING_CALLBACK_URL"
-          value = "http://${data.aws_lb.public_alb.dns_name}/grafana"
-        },
-        {
-          name = "REDIS_PATH"
-          value = "${data.aws_lb.internal_nlb.dns_name}:6379"
-        },
+        { name = "GF_RENDERING_SERVER_URL", value = "http://${data.aws_lb.public_alb.dns_name}/render" },
+        { name = "GF_RENDERING_CALLBACK_URL", value = "http://${data.aws_lb.public_alb.dns_name}/grafana" },
+        { name = "REDIS_PATH", value = "${data.aws_lb.internal_nlb.dns_name}:6379" },
         { name = "REDIS_DB", value = "1" },
         { name = "REDIS_CACHETIME", value = "12000" },
         { name = "CACHING", value = "Y" },
         { name = "GF_PLUGIN_ALLOW_LOCAL_MODE", value = "true" },
-        { name = "GF_LOG_FILTERS", value = "rendering:debug" }
+        { name = "GF_LOG_FILTERS", value = "rendering:debug" },
+        { name = "GRAFANA_DATASOURCE_BUCKET", value = var.grafana_datasource_bucket },
+        { name = "GRAFANA_DATASOURCE_PREFIX", value = var.grafana_datasource_prefix }
       ],
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -195,12 +94,12 @@ resource "aws_ecs_task_definition" "grafana" {
           awslogs-stream-prefix = "grafana"
           awslogs-create-group  = "true"
         }
-      }
+      },
+
+      command = ["/bin/bash", "-c", "/entrypoint.sh"]
     }
   ])
 }
-
-
 
 resource "aws_ecs_task_definition" "renderer" {
   family                   = "renderer-task"
@@ -241,9 +140,7 @@ resource "aws_ecs_task_definition" "redis" {
   container_definitions = jsonencode([{
     name  = "redis"
     image = "redis:latest"
-    portMappings = [{
-      containerPort = 6379
-    }]
+    portMappings = [{ containerPort = 6379 }]
     command = ["redis-server", "--bind", "0.0.0.0"]
     logConfiguration = {
       logDriver = "awslogs"
@@ -256,7 +153,6 @@ resource "aws_ecs_task_definition" "redis" {
     }
   }])
 }
-
 
 ##############################
 # ECS Services
@@ -276,13 +172,13 @@ resource "aws_ecs_service" "grafana" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.grafana_tg.arn
+    target_group_arn = data.aws_lb_target_group.grafana_tg.arn
     container_name   = "grafana"
     container_port   = 3000
   }
 
   enable_execute_command = true
-  depends_on             = [aws_lb_listener_rule.grafana_rule]
+  depends_on             = [data.aws_lb_listener.public_listener]
 }
 
 resource "aws_ecs_service" "renderer" {
@@ -299,13 +195,13 @@ resource "aws_ecs_service" "renderer" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.renderer_tg.arn
+    target_group_arn = data.aws_lb_target_group.renderer_tg.arn
     container_name   = "renderer"
     container_port   = 8081
   }
 
   enable_execute_command = true
-  depends_on             = [aws_lb_listener_rule.renderer_rule]
+  depends_on             = [data.aws_lb_listener.public_listener]
 }
 
 resource "aws_ecs_service" "redis" {
@@ -322,147 +218,38 @@ resource "aws_ecs_service" "redis" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.redis_tg.arn
+    target_group_arn = data.aws_lb_target_group.redis_tg.arn
     container_name   = "redis"
     container_port   = 6379
   }
 
   enable_execute_command = true
-  depends_on             = [aws_lb_listener.redis_tcp]
+  depends_on             = [data.aws_lb_listener.redis_tcp_listener]
 }
 
-##############################
-# Auto Scaling
-##############################
+######################################################
 
-resource "aws_appautoscaling_target" "grafana" {
-  service_namespace  = "ecs"
-  resource_id        = "service/${var.ecs_cluster_name}/grafana"
-  scalable_dimension = "ecs:service:DesiredCount"
-  min_capacity       = var.grafana_autoscaling_min
-  max_capacity       = var.grafana_autoscaling_max
-  depends_on         = [aws_ecs_service.grafana]
-}
-
-resource "aws_appautoscaling_policy" "grafana_cpu" {
-  name               = "grafana-cpu-autoscaling"
-  policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.grafana.resource_id
-  scalable_dimension = aws_appautoscaling_target.grafana.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.grafana.service_namespace
-
-  target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
-    target_value       = var.grafana_autoscaling_cpu_target
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
-  }
-}
-
-resource "aws_appautoscaling_target" "renderer" {
-  service_namespace  = "ecs"
-  resource_id        = "service/${var.ecs_cluster_name}/renderer"
-  scalable_dimension = "ecs:service:DesiredCount"
-  min_capacity       = var.renderer_autoscaling_min
-  max_capacity       = var.renderer_autoscaling_max
-  depends_on         = [aws_ecs_service.renderer]
-}
-
-resource "aws_appautoscaling_policy" "renderer_cpu" {
-  name               = "renderer-cpu-autoscaling"
-  policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.renderer.resource_id
-  scalable_dimension = aws_appautoscaling_target.renderer.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.renderer.service_namespace
-
-  target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
-    target_value       = var.renderer_autoscaling_cpu_target
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
-  }
-}
-
-resource "aws_appautoscaling_target" "redis" {
-  service_namespace  = "ecs"
-  resource_id        = "service/${var.ecs_cluster_name}/redis"
-  scalable_dimension = "ecs:service:DesiredCount"
-  min_capacity       = var.redis_autoscaling_min
-  max_capacity       = var.redis_autoscaling_max
-  depends_on         = [aws_ecs_service.redis]
-}
-
-resource "aws_appautoscaling_policy" "redis_cpu" {
-  name               = "redis-cpu-autoscaling"
-  policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.redis.resource_id
-  scalable_dimension = aws_appautoscaling_target.redis.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.redis.service_namespace
-
-  target_tracking_scaling_policy_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
-    }
-    target_value       = var.redis_autoscaling_cpu_target
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
-  }
-}
-
-##################################
-resource "local_file" "clickhouse_datasource_json" {
+resource "local_file" "clickhouse_jsons" {
   for_each = var.clickhouse_sources
 
-  content = templatefile("${path.module}/clickhouse-datasource.tpl.json", {
+  content  = templatefile("${path.module}/clickhouse-datasource.tpl.json", {
     name = each.key
     host = each.value.host
     port = each.value.port
   })
-
   filename = "${path.module}/clickhouse-${each.key}.json"
 }
 
-resource "null_resource" "clickhouse_provision" {
-  for_each = var.clickhouse_sources
+resource "aws_s3_object" "clickhouse_jsons" {
+  for_each = local_file.clickhouse_jsons
 
-  provisioner "local-exec" {
-    command = <<EOT
-#!/bin/bash
-
-# Wait for Grafana to be healthy
-for i in {1..12}; do
-  STATUS=$(curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} http://${data.aws_lb.public_alb.dns_name}/grafana/api/health | grep '"database":"ok"')
-  if [ ! -z "$STATUS" ]; then
-    echo "Grafana is healthy."
-    break
-  fi
-  echo "Waiting for Grafana..."
-  sleep 10
-done
-
-# Create ClickHouse datasource
-curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} \
-  -X POST http://${data.aws_lb.public_alb.dns_name}/grafana/api/datasources \
-  -H "Content-Type: application/json" \
-  -d @${local_file.clickhouse_datasource_json[each.key].filename}
-EOT
-    interpreter = ["/bin/bash", "-c"]
-  }
-
-  depends_on = [
-    aws_ecs_service.grafana
-  ]
-
-  triggers = {
-    datasource = local_file.clickhouse_datasource_json[each.key].content
-  }
+  bucket = var.grafana_datasource_bucket
+  key    = "${var.grafana_datasource_prefix}/clickhouse-${each.key}.json"
+  source = each.value.filename
+  etag   = filemd5(each.value.filename)
 }
 
-resource "local_file" "postgres_datasource_json" {
+resource "local_file" "postgres_json" {
   content = templatefile("${path.module}/postgres-datasource.tpl.json", {
     name     = "rds-postgres"
     host     = var.db_endpoint
@@ -476,44 +263,14 @@ resource "local_file" "postgres_datasource_json" {
   filename = "${path.module}/postgres-datasource.json"
 }
 
-
-resource "null_resource" "postgres_provision" {
-  provisioner "local-exec" {
-    command = <<EOT
-#!/bin/bash
-
-# Wait for Grafana to be healthy
-for i in {1..12}; do
-  STATUS=$(curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} http://${data.aws_lb.public_alb.dns_name}/grafana/api/health | grep '"database":"ok"')
-  if [ ! -z "$STATUS" ]; then
-    echo "Grafana is healthy."
-    break
-  fi
-  echo "Waiting for Grafana..."
-  sleep 10
-done
-
-# Create RDS datasource
-curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} \
-  -X POST http://${data.aws_lb.public_alb.dns_name}/grafana/api/datasources \
-  -H "Content-Type: application/json" \
-  -d @${local_file.postgres_datasource_json.filename}
-EOT
-    interpreter = ["/bin/bash", "-c"]
-  }
-
-  depends_on = [
-    aws_ecs_service.grafana
-  ]
-
-  triggers = {
-    datasource = local_file.postgres_datasource_json.content
-  }
+resource "aws_s3_object" "postgres_json" {
+  bucket = var.grafana_datasource_bucket
+  key    = "${var.grafana_datasource_prefix}/postgres-datasource.json"
+  source = local_file.postgres_json.filename
+  etag   = filemd5(local_file.postgres_json.filename)
 }
 
-
-
-resource "local_file" "redis_datasource_json" {
+resource "local_file" "redis_json" {
   content = templatefile("${path.module}/redis-datasource.tpl.json", {
     name = "redis"
     host = data.aws_lb.internal_nlb.dns_name
@@ -523,36 +280,9 @@ resource "local_file" "redis_datasource_json" {
   filename = "${path.module}/redis-datasource.json"
 }
 
-resource "null_resource" "redis_provision" {
-  provisioner "local-exec" {
-    command = <<EOT
-#!/bin/bash
-
-# Wait for Grafana to be healthy
-for i in {1..12}; do
-  STATUS=$(curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} http://${data.aws_lb.public_alb.dns_name}/grafana/api/health | grep '"database":"ok"')
-  if [ ! -z "$STATUS" ]; then
-    echo "Grafana is healthy."
-    break
-  fi
-  echo "Waiting for Grafana..."
-  sleep 10
-done
-
-# Create Redis datasource
-curl -s -u ${var.grafana_admin_user}:${var.grafana_admin_password} \
-  -X POST http://${data.aws_lb.public_alb.dns_name}/grafana/api/datasources \
-  -H "Content-Type: application/json" \
-  -d @${local_file.redis_datasource_json.filename}
-EOT
-    interpreter = ["/bin/bash", "-c"]
-  }
-
-  depends_on = [
-    aws_ecs_service.grafana
-  ]
-
-  triggers = {
-    datasource = local_file.redis_datasource_json.content
-  }
+resource "aws_s3_object" "redis_json" {
+  bucket = var.grafana_datasource_bucket
+  key    = "${var.grafana_datasource_prefix}/redis-datasource.json"
+  source = local_file.redis_json.filename
+  etag   = filemd5(local_file.redis_json.filename)
 }

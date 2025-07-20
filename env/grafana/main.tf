@@ -33,4 +33,6 @@ module "grafana" {
   grafana_admin_user     = var.grafana_admin_user
   grafana_admin_password = var.grafana_admin_password
   clickhouse_sources     = var.clickhouse_sources
+  grafana_datasource_bucket = var.grafana_datasource_bucket
+  grafana_datasource_prefix = var.grafana_datasource_prefix
 }

@@ -1,15 +1,14 @@
 {
   "name": "${name}",
   "type": "postgres",
-  "access": "proxy",
   "url": "${host}:${port}",
+  "access": "proxy",
   "user": "${user}",
   "database": "${database}",
-  "jsonData": {
-    "sslmode": "${sslmode}"
-  },
   "secureJsonData": {
     "password": "${password}"
   },
-  "isDefault": false
+  "jsonData": {
+    "sslmode": "${sslmode}"
+  }
 }

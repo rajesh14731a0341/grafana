@@ -30,6 +30,9 @@ redis_autoscaling_min        = 1
 redis_autoscaling_max        = 5
 redis_autoscaling_cpu_target = 70
 
+grafana_datasource_bucket = "errorbudget-s3"
+grafana_datasource_prefix = "errorbudget-terraform-tfstate/grafana_datasources"
+
 clickhouse_sources = {
   d3po_clickhouse = {
     host = "rajesh-errorbudget-nlb-54e2cd93acff92ad.elb.us-east-1.amazonaws.com"
@@ -39,5 +42,4 @@ clickhouse_sources = {
 
 grafana_admin_user     = "admin"
 grafana_admin_password = "admin"
-
 grafana_image                  = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:grafana"
