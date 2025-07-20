@@ -229,14 +229,18 @@ resource "aws_ecs_service" "redis" {
 
 ######################################################
 
+##############################
+# CLICKHOUSE DATASOURCES
+##############################
 resource "local_file" "clickhouse_jsons" {
   for_each = var.clickhouse_sources
 
-  content  = templatefile("${path.module}/clickhouse-datasource.tpl.json", {
+  content = templatefile("${path.module}/clickhouse-datasource.tpl.json", {
     name = each.key
     host = each.value.host
     port = each.value.port
   })
+
   filename = "${path.module}/clickhouse-${each.key}.json"
 }
 
@@ -246,9 +250,13 @@ resource "aws_s3_object" "clickhouse_jsons" {
   bucket = var.grafana_datasource_bucket
   key    = "${var.grafana_datasource_prefix}/clickhouse-${each.key}.json"
   source = each.value.filename
-  etag   = filemd5(each.value.filename)
+  depends_on = [local_file.clickhouse_jsons]
 }
 
+
+##############################
+# POSTGRES DATASOURCE
+##############################
 resource "local_file" "postgres_json" {
   content = templatefile("${path.module}/postgres-datasource.tpl.json", {
     name     = "rds-postgres"
@@ -267,9 +275,13 @@ resource "aws_s3_object" "postgres_json" {
   bucket = var.grafana_datasource_bucket
   key    = "${var.grafana_datasource_prefix}/postgres-datasource.json"
   source = local_file.postgres_json.filename
-  etag   = filemd5(local_file.postgres_json.filename)
+  depends_on = [local_file.postgres_json]
 }
 
+
+##############################
+# REDIS DATASOURCE
+##############################
 resource "local_file" "redis_json" {
   content = templatefile("${path.module}/redis-datasource.tpl.json", {
     name = "redis"
@@ -284,5 +296,5 @@ resource "aws_s3_object" "redis_json" {
   bucket = var.grafana_datasource_bucket
   key    = "${var.grafana_datasource_prefix}/redis-datasource.json"
   source = local_file.redis_json.filename
-  etag   = filemd5(local_file.redis_json.filename)
+  depends_on = [local_file.redis_json]
 }
