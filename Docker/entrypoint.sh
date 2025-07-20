@@ -27,15 +27,15 @@ for i in {1..30}; do
   sleep 5
 done
 
-# Download datasource JSONs from S3
+# Download datasource JSONs from S3 to Grafana provisioning directory
 echo "[Provisioning] Downloading datasource files from S3..."
-mkdir -p /etc/grafana/datasources
+mkdir -p /etc/grafana/provisioning/datasources
 
 aws s3 cp "s3://${GRAFANA_DATASOURCE_BUCKET}/${GRAFANA_DATASOURCE_PREFIX}/" \
-  /etc/grafana/datasources/ --recursive
+  /etc/grafana/provisioning/datasources/ --recursive
 
-# Provision each datasource
-for f in /etc/grafana/datasources/*.json; do
+# Provision each datasource via API
+for f in /etc/grafana/provisioning/datasources/*.json; do
   echo "[Provisioning] Posting $f"
 
   HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \

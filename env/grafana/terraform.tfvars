@@ -42,4 +42,4 @@ clickhouse_sources = {
 
 grafana_admin_user     = "admin"
 grafana_admin_password = "admin"
-grafana_image                  = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:grafana"
+grafana_image                  = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:grafana_2"
