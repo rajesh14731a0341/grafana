@@ -26,7 +26,7 @@ variable "marquez_api_image" {
   type        = string
 }
 
-variable "marquez_postgres_port" {
+variable "d3po_marquez_postgres_port" {
   type        = string
   default     = "5432"
   description = "Postgres DB port"
@@ -110,4 +110,9 @@ variable "nginx_config_prefix" {
   description = "A description for nginx_config_prefix."
   type        = string
   # default     = "another_default_value" # Optional: provide a default value
+}
+
+variable "vector_image" {
+  description = "Custom vector_image Docker image URI"
+  type        = string
 }

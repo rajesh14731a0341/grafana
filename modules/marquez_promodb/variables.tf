@@ -9,6 +9,8 @@ variable "task_role_arn" {}
 variable "alb_name" {}
 variable "nlb_name" {}
 
+variable "region" {}
+
 variable "marquez_api_desired_count" {}
 variable "marquez_api_autoscaling_min" {}
 variable "marquez_api_autoscaling_max" {}
@@ -18,33 +20,18 @@ variable "marquez_web_desired_count" {}
 variable "marquez_web_autoscaling_min" {}
 variable "marquez_web_autoscaling_max" {}
 variable "marquez_web_autoscaling_cpu_target" {}
-variable "region" {}
+
 variable "marquez_api_image" {
   description = "Custom Marquez API Docker image URI"
   type        = string
 }
 
-variable "nginx_image" {
-  description = "Custom nginx_image Docker image URI"
-  type        = string
-}
-
-variable "vector_image" {
-  description = "Custom vector_image Docker image URI"
-  type        = string
-}
-
-variable "d3po_marquez_postgres_port" {
+variable "marquez_postgres_port" {
   type        = string
   default     = "5432"
   description = "Postgres DB port"
 }
 
-variable "promodb_marquez_postgres_port" {
-  type        = string
-  default     = "5433"
-  description = "Postgres DB port"
-}
 variable "marquez_postgres_user" {
   type        = string
   default     = "marquez"
@@ -64,7 +51,12 @@ variable "marquez_postgres_db" {
   description = "Postgres DB name"
 }
 
+variable "config_s3_bucket_name" {
+  description = "S3 bucket to store config files"
+  type        = string
+}
 
+# 🟩 Vector service variables
 variable "vector_desired_count" {
   type    = number
   default = 1
@@ -85,10 +77,6 @@ variable "vector_autoscaling_cpu_target" {
   default = 50
 }
 
-variable "config_s3_bucket_name" {
-  type = string
-}
-
 variable "vector_config_bucket" {
   type        = string
   description = "S3 bucket to store vector.yaml config"
@@ -96,20 +84,6 @@ variable "vector_config_bucket" {
 variable "nginx_config_bucket" {
   description = "The name of the S3 bucket that contains the nginx.template file"
   type        = string
-}
-
-
-
-variable "clickhouse_desired_count" {
-  description = "ClickHouse desired count"
-  type        = number
-  default     = 1
-}
-
-variable "nginx_desired_count" {
-  description = "Nginx desired count"
-  type        = number
-  default     = 1
 }
 variable "nginx_autoscaling_min" {
   description = "Minimum number of nginx service tasks for autoscaling"
@@ -136,4 +110,15 @@ variable "nginx_config_prefix" {
   description = "A description for nginx_config_prefix."
   type        = string
   # default     = "another_default_value" # Optional: provide a default value
+}
+
+variable "vector_image" {
+  description = "Custom vector_image Docker image URI"
+  type        = string
+}
+
+variable "promodb_marquez_postgres_port" {
+  type        = string
+  default     = "5433"
+  description = "Postgres DB port"
 }

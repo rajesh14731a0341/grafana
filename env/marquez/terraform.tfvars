@@ -12,22 +12,23 @@ nlb_name = "rajesh-errorbudget-nlb"
 
 
 # 👇 Add this line to point to your custom image in ECR
-marquez_api_image             = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:marquez-api"
+marquez_api_image             = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:marquez_api"
 nginx_image                   = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:nginx"
 vector_image                  = "324936657337.dkr.ecr.us-east-1.amazonaws.com/errorbudget_repo:vector"
 
 
-marquez_postgres_port     = "5432"
+d3po_marquez_postgres_port     = "5432"
 marquez_postgres_user     = "marquez"
 marquez_postgres_password = "marquez"
 marquez_postgres_db       = "marquez"
+promodb_marquez_postgres_port     = "5433"
 
 config_s3_bucket_name = "errorbudget-s3"
 vector_config_bucket  = "errorbudget-s3"
-vector_config_prefix  = "errorbudget-terraform-tfstate/d3po-marquez"
+vector_config_prefix  = "errorbudget-terraform-tfstate/marquez_config"
 
 nginx_config_bucket   = "errorbudget-s3"
-nginx_config_prefix   = "errorbudget-terraform-tfstate/d3po-marquez"
+nginx_config_prefix   = "errorbudget-terraform-tfstate/marquez_config"
 
 marquez_api_desired_count     = 1
 marquez_api_autoscaling_min   = 1

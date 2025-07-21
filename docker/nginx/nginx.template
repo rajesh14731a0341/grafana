@@ -11,6 +11,8 @@ http {
     sendfile        on;
     keepalive_timeout 65;
 
+    access_log /var/log/nginx/access.log;
+
     server {
         listen 80;
 
@@ -20,15 +22,40 @@ http {
             add_header Content-Type text/plain;
         }
 
-        # ol-vector proxy block
-        location /ol-vector/ {
-            rewrite ^/ol-vector/(.*)$ /$1 break;
-            proxy_pass http://${OL_VECTOR_HOST}:${OL_VECTOR_PORT};
+        # d3po-vector proxy block
+        location /d3po-vector/ {
+            rewrite ^/d3po-vector/(.*)$ /$1 last;
+            proxy_pass http://${D3PO_VECTOR_HOST}:8686;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
             include /etc/nginx/proxy-headers.conf;
         }
 
-        # Future team paths can be added below, like:
-        # location /team-a/ { ... }
-        # location /team-b/ { ... }
+        # promodb-vector proxy block
+        location /promodb-vector/ {
+            rewrite ^/promodb-vector/(.*)$ /$1 last;
+            proxy_pass http://${PROMODB_VECTOR_HOST}:8687;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            include /etc/nginx/proxy-headers.conf;
+        }
+
+        # d3po-marquez-api proxy block
+        location /d3po/api/ {
+            rewrite ^/d3po/api/(.*)$ /$1 break;
+            proxy_pass http://${D3PO_MARQUEZ_API_HOST}:5000;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            include /etc/nginx/proxy-headers.conf;
+        }
+
+        # promodb-marquez-api proxy block
+        location /promodb/api/ {
+            rewrite ^/promodb/api/(.*)$ /$1 break;
+            proxy_pass http://${PROMODB_MARQUEZ_API_HOST}:5002;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            include /etc/nginx/proxy-headers.conf;
+        }
     }
 }

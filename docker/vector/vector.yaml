@@ -7,6 +7,7 @@ sources:
     response_code: 201
     path: /api/v1/lineage
     strict_path: true
+    healthcheck: true
 
 transforms:
   remap_json_fields:
@@ -34,7 +35,7 @@ sinks:
     inputs:
       - remap_json_fields
     database: default
-    endpoint: clickhouse://${CLICKHOUSE_HOST}:8123
+    endpoint: clickhouse://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}
     table: lineage_events
 
   debug_file:
@@ -60,4 +61,4 @@ sinks:
       retry_attempts: 3
       headers:
         Content-Type: application/json
-    uri: http://${MARQUEZ_API_HOST}${MARQUEZ_API_PATH}
+    uri: ${MARQUEZ_URI}
