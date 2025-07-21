@@ -44,7 +44,7 @@ data "aws_lb_listener" "public_listener" {
 ######################
 resource "aws_lb_target_group" "api_tg" {
   name        = "promodb-marquez-api-tg"
-  port        = 5002
+  port        = var.promodb_marquez_api_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -61,7 +61,7 @@ resource "aws_lb_target_group" "api_tg" {
 
 resource "aws_lb_target_group" "web_tg" {
   name        = "promodb-marquez-web-tg"
-  port        = 3001
+  port        = var.promodb_marquez_web_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -78,7 +78,7 @@ resource "aws_lb_target_group" "web_tg" {
 
 resource "aws_lb_target_group" "db_tg" {
   name        = "promodb-marquez-db-tg"
-  port        = 5433
+  port        = var.promodb_marquez_db_port
   protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -94,7 +94,7 @@ resource "aws_lb_target_group" "db_tg" {
 
 resource "aws_lb_target_group" "clickhouse_tg" {
   name        = "promodb-clickhouse-tg"
-  port        = 8124
+  port        = var.promodb_clickhouse_port
   protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -110,7 +110,7 @@ resource "aws_lb_target_group" "clickhouse_tg" {
 
 resource "aws_lb_target_group" "vector_tg" {
   name        = "promodb-vector-tg"
-  port        = 8687
+  port        = var.promodb_vector_port
   protocol    = "TCP"  # ✅ FIX: Change from HTTP to TCP
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -160,7 +160,7 @@ resource "aws_lb_listener_rule" "web_rule" {
 
 resource "aws_lb_listener" "internal_tcp_5432" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
-  port              = 5433
+  port              = var.promodb_marquez_db_port
   protocol          = "TCP"
 
   default_action {
@@ -171,7 +171,7 @@ resource "aws_lb_listener" "internal_tcp_5432" {
 
 resource "aws_lb_listener" "clickhouse_tcp_8123" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
-  port              = 8124
+  port              = var.promodb_clickhouse_port
   protocol          = "TCP"
 
   default_action {
@@ -182,7 +182,7 @@ resource "aws_lb_listener" "clickhouse_tcp_8123" {
 
 resource "aws_lb_listener" "vector_TCP_8686" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
-  port              = 8687
+  port              = var.promodb_vector_port
   protocol          = "TCP"
 
   default_action {
@@ -234,8 +234,8 @@ resource "aws_ecs_task_definition" "api" {
     name  = "marquez-api"
     image = var.marquez_api_image                        
     portMappings = [
-      { containerPort = 5002 },
-      { containerPort = 5003 }
+      { containerPort = var.promodb_marquez_api_port },
+      { containerPort = var.promodb_marquez_admin_port }
     ]
     environment = [
       { name = "MARQUEZ_POSTGRES_HOST",     value = data.aws_lb.internal_nlb.dns_name },
@@ -244,8 +244,8 @@ resource "aws_ecs_task_definition" "api" {
       { name = "MARQUEZ_POSTGRES_PASSWORD", value = var.marquez_postgres_password },
       { name = "MARQUEZ_POSTGRES_DB",       value = var.marquez_postgres_db },
       { name = "MARQUEZ_CONFIG",            value = "/usr/src/app/marquez.dev.yml" },
-      { name = "MARQUEZ_APPLICATION_PORT",  value = "5002" },
-      { name = "MARQUEZ_ADMIN_PORT",        value = "5003" }
+      { name = "MARQUEZ_APPLICATION_PORT",  value = var.promodb_marquez_api_port },
+      { name = "MARQUEZ_ADMIN_PORT",        value = var.promodb_marquez_admin_port }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -272,7 +272,7 @@ resource "aws_ecs_task_definition" "web" {
   container_definitions = jsonencode([{
     name        = "marquez-web"
     image       = "marquezproject/marquez-web:0.47.0"
-    portMappings = [{ containerPort = 3001 }]
+    portMappings = [{ containerPort = var.promodb_marquez_web_port }]
     environment = [
       { name = "MARQUEZ_HOST", value = local.marquez_api_url_base },
       { name = "MARQUEZ_PORT", value = "80" }
@@ -300,7 +300,7 @@ resource "aws_ecs_task_definition" "db" {
   container_definitions = jsonencode([{
     name        = "marquez-db"
     image       = "postgres:14"
-    portMappings = [{ containerPort = 5433 }]
+    portMappings = [{ containerPort = var.promodb_marquez_db_port }]
     environment = [
       { name = "POSTGRES_USER", value = var.marquez_postgres_user },
       { name = "POSTGRES_PASSWORD", value = var.marquez_postgres_password },
@@ -334,7 +334,7 @@ resource "aws_ecs_task_definition" "vector" {
 
       portMappings = [
         {
-          containerPort = 8687
+          containerPort = var.promodb_vector_port
           protocol      = "tcp"
         }
       ]
@@ -404,7 +404,7 @@ resource "aws_ecs_task_definition" "clickhouse" {
     name        = "clickhouse"
     image       = "clickhouse/clickhouse-server:23.4"
     portMappings = [
-      { containerPort = 8124 }
+      { containerPort = var.promodb_clickhouse_port }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -437,7 +437,7 @@ resource "aws_ecs_service" "api" {
   load_balancer {
     target_group_arn = aws_lb_target_group.api_tg.arn
     container_name   = "marquez-api"
-    container_port   = 5000
+    container_port   = var.promodb_marquez_api_port
   }
 
   depends_on = [
@@ -465,7 +465,7 @@ resource "aws_ecs_service" "web" {
   load_balancer {
     target_group_arn = aws_lb_target_group.web_tg.arn
     container_name   = "marquez-web"
-    container_port   = 3000
+    container_port   = var.promodb_marquez_web_port
   }
 
   depends_on = [
@@ -493,7 +493,7 @@ resource "aws_ecs_service" "db" {
   load_balancer {
     target_group_arn = aws_lb_target_group.db_tg.arn
     container_name   = "marquez-db"
-    container_port   = 5432
+    container_port   = var.promodb_marquez_db_port
   }
 
   depends_on = [
@@ -521,7 +521,7 @@ resource "aws_ecs_service" "vector" {
   load_balancer {
     target_group_arn = aws_lb_target_group.vector_tg.arn
     container_name   = "vector"
-    container_port   = 8686
+    container_port   = var.promodb_vector_port
   }
 
   depends_on = [
@@ -552,7 +552,7 @@ resource "aws_ecs_service" "clickhouse" {
   load_balancer {
     target_group_arn = aws_lb_target_group.clickhouse_tg.arn
     container_name   = "clickhouse"
-    container_port   = 8123
+    container_port   = var.promodb_clickhouse_port
   }
 
   depends_on = [

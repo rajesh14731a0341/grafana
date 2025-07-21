@@ -44,7 +44,7 @@ data "aws_lb_listener" "public_listener" {
 ######################
 resource "aws_lb_target_group" "api_tg" {
   name        = "d3po-marquez-api-tg"
-  port        = 5000
+  port        = var.d3po_marquez_api_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -61,7 +61,7 @@ resource "aws_lb_target_group" "api_tg" {
 
 resource "aws_lb_target_group" "web_tg" {
   name        = "d3po-marquez-web-tg"
-  port        = 3000
+  port        = var.d3po_marquez_web_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -78,7 +78,7 @@ resource "aws_lb_target_group" "web_tg" {
 
 resource "aws_lb_target_group" "db_tg" {
   name        = "d3po-marquez-db-tg"
-  port        = 5432
+  port        = var.d3po_marquez_db_port
   protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -94,7 +94,7 @@ resource "aws_lb_target_group" "db_tg" {
 
 resource "aws_lb_target_group" "clickhouse_tg" {
   name        = "d3po-clickhouse-tg"
-  port        = 8123
+  port        = var.d3po_clickhouse_port
   protocol    = "TCP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -110,7 +110,7 @@ resource "aws_lb_target_group" "clickhouse_tg" {
 
 resource "aws_lb_target_group" "vector_tg" {
   name        = "d3po-vector-tg"
-  port        = 8686
+  port        = var.d3po_vector_port
   protocol    = "TCP"  # ✅ FIX: Change from HTTP to TCP
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -160,7 +160,7 @@ resource "aws_lb_listener_rule" "web_rule" {
 
 resource "aws_lb_listener" "internal_tcp_5432" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
-  port              = 5432
+  port              = var.d3po_marquez_db_port
   protocol          = "TCP"
 
   default_action {
@@ -171,7 +171,7 @@ resource "aws_lb_listener" "internal_tcp_5432" {
 
 resource "aws_lb_listener" "clickhouse_tcp_8123" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
-  port              = 8123
+  port              = var.d3po_clickhouse_port
   protocol          = "TCP"
 
   default_action {
@@ -182,7 +182,7 @@ resource "aws_lb_listener" "clickhouse_tcp_8123" {
 
 resource "aws_lb_listener" "vector_TCP_8686" {
   load_balancer_arn = data.aws_lb.internal_nlb.arn
-  port              = 8686
+  port              = var.d3po_vector_port
   protocol          = "TCP"
 
   default_action {
@@ -234,8 +234,8 @@ resource "aws_ecs_task_definition" "api" {
     name  = "marquez-api"
     image = var.marquez_api_image                        
     portMappings = [
-      { containerPort = 5000 },
-      { containerPort = 5001 }
+      { containerPort = var.d3po_marquez_api_port },
+      { containerPort = var.d3po_marquez_admin_port }
     ]
     environment = [
       { name = "MARQUEZ_POSTGRES_HOST",     value = data.aws_lb.internal_nlb.dns_name },
@@ -244,8 +244,8 @@ resource "aws_ecs_task_definition" "api" {
       { name = "MARQUEZ_POSTGRES_PASSWORD", value = var.marquez_postgres_password },
       { name = "MARQUEZ_POSTGRES_DB",       value = var.marquez_postgres_db },
       { name = "MARQUEZ_CONFIG",            value = "/usr/src/app/marquez.dev.yml" },
-      { name = "MARQUEZ_APPLICATION_PORT",  value = "5000" },
-      { name = "MARQUEZ_ADMIN_PORT",        value = "5001" }
+      { name = "MARQUEZ_APPLICATION_PORT",  value = var.d3po_marquez_api_port },
+      { name = "MARQUEZ_ADMIN_PORT",        value = var.d3po_marquez_admin_port }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -300,7 +300,7 @@ resource "aws_ecs_task_definition" "db" {
   container_definitions = jsonencode([{
     name        = "marquez-db"
     image       = "postgres:14"
-    portMappings = [{ containerPort = 5432 }]
+    portMappings = [{ containerPort = var.d3po_marquez_db_port }]
     environment = [
       { name = "POSTGRES_USER", value = var.marquez_postgres_user },
       { name = "POSTGRES_PASSWORD", value = var.marquez_postgres_password },
@@ -334,8 +334,7 @@ resource "aws_ecs_task_definition" "vector" {
 
       portMappings = [
         {
-          containerPort = 8686
-          hostPort      = 8686
+          containerPort = var.d3po_vector_port
           protocol      = "tcp"
         }
       ]
@@ -405,7 +404,7 @@ resource "aws_ecs_task_definition" "clickhouse" {
     name        = "clickhouse"
     image       = "clickhouse/clickhouse-server:23.4"
     portMappings = [
-      { containerPort = 8123 }
+      { containerPort = var.d3po_clickhouse_port }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -438,7 +437,7 @@ resource "aws_ecs_service" "api" {
   load_balancer {
     target_group_arn = aws_lb_target_group.api_tg.arn
     container_name   = "marquez-api"
-    container_port   = 5000
+    container_port   = var.d3po_marquez_api_port
   }
 
   depends_on = [
@@ -466,7 +465,7 @@ resource "aws_ecs_service" "web" {
   load_balancer {
     target_group_arn = aws_lb_target_group.web_tg.arn
     container_name   = "marquez-web"
-    container_port   = 3000
+    container_port   = var.d3po_marquez_web_port
   }
 
   depends_on = [
@@ -494,7 +493,7 @@ resource "aws_ecs_service" "db" {
   load_balancer {
     target_group_arn = aws_lb_target_group.db_tg.arn
     container_name   = "marquez-db"
-    container_port   = 5432
+    container_port   = var.d3po_marquez_db_port
   }
 
   depends_on = [
@@ -522,7 +521,7 @@ resource "aws_ecs_service" "vector" {
   load_balancer {
     target_group_arn = aws_lb_target_group.vector_tg.arn
     container_name   = "vector"
-    container_port   = 8686
+    container_port   = var.d3po_vector_port
   }
 
   depends_on = [
@@ -553,7 +552,7 @@ resource "aws_ecs_service" "clickhouse" {
   load_balancer {
     target_group_arn = aws_lb_target_group.clickhouse_tg.arn
     container_name   = "clickhouse"
-    container_port   = 8123
+    container_port   = var.d3po_clickhouse_port
   }
 
   depends_on = [

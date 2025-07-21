@@ -137,3 +137,17 @@ variable "nginx_config_prefix" {
   type        = string
   # default     = "another_default_value" # Optional: provide a default value
 }
+
+variable "d3po_marquez_api_port" {}
+variable "d3po_marquez_admin_port" {}
+variable "d3po_marquez_web_port" {}
+variable "d3po_marquez_db_port" {}
+variable "d3po_vector_port" {}
+variable "d3po_clickhouse_port" {}
+
+variable "promodb_marquez_api_port" {}
+variable "promodb_marquez_admin_port" {}
+variable "promodb_marquez_web_port" {}
+variable "promodb_marquez_db_port" {}
+variable "promodb_vector_port" {}
+variable "promodb_clickhouse_port" {}

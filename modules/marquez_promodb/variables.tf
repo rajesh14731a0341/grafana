@@ -122,3 +122,10 @@ variable "promodb_marquez_postgres_port" {
   default     = "5433"
   description = "Postgres DB port"
 }
+
+variable "promodb_marquez_api_port" {}
+variable "promodb_marquez_admin_port" {}
+variable "promodb_marquez_web_port" {}
+variable "promodb_marquez_db_port" {}
+variable "promodb_vector_port" {}
+variable "promodb_clickhouse_port" {}

@@ -38,10 +38,15 @@ module "marquez_d3po_stack" {
   nginx_autoscaling_min              = var.nginx_autoscaling_min
   nginx_autoscaling_max              = var.nginx_autoscaling_max
   nginx_autoscaling_cpu_target       = var.nginx_autoscaling_cpu_target
-
   config_s3_bucket_name              = var.config_s3_bucket_name
-}
 
+  d3po_marquez_api_port              = var.d3po_marquez_api_port
+  d3po_marquez_admin_port            = var.d3po_marquez_admin_port
+  d3po_marquez_web_port              = var.d3po_marquez_web_port
+  d3po_marquez_db_port               = var.d3po_marquez_db_port
+  d3po_vector_port                   = var.d3po_vector_port
+  d3po_clickhouse_port               = var.d3po_clickhouse_port
+}
 
 module "marquez_promodb_stack" {
   source = "../../modules/marquez_promodb"
@@ -83,32 +88,36 @@ module "marquez_promodb_stack" {
   nginx_autoscaling_min              = var.nginx_autoscaling_min
   nginx_autoscaling_max              = var.nginx_autoscaling_max
   nginx_autoscaling_cpu_target       = var.nginx_autoscaling_cpu_target
-
   config_s3_bucket_name              = var.config_s3_bucket_name
-}
 
+  promodb_marquez_api_port           = var.promodb_marquez_api_port
+  promodb_marquez_admin_port         = var.promodb_marquez_admin_port
+  promodb_marquez_web_port           = var.promodb_marquez_web_port
+  promodb_marquez_db_port            = var.promodb_marquez_db_port
+  promodb_vector_port                = var.promodb_vector_port
+  promodb_clickhouse_port            = var.promodb_clickhouse_port
+}
 
 module "nginx_stack" {
   source = "../../modules/nginx"
 
-  ecs_cluster_id                  = var.ecs_cluster_id
-  ecs_cluster_name                = var.ecs_cluster_name
-  vpc_id                          = var.vpc_id
-  private_subnet_ids              = var.private_subnet_ids
-  security_group_id               = var.security_group_id
-  execution_role_arn              = var.execution_role_arn
-  task_role_arn                   = var.task_role_arn
-  region                          = var.region
-  alb_name                        = var.alb_name
-  nlb_name                        = var.nlb_name
+  ecs_cluster_id                 = var.ecs_cluster_id
+  ecs_cluster_name               = var.ecs_cluster_name
+  vpc_id                         = var.vpc_id
+  private_subnet_ids             = var.private_subnet_ids
+  security_group_id              = var.security_group_id
+  execution_role_arn             = var.execution_role_arn
+  task_role_arn                  = var.task_role_arn
+  region                         = var.region
+  alb_name                       = var.alb_name
+  nlb_name                       = var.nlb_name
 
-  nginx_image                     = var.nginx_image
-  nginx_desired_count            = var.nginx_desired_count
-  nginx_autoscaling_min          = var.nginx_autoscaling_min
-  nginx_autoscaling_max          = var.nginx_autoscaling_max
-  nginx_autoscaling_cpu_target   = var.nginx_autoscaling_cpu_target
-  config_s3_bucket_name          = var.config_s3_bucket_name
-  nginx_config_bucket            = var.nginx_config_bucket
-  nginx_config_prefix            = var.nginx_config_prefix
+  nginx_image                    = var.nginx_image
+  nginx_desired_count           = var.nginx_desired_count
+  nginx_autoscaling_min         = var.nginx_autoscaling_min
+  nginx_autoscaling_max         = var.nginx_autoscaling_max
+  nginx_autoscaling_cpu_target  = var.nginx_autoscaling_cpu_target
+  config_s3_bucket_name         = var.config_s3_bucket_name
+  nginx_config_bucket           = var.nginx_config_bucket
+  nginx_config_prefix           = var.nginx_config_prefix
 }
-

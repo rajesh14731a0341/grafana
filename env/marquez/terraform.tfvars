@@ -49,3 +49,21 @@ nginx_desired_count           = 1
 nginx_autoscaling_min         = 1
 nginx_autoscaling_max         = 2
 nginx_autoscaling_cpu_target  = 70
+
+# Unique port mappings for d3po stack to avoid conflict with d3po stack
+
+d3po_marquez_api_port     = 5000
+d3po_marquez_admin_port   = 5001
+d3po_marquez_web_port     = 3000
+d3po_marquez_db_port      = 5432
+d3po_vector_port          = 8686
+d3po_clickhouse_port      = 8123
+
+
+# Unique port mappings for promodb stack to avoid conflict with d3po stack
+promodb_marquez_api_port     = 5002
+promodb_marquez_admin_port   = 5003
+promodb_marquez_web_port     = 3001
+promodb_marquez_db_port      = 5433
+promodb_vector_port          = 8687
+promodb_clickhouse_port      = 8124
