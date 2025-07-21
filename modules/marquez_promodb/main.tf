@@ -244,8 +244,8 @@ resource "aws_ecs_task_definition" "api" {
       { name = "MARQUEZ_POSTGRES_PASSWORD", value = var.marquez_postgres_password },
       { name = "MARQUEZ_POSTGRES_DB",       value = var.marquez_postgres_db },
       { name = "MARQUEZ_CONFIG",            value = "/usr/src/app/marquez.dev.yml" },
-      { name = "MARQUEZ_APPLICATION_PORT",  value = var.promodb_marquez_api_port },
-      { name = "MARQUEZ_ADMIN_PORT",        value = var.promodb_marquez_admin_port }
+      { name = "MARQUEZ_APPLICATION_PORT",  value = tostring(var.promodb_marquez_api_port) },
+      { name = "MARQUEZ_ADMIN_PORT",        value = tostring(var.promodb_marquez_admin_port) }
     ]
     logConfiguration = {
       logDriver = "awslogs"
