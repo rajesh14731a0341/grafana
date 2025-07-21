@@ -1,7 +1,6 @@
-#############################d3po stack ######################################
+#############################promodb stack ######################################
 
 locals {
-  log_prefix           = "/ecs/marquez/promodb"
   marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}/promodb/api"
   s3_bucket        = "errorbudget-s3"
   s3_common_prefix = "errorbudget-terraform-tfstate/marquez_config" 
@@ -195,28 +194,28 @@ resource "aws_lb_listener" "vector_TCP_8686" {
 # Log Groups
 ######################
 resource "aws_cloudwatch_log_group" "api_logs" {
-  name              = "${local.log_prefix}/api"
-  retention_in_days = 7
+  name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-promodb-api"
+  retention_in_days = 30
 }
 
 resource "aws_cloudwatch_log_group" "web_logs" {
-  name              = "${local.log_prefix}/web"
-  retention_in_days = 7
+  name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-promodb-web"
+  retention_in_days = 30
 }
 
 resource "aws_cloudwatch_log_group" "db_logs" {
-  name              = "${local.log_prefix}/db"
-  retention_in_days = 7
+  name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-promodb-db"
+  retention_in_days = 30
 }
 
 resource "aws_cloudwatch_log_group" "vector_logs" {
-  name              = "/ecs/vector"
-  retention_in_days = 7
+  name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-promodb-vector"
+  retention_in_days = 30
 }
 
 resource "aws_cloudwatch_log_group" "clickhouse_logs" {
-  name              = "/ecs/clickhouse"
-  retention_in_days = 7
+  name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-promodb-clickhouse"
+  retention_in_days = 30
 }
 
 ######################
@@ -253,7 +252,7 @@ resource "aws_ecs_task_definition" "api" {
       options = {
         awslogs-group         = aws_cloudwatch_log_group.api_logs.name
         awslogs-region        = var.region
-        awslogs-stream-prefix = "ecs"
+        awslogs-stream-prefix = "promodb-api"
       }
     }
   }])
@@ -283,7 +282,7 @@ resource "aws_ecs_task_definition" "web" {
       options = {
         awslogs-group         = aws_cloudwatch_log_group.web_logs.name
         awslogs-region        = var.region
-        awslogs-stream-prefix = "ecs"
+        awslogs-stream-prefix = "promodb-web"
       }
     }
   }])
@@ -312,7 +311,7 @@ resource "aws_ecs_task_definition" "db" {
       options = {
         awslogs-group         = aws_cloudwatch_log_group.db_logs.name
         awslogs-region        = var.region
-        awslogs-stream-prefix = "ecs"
+        awslogs-stream-prefix = "promodb-db"
       }
     }
   }])
@@ -383,7 +382,7 @@ resource "aws_ecs_task_definition" "vector" {
         options = {
           awslogs-group         = aws_cloudwatch_log_group.vector_logs.name
           awslogs-region        = var.region
-          awslogs-stream-prefix = "ecs"
+          awslogs-stream-prefix = "promodb-vector"
         }
       }
     }
@@ -412,7 +411,7 @@ resource "aws_ecs_task_definition" "clickhouse" {
       options = {
         awslogs-group         = aws_cloudwatch_log_group.clickhouse_logs.name
         awslogs-region        = var.region
-        awslogs-stream-prefix = "ecs"
+        awslogs-stream-prefix = "promodb-clickhouse"
       }
     }
   }])
