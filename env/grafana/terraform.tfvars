@@ -15,7 +15,7 @@ db_endpoint   = "database-1.cpwo7c7ymxqw.us-east-1.rds.amazonaws.com"
 alb_name = "rajesh-errorbudget-alb"
 nlb_name = "rajesh-errorbudget-nlb"
 
-grafana_desired_count          = 1
+grafana_desired_count          = 2
 grafana_autoscaling_min        = 1
 grafana_autoscaling_max        = 5
 grafana_autoscaling_cpu_target = 70
