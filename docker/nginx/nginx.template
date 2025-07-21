@@ -40,17 +40,19 @@ http {
             include /etc/nginx/proxy-headers.conf;
         }
 
-        # d3po-marquez-api proxy block
+        # d3po-marquez-api proxy block (strip /d3po, keep /api)
         location /d3po/api/ {
-            proxy_pass http://${D3PO_MARQUEZ_API_HOST}/;
+            rewrite ^/d3po(/api/.*)$ $1 break;
+            proxy_pass http://${D3PO_MARQUEZ_API_HOST};
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             include /etc/nginx/proxy-headers.conf;
         }
 
-        # promodb-marquez-api proxy block
+        # promodb-marquez-api proxy block (strip /promodb, keep /api)
         location /promodb/api/ {
-            proxy_pass http://${PROMODB_MARQUEZ_API_HOST}/;
+            rewrite ^/promodb(/api/.*)$ $1 break;
+            proxy_pass http://${PROMODB_MARQUEZ_API_HOST};
             proxy_http_version 1.1;
             proxy_set_header Connection "";
             include /etc/nginx/proxy-headers.conf;
