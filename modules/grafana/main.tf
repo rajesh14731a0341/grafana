@@ -227,7 +227,7 @@ resource "aws_ecs_service" "redis" {
   depends_on             = [data.aws_lb_listener.redis_tcp_listener]
 }
 
-######################################################
+
 
 ##############################
 # CLICKHOUSE DATASOURCES
