@@ -11,6 +11,8 @@ http {
     sendfile        on;
     keepalive_timeout 65;
 
+    access_log /var/log/nginx/access.log;
+
     server {
         listen 80;
 
@@ -22,13 +24,14 @@ http {
 
         # ol-vector proxy block
         location /ol-vector/ {
-            rewrite ^/ol-vector/(.*)$ /$1 break;
+            rewrite ^/ol-vector/(.*)$ /$1 last;
             proxy_pass http://${OL_VECTOR_HOST}:${OL_VECTOR_PORT};
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
             include /etc/nginx/proxy-headers.conf;
         }
 
-        # Future team paths can be added below, like:
-        # location /team-a/ { ... }
-        # location /team-b/ { ... }
+        # Future team paths can be added below
+        # location /team-a/ { proxy_pass http://... }
     }
 }
