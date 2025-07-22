@@ -10,7 +10,8 @@ module "marquez_d3po_stack" {
   execution_role_arn                 = var.execution_role_arn
   task_role_arn                      = var.task_role_arn
   region                             = var.region
-  alb_name                           = var.alb_name
+  public_alb_name                       = var.public_alb_name
+  internal_alb_name                       = var.internal_alb_name
   nlb_name                           = var.nlb_name
 
   marquez_api_image                  = var.marquez_api_image
@@ -60,7 +61,8 @@ module "marquez_promodb_stack" {
   execution_role_arn                 = var.execution_role_arn
   task_role_arn                      = var.task_role_arn
   region                             = var.region
-  alb_name                           = var.alb_name
+  public_alb_name                       = var.public_alb_name
+  internal_alb_name                       = var.internal_alb_name
   nlb_name                           = var.nlb_name
 
   marquez_api_image                  = var.marquez_api_image
@@ -109,7 +111,8 @@ module "nginx_stack" {
   execution_role_arn             = var.execution_role_arn
   task_role_arn                  = var.task_role_arn
   region                         = var.region
-  alb_name                       = var.alb_name
+  public_alb_name                       = var.public_alb_name
+  internal_alb_name                       = var.internal_alb_name
   nlb_name                       = var.nlb_name
 
   nginx_image                    = var.nginx_image

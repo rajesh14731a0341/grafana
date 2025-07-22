@@ -1,7 +1,7 @@
 #############################d3po stack ######################################
 
 locals {
-  marquez_api_url_base = "http://${data.aws_lb.public_alb.dns_name}/d3po/api"
+  marquez_api_url_base = "http://${data.aws_lb.internal_alb.dns_name}/d3po/api"
   s3_bucket        = "errorbudget-s3"
   s3_common_prefix = "errorbudget-terraform-tfstate/marquez_config" 
 }
@@ -24,9 +24,12 @@ resource "aws_s3_object" "vector_config" {
 # Load Balancers
 ######################
 data "aws_lb" "public_alb" {
-  name = var.alb_name
+  name = var.public_alb_name
 }
 
+data "aws_lb" "internal_alb" {
+  name = var.internal_alb_name
+}
 data "aws_lb" "internal_nlb" {
   name = var.nlb_name
 }
@@ -39,6 +42,10 @@ data "aws_lb_listener" "public_listener" {
   port              = 80
 }
 
+data "aws_lb_listener" "internal_listener" {
+  load_balancer_arn = data.aws_lb.internal_alb.arn
+  port              = 80
+}
 ######################
 # Target Groups
 ######################
@@ -127,7 +134,7 @@ resource "aws_lb_target_group" "vector_tg" {
 # Listener Rules
 ######################
 resource "aws_lb_listener_rule" "api_rule" {
-  listener_arn = data.aws_lb_listener.public_listener.arn
+  listener_arn = data.aws_lb_listener.internal_listener.arn
   priority     = 1006
 
   action {
@@ -362,7 +369,7 @@ resource "aws_ecs_task_definition" "vector" {
         },
         {
           name  = "MARQUEZ_URI"
-          value = "http://${data.aws_lb.public_alb.dns_name}/d3po/api/v1/lineage"
+          value = "http://${data.aws_lb.internal_alb.dns_name}/d3po/api/v1/lineage"
         }
       ]
 

@@ -11,9 +11,12 @@ resource "aws_cloudwatch_log_group" "nginx_logs" {
 # Load Balancers
 ######################
 data "aws_lb" "public_alb" {
-  name = var.alb_name
+  name = var.public_alb_name
 }
 
+data "aws_lb" "internal_alb" {
+  name = var.internal_alb_name
+}
 data "aws_lb" "internal_nlb" {
   name = var.nlb_name
 }
@@ -22,6 +25,10 @@ data "aws_lb_listener" "public_http" {
   port              = 80
 }
 
+data "aws_lb_listener" "internal_listener" {
+  load_balancer_arn = data.aws_lb.internal_alb.arn
+  port              = 80
+}
 ######################
 # Target Groups
 ######################
@@ -159,11 +166,11 @@ resource "aws_ecs_task_definition" "nginx" {
         # Marquez API routing - public ALB
         {
           name  = "D3PO_MARQUEZ_API_HOST"
-          value = data.aws_lb.public_alb.dns_name
+          value = data.aws_lb.internal_alb.dns_name
         },
         {
           name  = "PROMODB_MARQUEZ_API_HOST"
-          value = data.aws_lb.public_alb.dns_name
+          value = data.aws_lb.internal_alb.dns_name
         }
       ]
 

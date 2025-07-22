@@ -8,7 +8,6 @@ variable "security_group_id" {}
 variable "execution_role_arn" {}
 variable "task_role_arn" {}
 variable "region" {}
-variable "alb_name" {}
 variable "nlb_name" {}
 
 variable "nginx_image" {}
@@ -20,3 +19,12 @@ variable "nginx_autoscaling_cpu_target" {}
 variable "config_s3_bucket_name" {}
 variable "nginx_config_bucket" {}
 variable "nginx_config_prefix" {}
+variable "internal_alb_name" {
+  description = "The name of the internal Application Load Balancer."
+  type        = string  
+}
+
+variable "public_alb_name" {
+  description = "The name of the public Application Load Balancer."
+  type        = string
+}

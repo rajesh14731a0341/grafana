@@ -6,7 +6,7 @@ variable "private_subnet_ids" {}
 variable "security_group_id" {}
 variable "execution_role_arn" {}
 variable "task_role_arn" {}
-variable "alb_name" {}
+
 variable "nlb_name" {}
 
 variable "marquez_api_desired_count" {}
@@ -151,3 +151,12 @@ variable "promodb_marquez_web_port" {}
 variable "promodb_marquez_db_port" {}
 variable "promodb_vector_port" {}
 variable "promodb_clickhouse_port" {}
+variable "internal_alb_name" {
+  description = "The name of the internal Application Load Balancer."
+  type        = string  
+}
+
+variable "public_alb_name" {
+  description = "The name of the public Application Load Balancer."
+  type        = string
+}

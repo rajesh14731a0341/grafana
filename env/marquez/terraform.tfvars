@@ -7,8 +7,11 @@ private_subnet_ids = ["subnet-0c2a2cfee95ed2a2e", "subnet-078af0ab3c67821ea"]
 security_group_id  = "sg-0707c29990939be2b"
 execution_role_arn = "arn:aws:iam::324936657337:role/errorbudget_ec2_role"
 task_role_arn      = "arn:aws:iam::324936657337:role/errorbudget_ec2_role"
-alb_name = "rajesh-errorbudget-alb"
+
+internal_alb_name = "rajesh-eb-alb-int"
 nlb_name = "rajesh-errorbudget-nlb"
+public_alb_name = "rajesh-errorbudget-alb"
+
 
 
 # 👇 Add this line to point to your custom image in ECR

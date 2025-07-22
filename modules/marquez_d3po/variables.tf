@@ -6,7 +6,6 @@ variable "private_subnet_ids" {}
 variable "security_group_id" {}
 variable "execution_role_arn" {}
 variable "task_role_arn" {}
-variable "alb_name" {}
 variable "nlb_name" {}
 
 variable "region" {}
@@ -123,3 +122,12 @@ variable "d3po_marquez_web_port" {}
 variable "d3po_marquez_db_port" {}
 variable "d3po_vector_port" {}
 variable "d3po_clickhouse_port" {}
+variable "internal_alb_name" {
+  description = "The name of the internal Application Load Balancer."
+  type        = string  
+}
+
+variable "public_alb_name" {
+  description = "The name of the public Application Load Balancer."
+  type        = string
+}
