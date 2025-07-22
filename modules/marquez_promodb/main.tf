@@ -43,7 +43,7 @@ data "aws_lb_listener" "public_listener" {
 }
 
 data "aws_lb_listener" "internal_listener" {
-  load_balancer_arn = data.aws_lb.internal_nlb.arn
+  load_balancer_arn = data.aws_lb.internal_alb.arn
   port              = 80
 }
 ######################
