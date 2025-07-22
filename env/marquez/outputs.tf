@@ -26,9 +26,12 @@ output "d3po_clickhouse_http_url" {
   value       = "http://${data.aws_lb.internal_nlb.dns_name}:${var.d3po_clickhouse_port}/"
   description = "Internal ClickHouse HTTP URL (used by Vector)"
 }
-
+output "d3po_clickhouse_wget_ping_command" {
+  value       = "wget -qO- http://${data.aws_lb.internal_nlb.dns_name}:${var.d3po_clickhouse_port}/ping"
+  description = "Command to test D3PO ClickHouse HTTP /ping endpoint"
+}
 output "d3po_psql_connection_string" {
-  value       = "postgresql://<user>:<password>@${data.aws_lb.internal_nlb.dns_name}:${var.d3po_marquez_db_port}/${var.marquez_postgres_db}"
+  value       = "psql -h ${data.aws_lb.internal_nlb.dns_name} -p ${var.d3po_marquez_db_port} -U ${var.marquez_postgres_user} -d ${var.marquez_postgres_db}"
   description = "PostgreSQL connection string for D3PO (replace <user>:<password>)"
 }
 
@@ -62,7 +65,11 @@ output "promodb_clickhouse_http_url" {
   description = "Internal ClickHouse HTTP URL (used by Vector)"
 }
 
+output "promodb_clickhouse_wget_ping_command" {
+  value       = "wget -qO- http://${data.aws_lb.internal_nlb.dns_name}:${var.promodb_clickhouse_port}/ping"
+  description = "Command to test Promodb ClickHouse HTTP /ping endpoint"
+}
 output "promodb_psql_connection_string" {
-  value       = "postgresql://<user>:<password>@${data.aws_lb.internal_nlb.dns_name}:${var.promodb_marquez_db_port}/${var.marquez_postgres_db}"
-  description = "PostgreSQL connection string for Promodb (replace <user>:<password>)"
+  value       = "psql -h ${data.aws_lb.internal_nlb.dns_name} -p ${var.promodb_marquez_db_port} -U ${var.marquez_postgres_user} -d ${var.marquez_postgres_db}"
+  description = "psql command for Promodb (password will be prompted)"
 }
