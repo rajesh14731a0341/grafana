@@ -9,29 +9,29 @@ output "d3po_web_ui_url" {
 
 output "d3po_api_url" {
   value       = "http://${data.aws_lb.public_alb.dns_name}/d3po/api"
-  description = "Base URL for D3PO API"
+  description = "Base URL for D3PO API (routed via Nginx → Marquez API)"
 }
 
 output "d3po_api_call_example" {
   value       = "curl http://${data.aws_lb.public_alb.dns_name}/d3po/api/v1/namespaces"
-  description = "Example: how to call the D3PO API through nginx"
+  description = "Example curl to D3PO Marquez API"
 }
 
-output "d3po_psql_connection_string" {
-  value       = "postgresql://${var.marquez_postgres_user}:${var.marquez_postgres_password}@${data.aws_lb.internal_nlb.dns_name}:${var.d3po_marquez_db_port}/${var.marquez_postgres_db}"
-  description = "Full PostgreSQL connection string usable with psql or JDBC"
-  sensitive   = true
+output "d3po_vector_http_endpoint" {
+  value       = "http://${data.aws_lb.public_alb.dns_name}/d3po-vector/api/v1/lineage"
+  description = "HTTP endpoint for sending lineage events to D3PO Vector"
 }
 
 output "d3po_clickhouse_http_url" {
   value       = "http://${data.aws_lb.internal_nlb.dns_name}:${var.d3po_clickhouse_port}/"
-  description = "ClickHouse HTTP connection URL for D3PO"
+  description = "Internal ClickHouse HTTP URL (used by Vector)"
 }
 
-output "d3po_vector_tcp_endpoint" {
-  value       = "${data.aws_lb.internal_nlb.dns_name}:${var.d3po_vector_port}"
-  description = "Vector TCP endpoint used for D3PO pipeline ingestion"
+output "d3po_psql_connection_string" {
+  value       = "postgresql://<user>:<password>@${data.aws_lb.internal_nlb.dns_name}:${var.d3po_marquez_db_port}/${var.marquez_postgres_db}"
+  description = "PostgreSQL connection string for D3PO (replace <user>:<password>)"
 }
+
 
 # -----------------------------
 # PROMODB Stack Outputs
@@ -44,26 +44,25 @@ output "promodb_web_ui_url" {
 
 output "promodb_api_url" {
   value       = "http://${data.aws_lb.public_alb.dns_name}/promodb/api"
-  description = "Base URL for Promodb API"
+  description = "Base URL for Promodb API (routed via Nginx → Marquez API)"
 }
 
 output "promodb_api_call_example" {
   value       = "curl http://${data.aws_lb.public_alb.dns_name}/promodb/api/v1/query?query=up"
-  description = "Example: how to call the Promodb API through nginx"
+  description = "Example curl to Promodb Marquez API"
 }
 
-output "promodb_psql_connection_string" {
-  value       = "postgresql://${var.marquez_postgres_user}:${var.marquez_postgres_password}@${data.aws_lb.internal_nlb.dns_name}:${var.promodb_marquez_db_port}/${var.marquez_postgres_db}"
-  description = "Full PostgreSQL connection string usable with psql or JDBC"
-  sensitive   = true
+output "promodb_vector_http_endpoint" {
+  value       = "http://${data.aws_lb.public_alb.dns_name}/promodb-vector/api/v1/lineage"
+  description = "HTTP endpoint for sending lineage events to Promodb Vector"
 }
 
 output "promodb_clickhouse_http_url" {
   value       = "http://${data.aws_lb.internal_nlb.dns_name}:${var.promodb_clickhouse_port}/"
-  description = "ClickHouse HTTP connection URL for Promodb"
+  description = "Internal ClickHouse HTTP URL (used by Vector)"
 }
 
-output "promodb_vector_tcp_endpoint" {
-  value       = "${data.aws_lb.internal_nlb.dns_name}:${var.promodb_vector_port}"
-  description = "Vector TCP endpoint used for Promodb pipeline ingestion"
+output "promodb_psql_connection_string" {
+  value       = "postgresql://<user>:<password>@${data.aws_lb.internal_nlb.dns_name}:${var.promodb_marquez_db_port}/${var.marquez_postgres_db}"
+  description = "PostgreSQL connection string for Promodb (replace <user>:<password>)"
 }
