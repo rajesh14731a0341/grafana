@@ -124,3 +124,19 @@ module "nginx_stack" {
   nginx_config_bucket           = var.nginx_config_bucket
   nginx_config_prefix           = var.nginx_config_prefix
 }
+
+
+
+######################
+# Load Balancers
+######################
+data "aws_lb" "public_alb" {
+  name = var.public_alb_name
+}
+
+data "aws_lb" "internal_alb" {
+  name = var.internal_alb_name
+}
+data "aws_lb" "internal_nlb" {
+  name = var.nlb_name
+}
