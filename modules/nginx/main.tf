@@ -1,11 +1,3 @@
-######################
-# CloudWatch Log Groups
-######################
-
-resource "aws_cloudwatch_log_group" "nginx_logs" {
-  name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-nginx"
-  retention_in_days = 30
-}
 
 ######################
 # Load Balancers
@@ -105,6 +97,24 @@ resource "aws_s3_object" "proxy_headers_conf" {
   lifecycle {
     ignore_changes  = [tags]
   }
+}
+
+######################
+# CloudWatch Log Groups
+######################
+locals {
+  common_tags = {
+    Project     = "error budget"
+    Owner       = "Muthukumar Kunjithapatham"
+    CreatedBy   = "rajesh.puchakayala"
+    ApprovedBy  = "Muthukumar Kunjithapatham"
+    SRNumber    = "10024"
+  }
+}
+resource "aws_cloudwatch_log_group" "nginx_logs" {
+  name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-nginx"
+  retention_in_days = 30
+  tags              = local.common_tags
 }
 
 ######################

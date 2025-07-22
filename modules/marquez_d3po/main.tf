@@ -200,29 +200,49 @@ resource "aws_lb_listener" "vector_TCP_8686" {
 ######################
 # Log Groups
 ######################
+
+locals {
+  common_tags = {
+    Project     = "error budget"
+    Owner       = "Muthukumar Kunjithapatham"
+    CreatedBy   = "rajesh.puchakayala"
+    ApprovedBy  = "Muthukumar Kunjithapatham"
+    SRNumber    = "10024"
+  }
+}
+
+######################
+# Log Groups
+######################
+
 resource "aws_cloudwatch_log_group" "api_logs" {
   name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-d3po-api"
   retention_in_days = 30
+  tags              = local.common_tags
 }
 
 resource "aws_cloudwatch_log_group" "web_logs" {
   name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-d3po-web"
   retention_in_days = 30
+  tags              = local.common_tags
 }
 
 resource "aws_cloudwatch_log_group" "db_logs" {
   name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-d3po-db"
   retention_in_days = 30
+  tags              = local.common_tags
 }
 
 resource "aws_cloudwatch_log_group" "vector_logs" {
   name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-d3po-vector"
   retention_in_days = 30
+  tags              = local.common_tags
 }
 
 resource "aws_cloudwatch_log_group" "clickhouse_logs" {
   name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-d3po-clickhouse"
   retention_in_days = 30
+  tags              = local.common_tags
 }
 
 ######################
