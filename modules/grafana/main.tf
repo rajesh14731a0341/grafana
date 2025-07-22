@@ -1,6 +1,32 @@
 locals {
-  log_prefix = "/ecs/grafana"
+  log_prefix   = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-grafana"
+  common_tags  = {
+    Project     = "error budget"
+    Owner       = "Muthukumar Kunjithapatham"
+    CreatedBy   = "rajesh.puchakayala"
+    ApprovedBy  = "Muthukumar Kunjithapatham"
+    SRNumber    = "10024"
+  }
 }
+
+resource "aws_cloudwatch_log_group" "grafana_logs" {
+  name              = "${local.log_prefix}-grafana"
+  retention_in_days = 30
+  tags              = local.common_tags
+}
+
+resource "aws_cloudwatch_log_group" "renderer_logs" {
+  name              = "${local.log_prefix}-renderer"
+  retention_in_days = 30
+  tags              = local.common_tags
+}
+
+resource "aws_cloudwatch_log_group" "redis_logs" {
+  name              = "${local.log_prefix}-redis"
+  retention_in_days = 30
+  tags              = local.common_tags
+}
+
 
 ##############################
 # Data Sources for Load Balancers and Target Groups
@@ -92,7 +118,6 @@ resource "aws_ecs_task_definition" "grafana" {
           awslogs-group         = "${local.log_prefix}-grafana"
           awslogs-region        = "us-east-1"
           awslogs-stream-prefix = "grafana"
-          awslogs-create-group  = "true"
         }
       },
 
@@ -121,7 +146,6 @@ resource "aws_ecs_task_definition" "renderer" {
           awslogs-group         = "${local.log_prefix}-renderer"
           awslogs-region        = "us-east-1"
           awslogs-stream-prefix = "renderer"
-          awslogs-create-group  = "true"
         }
       }
     }
@@ -148,7 +172,6 @@ resource "aws_ecs_task_definition" "redis" {
         awslogs-group         = "${local.log_prefix}-redis"
         awslogs-region        = "us-east-1"
         awslogs-stream-prefix = "redis"
-        awslogs-create-group  = "true"
       }
     }
   }])
