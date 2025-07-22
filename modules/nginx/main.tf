@@ -3,8 +3,8 @@
 ######################
 
 resource "aws_cloudwatch_log_group" "nginx_logs" {
-  name              = "/ecs/nginx"
-  retention_in_days = 7
+  name              = "/aws/ecs/us-east-dev-corp-gdap-errorbudget-nginx"
+  retention_in_days = 30
 }
 
 ######################
@@ -179,7 +179,7 @@ resource "aws_ecs_task_definition" "nginx" {
         options = {
           awslogs-group         = aws_cloudwatch_log_group.nginx_logs.name
           awslogs-region        = var.region
-          awslogs-stream-prefix = "ecs"
+          awslogs-stream-prefix = "nginx"
         }
       }
     }
