@@ -144,7 +144,7 @@ resource "aws_lb_listener_rule" "api_rule" {
 
   condition {
     path_pattern {
-      values = ["/promodb/api/*"]
+      values = ["/api/*"]
     }
   }
 }
