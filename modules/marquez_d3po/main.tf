@@ -1,7 +1,7 @@
 #############################d3po stack ######################################
 
 locals {
-  marquez_api_url_base = "http://${data.aws_lb.internal_alb.dns_name}/api"
+  marquez_api_url_base = "/d3po/api"
   s3_bucket        = "errorbudget-s3"
   s3_common_prefix = "errorbudget-terraform-tfstate/marquez_config" 
 }
